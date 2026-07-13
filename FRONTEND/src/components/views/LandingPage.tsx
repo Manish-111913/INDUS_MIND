@@ -67,21 +67,26 @@ export function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Sync with document element theme attribute
+  // Reflect the currently-applied theme (the .dark class is applied globally in App.tsx).
   useEffect(() => {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    if (currentTheme === 'dark' || currentTheme === 'industrial') {
-      setTheme('dark');
-    } else {
-      setTheme('light');
-      document.documentElement.setAttribute('data-theme', 'light');
-    }
+    const syncFromDom = () => {
+      setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    };
+    syncFromDom();
+    window.addEventListener('indusmind-theme-change', syncFromDom);
+    return () => window.removeEventListener('indusmind-theme-change', syncFromDom);
   }, []);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(nextTheme);
+    // Persist so the choice sticks across routes/reloads, and toggle the .dark class the
+    // CSS actually keys off of. Broadcast so the root theme listener stays in sync.
+    localStorage.setItem('appearance.theme', nextTheme);
+    localStorage.setItem('indusmind_theme', nextTheme);
+    document.documentElement.classList.toggle('dark', nextTheme === 'dark');
     document.documentElement.setAttribute('data-theme', nextTheme);
+    window.dispatchEvent(new Event('indusmind-theme-change'));
   };
 
   const handleCta = () => {

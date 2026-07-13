@@ -23,6 +23,21 @@ export function useLoginMutation() {
   });
 }
 
+export function useRegisterMutation() {
+  const queryClient = useQueryClient();
+  const registerInStore = useAuthStore((state) => state.register);
+
+  return useMutation({
+    mutationFn: async ({ name, email, password }: { name: string; email: string; password: string }) => {
+      return registerInStore(name, email, password);
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(['auth_user'], user);
+      queryClient.invalidateQueries({ queryKey: ['navigation'] });
+    },
+  });
+}
+
 export function useMeQuery(enabled = true) {
   const checkSession = useAuthStore((state) => state.checkSession);
 

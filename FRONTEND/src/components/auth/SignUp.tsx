@@ -7,72 +7,67 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { motion } from 'motion/react';
-import { Bot, Shield, Cpu, ArrowRight } from 'lucide-react';
-import { useLoginMutation } from '../../lib/api/auth';
+import { Bot, Shield, Cpu, ArrowRight, UserPlus } from 'lucide-react';
+import { useRegisterMutation } from '../../lib/api/auth';
 import { useState } from 'react';
 
 // Validation Schema using Zod
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Enter a valid enterprise email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
-});
+const signUpSchema = z
+  .object({
+    name: z.string().min(2, { message: 'Enter your full name (min. 2 characters)' }),
+    email: z.string().email({ message: 'Enter a valid enterprise email address' }),
+    password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type SignUpFormValues = z.infer<typeof signUpSchema>;
 
-const QUICK_USERS = [
-  { email: 'admin@indusmind.io', role: 'Admin (Aditya)', desc: 'Full System Access' },
-  { email: 'manager@indusmind.io', role: 'Plant Manager (Rajesh)', desc: 'KPIs & Approvals' },
-  { email: 'engineer@indusmind.io', role: 'Maint. Engineer (Priya)', desc: 'RCA & Scheduling' },
-  { email: 'tech@indusmind.io', role: 'Field Technician (Arun)', desc: 'WO Execution (Mobile)' },
-  { email: 'compliance@indusmind.io', role: 'Compliance Officer (Meena)', desc: 'Regulations & Audits' },
-];
-
-export function Login() {
-  const loginMutation = useLoginMutation();
+export function SignUp() {
+  const registerMutation = useRegisterMutation();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignUpFormValues>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = async (values: SignUpFormValues) => {
     setServerError(null);
     try {
-      await loginMutation.mutateAsync({
+      await registerMutation.mutateAsync({
+        name: values.name,
         email: values.email,
         password: values.password,
       });
-      // Redirect to dashboard is handled in App.tsx by observing authStore state
+      // Auto-login on success; redirect handled in App.tsx by observing authStore state
       window.location.hash = '#dashboard';
     } catch (err: any) {
-      setServerError(err?.error?.message || 'Authentication failed. Please check credentials.');
+      setServerError(err?.error?.message || 'Registration failed. Please try again.');
     }
   };
 
-  const fillCredentials = (email: string) => {
-    setValue('email', email);
-    setValue('password', 'Demo@1234');
-    setServerError(null);
-  };
-
   return (
-    <div className="min-h-screen flex bg-background-custom text-text-primary overflow-hidden">
-      
+    <div className="min-h-screen flex bg-background-custom text-text-primary">
+
       {/* LEFT SIDE: Brand / HMI Control Room Panel (Hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-primary/15 via-primary/5 to-bg border-r border-border-custom items-center justify-center p-12">
-        
+
         {/* Subtle Engineering Grid Background Overlay */}
-        <div 
-          className="absolute inset-0 opacity-10 pointer-events-none" 
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
             backgroundImage: `linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)`,
             backgroundSize: '24px 24px'
@@ -91,11 +86,11 @@ export function Login() {
           </div>
 
           <h1 className="font-display text-4xl font-extrabold tracking-tight text-text-primary mb-4 leading-tight">
-            The operations brain for asset-intensive industry
+            Provision your operational node
           </h1>
-          
+
           <p className="text-text-secondary text-base mb-8 leading-relaxed">
-            Unifying engineering P&IDs, equipment timelines, compliance procedures, and work order histories into an intelligent, secure control-room interface.
+            Create an account to connect your engineering documents, equipment timelines, and work-order histories into a single secure control-room intelligence layer.
           </p>
 
           {/* Core capability chips */}
@@ -117,10 +112,10 @@ export function Login() {
         </div>
       </div>
 
-      {/* RIGHT SIDE: Auth Form */}
+      {/* RIGHT SIDE: Registration Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-12 md:px-12 lg:px-16 bg-surface relative">
         <div className="max-w-md w-full mx-auto">
-          
+
           {/* Mobile App Header */}
           <div className="lg:hidden flex items-center space-x-2.5 mb-8">
             <div className="p-2 rounded bg-primary/20 text-primary">
@@ -131,15 +126,15 @@ export function Login() {
 
           <div className="mb-8">
             <h2 className="font-display text-2xl font-bold tracking-tight text-text-primary">
-              System Authorization
+              Create Operator Account
             </h2>
             <p className="text-sm text-text-secondary mt-1">
-              Provide credentials to access your industrial plant node.
+              Register a new operator identity for your industrial plant node.
             </p>
           </div>
 
           {serverError && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               className="p-3 mb-6 rounded text-xs bg-status-critical/10 border border-status-critical/20 text-status-critical font-mono"
@@ -149,6 +144,23 @@ export function Login() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-xs font-mono text-text-secondary mb-1 uppercase tracking-wider">
+                Full Name
+              </label>
+              <input
+                {...register('name')}
+                type="text"
+                placeholder="e.g. Aditya Vardhan"
+                className="w-full px-3 py-2 bg-background-custom text-text-primary text-sm border border-border-custom focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded transition-all font-sans"
+              />
+              {errors.name && (
+                <p className="text-[11px] text-status-critical font-mono mt-1">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-mono text-text-secondary mb-1 uppercase tracking-wider">
                 Enterprise Email
@@ -167,17 +179,9 @@ export function Login() {
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-xs font-mono text-text-secondary uppercase tracking-wider">
-                  Password
-                </label>
-                <a 
-                  href="#forgot-password" 
-                  className="text-xs font-mono text-primary hover:text-primary-hover hover:underline"
-                >
-                  Forgot Password?
-                </a>
-              </div>
+              <label className="block text-xs font-mono text-text-secondary mb-1 uppercase tracking-wider">
+                Password
+              </label>
               <input
                 {...register('password')}
                 type="password"
@@ -191,85 +195,45 @@ export function Login() {
               )}
             </div>
 
+            <div>
+              <label className="block text-xs font-mono text-text-secondary mb-1 uppercase tracking-wider">
+                Confirm Password
+              </label>
+              <input
+                {...register('confirmPassword')}
+                type="password"
+                placeholder="••••••••"
+                className="w-full px-3 py-2 bg-background-custom text-text-primary text-sm border border-border-custom focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded transition-all font-sans"
+              />
+              {errors.confirmPassword && (
+                <p className="text-[11px] text-status-critical font-mono mt-1">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
+            </div>
+
             <button
               type="submit"
-              disabled={loginMutation.isPending}
+              disabled={registerMutation.isPending}
               className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-primary hover:bg-primary-hover focus:outline-none rounded transition-colors flex items-center justify-center space-x-2 cursor-pointer shadow-md shadow-primary/10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{loginMutation.isPending ? 'Establishing Node Link...' : 'Link to Operational Console'}</span>
+              <UserPlus className="w-4 h-4" />
+              <span>{registerMutation.isPending ? 'Provisioning Node Access...' : 'Create Account'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          {/* Link to registration */}
-          <p className="mt-4 text-center text-xs text-text-secondary">
-            No operator account yet?{' '}
-            <a
-              href="#register"
-              className="font-semibold text-primary hover:text-primary-hover hover:underline"
-            >
-              Create one
-            </a>
-          </p>
-
-          {/* Social login stub */}
-          <div className="mt-6">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border-custom"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-surface px-2 text-text-muted font-mono text-[10px]">
-                  Or Enterprise SSO
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                type="button"
-                onClick={() => alert('Microsoft Azure AD login is currently stubbed in HMI Mock State.')}
-                className="flex items-center justify-center py-1.5 px-3 border border-border-custom hover:bg-surface-muted rounded text-xs font-mono text-text-secondary transition-colors cursor-pointer"
+          {/* Link back to sign in */}
+          <div className="mt-8 pt-6 border-t border-border-custom text-center">
+            <p className="text-xs text-text-secondary">
+              Already have an operator account?{' '}
+              <a
+                href="#login"
+                className="font-semibold text-primary hover:text-primary-hover hover:underline"
               >
-                Microsoft SSO
-              </button>
-              <button 
-                type="button"
-                onClick={() => alert('Google Workspace login is currently stubbed in HMI Mock State.')}
-                className="flex items-center justify-center py-1.5 px-3 border border-border-custom hover:bg-surface-muted rounded text-xs font-mono text-text-secondary transition-colors cursor-pointer"
-              >
-                Google Auth
-              </button>
-            </div>
-          </div>
-
-          {/* Developer quick-fill user matrix */}
-          <div className="mt-8 pt-6 border-t border-border-custom">
-            <span className="block font-mono text-[10px] text-accent tracking-widest uppercase mb-3">
-              ⚠ DEVELOPMENT CONTROLS: QUICK CONSOLE LINKS
-            </span>
-            <div className="space-y-1.5">
-              {QUICK_USERS.map((user) => (
-                <button
-                  key={user.email}
-                  type="button"
-                  onClick={() => fillCredentials(user.email)}
-                  className="w-full flex items-center justify-between p-2 text-left bg-background-custom border border-border-custom hover:border-primary hover:bg-primary/5 rounded transition-all cursor-pointer group"
-                >
-                  <div className="truncate">
-                    <p className="text-xs font-semibold text-text-primary group-hover:text-primary transition-colors">
-                      {user.role}
-                    </p>
-                    <p className="text-[10px] font-mono text-text-muted truncate">
-                      {user.email}
-                    </p>
-                  </div>
-                  <span className="text-[9px] font-mono bg-surface-muted px-1.5 py-0.5 rounded text-text-secondary group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                    Fill Creds
-                  </span>
-                </button>
-              ))}
-            </div>
+                Sign in to the console
+              </a>
+            </p>
           </div>
 
         </div>

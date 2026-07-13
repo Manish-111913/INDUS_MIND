@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './stores/authStore';
 import { Login } from './components/auth/Login';
+import { SignUp } from './components/auth/SignUp';
 import { ForgotPassword } from './components/auth/ForgotPassword';
 import { ResetPassword } from './components/auth/ResetPassword';
 import { AppShell } from './components/layout/AppShell';
@@ -63,6 +64,33 @@ function MainAppContent() {
     });
   }, [checkSession]);
 
+  // 2b. Apply the persisted theme globally (works on landing/login pages too, not just
+  // inside the AppShell). The CSS keys off the `.dark` class on <html>.
+  useEffect(() => {
+    const applyStoredTheme = () => {
+      const stored =
+        localStorage.getItem('appearance.theme') ||
+        localStorage.getItem('indusmind_theme') ||
+        'system';
+      const isDark =
+        stored === 'dark' ||
+        (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', isDark);
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    };
+
+    applyStoredTheme();
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    window.addEventListener('storage', applyStoredTheme);
+    window.addEventListener('indusmind-theme-change', applyStoredTheme);
+    mediaQuery.addEventListener('change', applyStoredTheme);
+    return () => {
+      window.removeEventListener('storage', applyStoredTheme);
+      window.removeEventListener('indusmind-theme-change', applyStoredTheme);
+      mediaQuery.removeEventListener('change', applyStoredTheme);
+    };
+  }, []);
+
   // 3. Simple Hash Navigation Trigger
   const handleRouteChange = (newHash: string) => {
     window.location.hash = newHash;
@@ -72,7 +100,7 @@ function MainAppContent() {
   useEffect(() => {
     if (initialChecking) return;
 
-    const authExemptRoutes = ['#login', '#forgot-password', '#reset-password', '#landing', '', '#'];
+    const authExemptRoutes = ['#login', '#register', '#forgot-password', '#reset-password', '#landing', '', '#'];
     
     if (!isAuthenticated && !authExemptRoutes.includes(currentHash)) {
       // Force non-authenticated users to login
@@ -119,6 +147,8 @@ function MainAppContent() {
         return <LandingPage />;
       case '#login':
         return <Login />;
+      case '#register':
+        return <SignUp />;
       case '#forgot-password':
         return <ForgotPassword />;
       case '#reset-password':
@@ -159,10 +189,13 @@ function MainAppContent() {
     }
   };
 
-  const isOutsideShell = ['#login', '#forgot-password', '#reset-password', '#landing', '', '#'].includes(currentHash);
+  const isOutsideShell = ['#login', '#register', '#forgot-password', '#reset-password', '#landing', '', '#'].includes(currentHash);
 
   if (isOutsideShell) {
-    return <div className="font-sans min-h-screen bg-background-custom">{renderActiveRoute()}</div>;
+    // These full-page routes live outside the AppShell's internal scroll containers.
+    // The global `body { overflow: hidden }` would otherwise clip long pages (landing,
+    // sign-up), so give this wrapper its own vertical scroll.
+    return <div className="font-sans h-screen overflow-y-auto bg-background-custom">{renderActiveRoute()}</div>;
   }
 
   return (

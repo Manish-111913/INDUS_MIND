@@ -3,9 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MOCK_USERS, MOCK_NAV_ITEMS } from './mockData';
+import { MOCK_USERS, MOCK_NAV_ITEMS, MockUserDbEntry } from './mockData';
 import { ApiResponseEnvelope, ApiErrorEnvelope, User, NavigationItem, DocumentFile, ExtractedEntity } from '../../types';
 import { MOCK_LOOKUPS, SEED_DOCUMENTS } from './mockDocuments';
+
+// Users created at runtime via the sign-up flow, persisted to localStorage so they
+// survive reloads and can authenticate exactly like the seeded demo accounts.
+const REGISTERED_USERS_KEY = 'indusmind_registered_users';
+
+function getRegisteredUsers(): Record<string, MockUserDbEntry> {
+  try {
+    const raw = localStorage.getItem(REGISTERED_USERS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveRegisteredUser(entry: MockUserDbEntry) {
+  const users = getRegisteredUsers();
+  users[entry.user.email] = entry;
+  localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
+}
+
+// Look up a user across both the seeded demo accounts and runtime sign-ups.
+function lookupUser(email: string): MockUserDbEntry | undefined {
+  return MOCK_USERS[email] || getRegisteredUsers()[email];
+}
 
 // Helper to load/save documents from localStorage
 export function getStoredDocuments(): DocumentFile[] {
@@ -350,7 +374,7 @@ const API_BASE_URL = (import.meta as any).env.VITE_PUBLIC_API_BASE_URL || '/api/
 function getUserFromToken(token: string): User | null {
   if (!token.startsWith('mock-jwt-token-for-')) return null;
   const email = token.replace('mock-jwt-token-for-', '');
-  return MOCK_USERS[email]?.user || null;
+  return lookupUser(email)?.user || null;
 }
 
 // Global flag to prevent infinite loops on token refreshing
@@ -381,10 +405,70 @@ async function simulateNetworkCall<T>(
   const authHeader = headers['Authorization'] || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : '';
 
+  // 0. Auth Register (create a new account + auto-login)
+  if (path === '/auth/register' && method === 'POST') {
+    const { name, email, password } = JSON.parse(options.body as string);
+    if (!name || !email || !password) {
+      throw {
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'Name, email and password are all required.',
+        }
+      };
+    }
+    if (lookupUser(email)) {
+      throw {
+        error: {
+          code: 'EMAIL_EXISTS',
+          message: 'An account with this email already exists. Please sign in instead.',
+          fieldErrors: {
+            email: 'This email is already registered',
+          }
+        }
+      };
+    }
+
+    const newUser: User = {
+      id: 'usr-' + Date.now(),
+      email,
+      name,
+      role: 'Field Technician',
+      plant: 'Reliance Jamnagar Refinery - Sector A',
+      featureFlags: {
+        lessons_learned: true,
+        predictive_maintenance: false,
+        compliance_evidence_pack: false,
+        advanced_analytics: false,
+      },
+      permissions: [
+        'doc.read', 'doc.create',
+        'equip.read',
+        'wo.read', 'wo.close',
+        'comp.read',
+        'lesson.read',
+        'copilot.use',
+        'graph.read',
+        'readings.record',
+        'imports.run'
+      ]
+    };
+
+    saveRegisteredUser({ passwordHash: password, user: newUser });
+
+    const mockAccess = `mock-jwt-token-for-${email}`;
+    return {
+      data: {
+        token: mockAccess,
+        refreshToken: 'mock-refresh-token',
+        user: newUser,
+      } as unknown as T,
+    };
+  }
+
   // 1. Auth Login
   if (path === '/auth/login' && method === 'POST') {
     const { email, password } = JSON.parse(options.body as string);
-    const matchedUser = MOCK_USERS[email];
+    const matchedUser = lookupUser(email);
     if (matchedUser && matchedUser.passwordHash === password) {
       const mockAccess = `mock-jwt-token-for-${email}`;
       const mockRefresh = 'mock-refresh-token';

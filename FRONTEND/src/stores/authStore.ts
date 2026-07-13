@@ -13,6 +13,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<User>;
+  register: (name: string, email: string, password: string) => Promise<User>;
   logout: () => void;
   checkSession: () => Promise<User | null>;
   updatePlant: (plant: string) => void;
@@ -45,6 +46,24 @@ export const useAuthStore = create<AuthState>((set, get) => {
         return data.user;
       } catch (err: any) {
         const msg = err?.error?.message || 'Login failed';
+        set({ error: msg, isLoading: false });
+        throw err;
+      }
+    },
+
+    register: async (name, email, password) => {
+      set({ isLoading: true, error: null });
+      try {
+        const data = await api.post<{ token: string; refreshToken: string; user: User }>('/auth/register', {
+          name,
+          email,
+          password,
+        });
+        setTokens(data.token, data.refreshToken);
+        set({ user: data.user, isAuthenticated: true, isLoading: false });
+        return data.user;
+      } catch (err: any) {
+        const msg = err?.error?.message || 'Registration failed';
         set({ error: msg, isLoading: false });
         throw err;
       }

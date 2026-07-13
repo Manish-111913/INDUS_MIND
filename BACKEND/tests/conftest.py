@@ -18,6 +18,7 @@ from sqlalchemy import text
 from app.main import app
 
 # Import every module's models so Base.metadata is complete before create_all.
+from app.modules.ai import models as _ai  # noqa: F401
 from app.modules.audit import models as _audit  # noqa: F401
 from app.modules.auth import models as _auth  # noqa: F401
 from app.modules.documents import models as _documents  # noqa: F401
@@ -30,6 +31,7 @@ from app.modules.users import models as _users  # noqa: F401
 # Truncated between tests (CASCADE handles FK order).
 _TABLES = (
     "audit_log, feature_flags, lookups, user_roles, role_permissions, permissions, roles, "
+    "llm_usage, prompt_templates, ai_model_configs, extracted_entities, "
     "document_chunks, ingestion_jobs, document_versions, documents, "
     "equipment, areas, plants, refresh_tokens, sessions, users, tenants"
 )
@@ -75,8 +77,11 @@ async def db():
 
     yield
 
+    from app.core import graph as core_graph
+
     await engine.dispose()
     await core_redis.close_redis()
+    await core_graph.close_driver()  # reset the Neo4j driver so each test rebinds to its loop
 
 
 @pytest.fixture
@@ -96,3 +101,23 @@ async def minio(db):
     except Exception as exc:  # noqa: BLE001
         pytest.skip(f"MinIO not available: {exc}")
     yield
+
+
+@pytest.fixture
+async def neo4j(db):
+    """Fresh Neo4j driver on the test loop + clean graph, else skip (docs/02 §9)."""
+    from app.core import graph
+    from app.modules.knowledge import service as knowledge_service
+
+    await graph.close_driver()
+    knowledge_service._schema_ready = False
+    try:
+        await graph.ping()
+        await graph.run_write("MATCH (n) DETACH DELETE n")  # isolate tests
+    except Exception as exc:  # noqa: BLE001
+        pytest.skip(f"Neo4j not available: {exc}")
+    yield
+    try:
+        await graph.close_driver()
+    except Exception:  # noqa: BLE001
+        pass

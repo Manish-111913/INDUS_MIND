@@ -48,6 +48,45 @@ DEMO_FLAGS = [
     ("evidence_packages", True),
 ]
 
+# (capability, provider, model_name, confidence_threshold, params) — global defaults (docs/02 §37)
+AI_CONFIGS = [
+    ("chat", "anthropic", "claude-sonnet-5", 0.700, {"temperature": 0.2, "max_tokens": 1500}),
+    ("embedding", "local", "bge-large-en-v1.5", 0.700, {}),
+    ("ocr_vision", "anthropic", "claude-sonnet-5", 0.700, {"max_tokens": 1500}),
+    ("extraction", "anthropic", "claude-sonnet-5", 0.600, {"temperature": 0.0, "max_tokens": 2000}),
+    ("rca", "anthropic", "claude-opus-4-8", 0.700, {"temperature": 0.3, "max_tokens": 2000}),
+    ("compliance", "anthropic", "claude-sonnet-5", 0.700, {"max_tokens": 1500}),
+    ("lessons", "anthropic", "claude-sonnet-5", 0.700, {"max_tokens": 1500}),
+]
+
+# (key, capability, [variables], template) — seeded prompts (docs/02 §38)
+PROMPTS = [
+    ("extract.entities", "extraction", ["text"],
+     "Extract industrial entities (equipment tags, parameters, regulation clauses, persons, "
+     "dates, materials, failure modes, procedures) from the text. Return JSON "
+     '{\"entities\":[{\"type\",\"value\",\"confidence\"}]}.\n\n{{text}}'),
+    ("copilot.answer", "chat", ["question", "context"],
+     "Answer the question using ONLY the sources below. Cite each claim with [n] mapping to a "
+     "source. If the sources are insufficient, say so.\n\nSources:\n{{context}}\n\n"
+     "Question: {{question}}"),
+    ("copilot.classify", "chat", ["question"],
+     "Classify the intent of this query (lookup | how_to | troubleshoot | compliance | other): "
+     "{{question}}"),
+    ("rca.hypothesize", "rca", ["symptom", "history"],
+     "Given the failure symptom and equipment history, hypothesize ranked probable root causes "
+     "with confidence and evidence.\n\nSymptom: {{symptom}}\n\nHistory:\n{{history}}"),
+    ("compliance.compare", "compliance", ["clause", "procedure"],
+     "Compare the regulation clause to the current procedure and report whether the procedure "
+     "satisfies it, with a gap explanation if not.\n\nClause:\n{{clause}}\n\n"
+     "Procedure:\n{{procedure}}"),
+    ("lessons.detect", "lessons", ["incidents"],
+     "Detect systemic patterns across these incidents and draft a lesson learned with a "
+     "recommended preventive action.\n\nIncidents:\n{{incidents}}"),
+    ("brief.daily", "chat", ["metrics"],
+     "Write a concise daily operations brief highlighting the top 3 risks from these metrics.\n\n"
+     "{{metrics}}"),
+]
+
 # ── asset seed (docs/02 §7, §23) ──────────────────────────────────────────────
 # (code, name, location, timezone)
 ASSET_PLANTS = [
@@ -334,6 +373,32 @@ async def _seed_documents(session, tenant, admin_user) -> int:
     return ingested
 
 
+async def _seed_ai(session) -> int:
+    from app.modules.ai.models import AIModelConfig, PromptTemplate
+
+    existing_caps = {
+        c.capability for c in (
+            await session.execute(select(AIModelConfig).where(AIModelConfig.tenant_id.is_(None)))
+        ).scalars()
+    }
+    for capability, provider, model_name, threshold, params in AI_CONFIGS:
+        if capability not in existing_caps:
+            session.add(AIModelConfig(tenant_id=None, capability=capability, provider=provider,
+                                      model_name=model_name, confidence_threshold=threshold,
+                                      params=params, active=True))
+    existing_prompts = {
+        p.key for p in (
+            await session.execute(select(PromptTemplate).where(PromptTemplate.tenant_id.is_(None)))
+        ).scalars()
+    }
+    for key, capability, variables, template in PROMPTS:
+        if key not in existing_prompts:
+            session.add(PromptTemplate(tenant_id=None, key=key, capability=capability, version=1,
+                                       template=template, variables=variables, active=True))
+    await session.flush()
+    return len(AI_CONFIGS)
+
+
 async def run(*, with_documents: bool = False) -> None:
     # Document ingestion (needs MinIO + pipeline deps) is opt-in so unit tests that
     # only need the config/asset seed stay fast; `make seed` enables it below.
@@ -348,9 +413,19 @@ async def run(*, with_documents: bool = False) -> None:
         await _seed_flags(session, tenant)
         users = await _seed_users(session, tenant, roles)
         n_plants, n_areas, n_equipment = await _seed_assets(session, tenant)
+        await _seed_ai(session)
         admin = next((u for u in users if u.email == "admin@indusmind.io"), users[0])
         n_docs = await _seed_documents(session, tenant, admin) if with_documents else 0
         await session.commit()
+
+        # Project the equipment hierarchy into the graph (best-effort; graph is optional).
+        if with_documents:
+            try:
+                from app.modules.knowledge.service import GraphProjector
+
+                await GraphProjector(session, tenant.id).project_equipment()
+            except Exception as exc:  # noqa: BLE001
+                log.warning("graph_projection_skipped", error=str(exc))
 
         # Warm the effective-permission cache for every demo user.
         for user in users:

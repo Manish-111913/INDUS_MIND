@@ -53,8 +53,8 @@ SAMPLES: list[tuple[str, str, str, list[str], list[str]]] = [
       "maintained for a minimum of three years.",
       "Clause 7.2: Pressure relief valves on pressure vessels shall be tested at intervals not "
       "exceeding twelve months.",
-      "Clause 9.1: Rotating equipment with criticality A shall have vibration monitoring and a "
-      "documented predictive maintenance program."]),
+      "Clause 9.1: Rotating equipment with criticality A, such as crude feed pump P-101, shall "
+      "have vibration monitoring and a documented predictive maintenance program."]),
     ("inspection-c3-2026.pdf", "inspection_report", "Inspection Report — C-3 Compressor (2026 Q1)",
      ["inspection_report", "C-3"],
      ["Visual and NDT inspection of C-3 casing and nozzles. Wall thickness within limits. Minor "

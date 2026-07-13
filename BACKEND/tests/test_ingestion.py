@@ -73,7 +73,8 @@ async def test_pipeline_produces_chunks_embeddings_thumbnails(db, minio, client)
     assert statuses["ocr"] == "completed"
     assert statuses["chunking"] == "completed"
     assert statuses["embedding"] == "completed"
-    assert statuses["extracting"] == "skipped"
+    assert statuses["extracting"] == "completed"  # B6: entity extraction now runs
+    assert statuses["graphing"] == "completed"    # B6: graph upsert (best-effort) now runs
     assert detail["job"]["durations"].get("embedding") is not None
 
     # Chunks exist with real 1024-dim vectors.

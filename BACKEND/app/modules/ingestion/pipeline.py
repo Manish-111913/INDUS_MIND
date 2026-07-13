@@ -36,8 +36,7 @@ from app.ws import progress
 
 log = get_logger("ingestion.pipeline")
 
-B5_STAGES = ["ocr", "parsing", "chunking", "embedding"]
-DEFERRED_STAGES = ["extracting", "graphing"]  # implemented in B6
+PIPELINE_STAGES = ["ocr", "parsing", "chunking", "embedding", "extracting", "graphing"]
 
 
 class PipelineError(Exception):
@@ -59,7 +58,7 @@ async def run_pipeline(session: AsyncSession, tenant_id: uuid.UUID | str,
     if job is None:
         raise PipelineError("load", ValueError("ingestion job not found"))
 
-    start = B5_STAGES.index(from_stage) if from_stage in B5_STAGES else 0
+    start = PIPELINE_STAGES.index(from_stage) if from_stage in PIPELINE_STAGES else 0
     document.ingestion_status = "pending"
     document.ingestion_error = None
     job.status = "running"
@@ -69,7 +68,7 @@ async def run_pipeline(session: AsyncSession, tenant_id: uuid.UUID | str,
     parsed = None
 
     try:
-        if start <= B5_STAGES.index("chunking"):
+        if start <= PIPELINE_STAGES.index("chunking"):
             # ── ocr ──
             async with _stage(session, job, tenant_id, "ocr", document):
                 pages = await asyncio.to_thread(extract_pages, data, document.mime)
@@ -95,8 +94,20 @@ async def run_pipeline(session: AsyncSession, tenant_id: uuid.UUID | str,
                 await chunks_repo.add_many(rows)
 
         # ── embedding (idempotent: only chunks without a vector) ──
-        async with _stage(session, job, tenant_id, "embedding", document):
-            await _embed_chunks(session, tenant_id, document.current_version_id)
+        if start <= PIPELINE_STAGES.index("embedding"):
+            async with _stage(session, job, tenant_id, "embedding", document):
+                await _embed_chunks(session, tenant_id, document.current_version_id)
+
+        chunks = await chunks_repo.list_for_document(document.id)
+
+        # ── extracting (entities) ──
+        if start <= PIPELINE_STAGES.index("extracting"):
+            async with _stage(session, job, tenant_id, "extracting", document):
+                await _extract(session, tenant_id, document, chunks)
+
+        # ── graphing (Neo4j upsert; best-effort — graph is a projection) ──
+        async with _stage(session, job, tenant_id, "graphing", document):
+            await _graph_upsert(session, tenant_id, document)
 
         await _finalize(session, job, document, tenant_id)
     except Exception as exc:  # noqa: BLE001 — surface as a typed pipeline error for retry/fail
@@ -123,14 +134,30 @@ async def _embed_chunks(session: AsyncSession, tenant_id, version_id) -> None:
     await session.flush()
 
 
+async def _extract(session, tenant_id, document, chunks) -> None:
+    from app.modules.ingestion.extraction import extract_entities
+    from app.modules.ingestion.repository import EntityRepository
+
+    entities = await extract_entities(session, tenant_id, document, chunks)
+    repo = EntityRepository(session, tenant_id)
+    await repo.delete_for_document(document.id)  # idempotent rebuild
+    await repo.add_many(entities)
+
+
+async def _graph_upsert(session, tenant_id, document) -> None:
+    from app.core import graph
+    from app.modules.ingestion.repository import EntityRepository
+    from app.modules.knowledge.service import GraphProjector
+
+    try:
+        entities = await EntityRepository(session, tenant_id).list_for_document(document.id)
+        await GraphProjector(session, tenant_id).upsert_document(document, entities)
+    except Exception as exc:  # noqa: BLE001 — graph is a rebuildable projection; don't fail ingest
+        log.warning("graph_upsert_skipped", document_id=str(document.id), error=str(exc))
+        await graph.close_driver()  # drop a possibly-broken driver so later docs retry cleanly
+
+
 async def _finalize(session, job, document, tenant_id) -> None:
-    stages = [dict(e) for e in job.stages]
-    for entry in stages:
-        if entry["stage"] in DEFERRED_STAGES and entry["status"] == "pending":
-            entry["status"] = "skipped"
-            entry["detail"] = "deferred to entity/graph stage (B6)"
-    job.stages = stages
-    flag_modified(job, "stages")
     job.status = "completed"
     job.current_stage = None
     document.ingestion_status = "completed"

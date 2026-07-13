@@ -16,7 +16,9 @@ from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.documents.router import router as documents_router
 from app.modules.equipment.router import router as equipment_router
+from app.modules.ingestion.entities_router import router as entities_router
 from app.modules.ingestion.router import router as ingestion_router
+from app.modules.knowledge.router import router as knowledge_router
 from app.modules.lookups.router import router as lookups_router
 from app.modules.users.router import router as users_router
 
@@ -35,5 +37,7 @@ api_router.include_router(lookups_router)
 api_router.include_router(equipment_router)
 api_router.include_router(documents_router)
 api_router.include_router(ingestion_router)
+api_router.include_router(entities_router)
+api_router.include_router(knowledge_router)
 api_router.include_router(audit_router)
-# knowledge, ai, maintenance, ... register here as they are implemented.
+# ai, maintenance, compliance, ... register here as they are implemented.

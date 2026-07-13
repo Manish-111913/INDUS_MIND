@@ -19,6 +19,7 @@ from app.core.config import settings
 
 # Import model modules here so their tables register on Base.metadata before
 # autogenerate runs.
+from app.modules.ai import models as _ai  # noqa: E402,F401
 from app.modules.audit import models as _audit  # noqa: E402,F401
 from app.modules.auth import models as _auth  # noqa: E402,F401
 from app.modules.documents import models as _documents  # noqa: E402,F401

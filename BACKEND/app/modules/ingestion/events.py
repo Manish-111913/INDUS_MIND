@@ -29,3 +29,17 @@ async def _on_document_event(event: Event) -> None:
 
 bus.subscribe(EventType.DOCUMENT_UPLOADED, _on_document_event)
 bus.subscribe(EventType.DOCUMENT_REPROCESS, _on_document_event)
+
+
+# Fill the B4 entity-link placeholder: resolve equipment_id → document_ids via
+# the extracted-entity links now that extraction produces them (docs/02 §17).
+class _EntityLinkProvider:
+    async def documents_for_equipment(self, session, tenant_id, equipment_id):
+        from app.modules.ingestion.repository import EntityRepository
+
+        return await EntityRepository(session, tenant_id).documents_for_equipment(equipment_id)
+
+
+from app.modules.documents.providers import entity_link_registry  # noqa: E402
+
+entity_link_registry.register(_EntityLinkProvider())

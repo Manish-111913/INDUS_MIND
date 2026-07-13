@@ -7,7 +7,7 @@ import uuid
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.ingestion.models import DocumentChunk
+from app.modules.ingestion.models import DocumentChunk, ExtractedEntity
 
 
 class ChunkRepository:
@@ -49,3 +49,46 @@ class ChunkRepository:
             .order_by(DocumentChunk.chunk_index)
         )
         return list((await self.session.execute(stmt)).scalars().all())
+
+
+class EntityRepository:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | str) -> None:
+        self.session = session
+        self.tenant_id = tenant_id
+
+    async def delete_for_document(self, document_id: uuid.UUID | str) -> None:
+        await self.session.execute(
+            delete(ExtractedEntity).where(
+                ExtractedEntity.tenant_id == self.tenant_id,
+                ExtractedEntity.document_id == document_id,
+            )
+        )
+
+    async def add_many(self, rows: list[ExtractedEntity]) -> None:
+        self.session.add_all(rows)
+        await self.session.flush()
+
+    async def get(self, entity_id: uuid.UUID | str) -> ExtractedEntity | None:
+        stmt = select(ExtractedEntity).where(
+            ExtractedEntity.id == entity_id, ExtractedEntity.tenant_id == self.tenant_id
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def list_for_document(self, document_id: uuid.UUID | str,
+                                *, status: str | None = None) -> list[ExtractedEntity]:
+        stmt = select(ExtractedEntity).where(
+            ExtractedEntity.tenant_id == self.tenant_id,
+            ExtractedEntity.document_id == document_id,
+        )
+        if status:
+            stmt = stmt.where(ExtractedEntity.status == status)
+        stmt = stmt.order_by(ExtractedEntity.entity_type, ExtractedEntity.normalized_value)
+        return list((await self.session.execute(stmt)).scalars().all())
+
+    async def documents_for_equipment(self, equipment_id: uuid.UUID | str) -> set[uuid.UUID]:
+        stmt = select(ExtractedEntity.document_id).where(
+            ExtractedEntity.tenant_id == self.tenant_id,
+            ExtractedEntity.linked_record_type == "equipment",
+            ExtractedEntity.linked_record_id == equipment_id,
+        )
+        return set((await self.session.execute(stmt)).scalars().all())

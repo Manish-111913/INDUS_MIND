@@ -35,5 +35,27 @@ class ChunkRead(BaseModel):
     has_embedding: bool = False
 
 
+class EntityRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    document_id: uuid.UUID
+    entity_type: str
+    value: str
+    normalized_value: str | None = None
+    confidence: float | None = None
+    page_no: int | None = None
+    status: str
+    linked_record_type: str | None = None
+    linked_record_id: uuid.UUID | None = None
+    version: int
+
+
+class EntityUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    status: str  # confirmed | corrected | rejected
+    value: str | None = None
+    version: int | None = None
+
+
 class MessageResponse(BaseModel):
     message: str

@@ -75,6 +75,15 @@ ENDPOINTS: list[GuardedEndpoint] = [
                     "doc.reprocess", {}),
     GuardedEndpoint("POST", "/api/v1/ingestion/jobs/00000000-0000-0000-0000-000000000009/cancel",
                     "doc.reprocess", {}),
+    # entities (human-in-the-loop)
+    GuardedEndpoint("GET", "/api/v1/documents/00000000-0000-0000-0000-000000000009/entities",
+                    "doc.read"),
+    GuardedEndpoint("PATCH", "/api/v1/entities/00000000-0000-0000-0000-000000000009",
+                    "doc.update", {"status": "confirmed"}),
+    # knowledge graph
+    GuardedEndpoint("POST", "/api/v1/graph/query", "graph.read",
+                    {"start_type": "Equipment", "start_key": "P-101"}),
+    GuardedEndpoint("POST", "/api/v1/graph/rebuild", "tenant.manage", {}),
 ]
 
 

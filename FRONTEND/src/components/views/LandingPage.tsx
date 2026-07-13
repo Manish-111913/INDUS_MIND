@@ -418,7 +418,7 @@ export function LandingPage() {
       <section id="platform" className="py-16 md:py-24 border-b border-border-custom/30 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <span className="font-mono text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+            <span className="inline-block font-mono text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
               OPERATIONAL SUITE
             </span>
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
@@ -528,7 +528,7 @@ export function LandingPage() {
       <section id="how" className="py-16 md:py-24 bg-bg border-b border-border-custom/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-            <span className="font-mono text-[10px] font-bold text-ai tracking-widest uppercase bg-ai/10 px-3 py-1 rounded-full border border-ai/20">
+            <span className="inline-block font-mono text-[10px] font-bold text-ai tracking-widest uppercase bg-ai/10 px-3 py-1 rounded-full border border-ai/20">
               IMPLEMENTATION BLUEPRINT
             </span>
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
@@ -590,7 +590,7 @@ export function LandingPage() {
       <section id="solutions" className="py-16 md:py-24 border-b border-border-custom/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
-            <span className="font-mono text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+            <span className="inline-block font-mono text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
               Crew Alignment
             </span>
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
@@ -699,7 +699,7 @@ export function LandingPage() {
             
             {/* Left testimonial */}
             <div className="lg:col-span-6 space-y-6">
-              <span className="font-mono text-[10px] font-bold text-ai tracking-widest uppercase bg-ai/10 px-3 py-1 rounded-full border border-ai/20">
+              <span className="inline-block font-mono text-[10px] font-bold text-ai tracking-widest uppercase bg-ai/10 px-3 py-1 rounded-full border border-ai/20">
                 PROVEN ON-SITE VALUE
               </span>
               <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
@@ -764,7 +764,7 @@ export function LandingPage() {
       <section id="faq" className="py-16 md:py-24 border-b border-border-custom/30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 space-y-4">
-            <span className="font-mono text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+            <span className="inline-block font-mono text-[10px] font-bold text-primary tracking-widest uppercase bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
               KNOWLEDGE BASE
             </span>
             <h2 className="font-display text-3xl font-bold tracking-tight text-text-primary">

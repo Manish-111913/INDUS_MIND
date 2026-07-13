@@ -43,6 +43,10 @@ app = FastAPI(
 )
 
 # ── middleware (outermost added last) ────────────────────────────────────────
+# RateLimit added first → innermost, so request-id is already bound when it runs.
+from app.core.ratelimit import RateLimitMiddleware  # noqa: E402
+
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestContextMiddleware)
 # Signed session cookie — required by the OAuth (authlib) redirect/callback flow.
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key, same_site="lax")

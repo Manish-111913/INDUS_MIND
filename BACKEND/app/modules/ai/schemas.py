@@ -1,0 +1,100 @@
+"""AI / chat schemas (docs/02 §13, §15, §16)."""
+
+from __future__ import annotations
+
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+# ── /ai/query ────────────────────────────────────────────────────────────────
+class AIQueryRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    query: str = Field(min_length=1)
+    scope: dict = Field(default_factory=dict)
+
+
+class Confidence(BaseModel):
+    level: str
+    score: float
+
+
+class AIQueryResponse(BaseModel):
+    answer: str
+    citations: list[dict]
+    confidence: Confidence
+    latency_ms: int
+    cached: bool = False
+
+
+# ── chat ─────────────────────────────────────────────────────────────────────
+class ChatSessionCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    title: str | None = Field(default=None, max_length=255)
+    scope: dict = Field(default_factory=dict)
+
+
+class ChatSessionUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    title: str | None = Field(default=None, max_length=255)
+    pinned: bool | None = None
+
+
+class ChatSessionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    title: str | None = None
+    scope: dict
+    pinned: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class MessageCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    content: str = Field(min_length=1)
+
+
+class ChatMessageRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    role: str
+    content: str
+    citations: list
+    confidence: float | None = None
+    confidence_level: str | None = None
+    latency_ms: int | None = None
+    cached: bool
+    feedback: str | None = None
+    created_at: datetime
+
+
+class FeedbackRequest(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    value: str = Field(pattern=r"^(up|down)$")
+    reason: str | None = Field(default=None, max_length=1024)
+
+
+# ── insights / evals ─────────────────────────────────────────────────────────
+class InsightRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    role: str | None = None
+    category: str
+    title: str
+    body: str
+    confidence: float | None = None
+    evidence: list
+    actions: list
+    entity_type: str | None = None
+    entity_id: uuid.UUID | None = None
+
+
+class EvalRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    status: str
+    summary: dict
+    results: list
+    created_at: datetime

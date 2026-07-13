@@ -60,8 +60,8 @@ const CustomNodeComponent = ({ data, selected }: NodeProps) => {
   const Icon = NODE_ICONS[nodeData.type] || Wrench;
 
   return (
-    <div className={`p-3 rounded-lg border bg-[#13191D]/90 backdrop-blur-md shadow-xl transition-all duration-300 min-w-[200px] max-w-[240px] text-left select-none ${
-      selected ? 'ring-2 ring-white border-white scale-105 shadow-white/10' : colors.border
+    <div className={`p-3 rounded-lg border bg-surface/90 backdrop-blur-md shadow-xl transition-all duration-300 min-w-[200px] max-w-[240px] text-left select-none ${
+      selected ? 'ring-2 ring-primary border-primary scale-105 shadow-primary/10' : colors.border
     }`}>
       {/* Dynamic multi-handles for perfect layout wrapping */}
       <Handle type="target" position={Position.Top} className="opacity-60 bg-text-secondary !w-2 !h-2" />
@@ -92,7 +92,7 @@ const CustomNodeComponent = ({ data, selected }: NodeProps) => {
         )}
       </div>
 
-      <div className="text-xs font-semibold text-white truncate mb-1">
+      <div className="text-xs font-semibold text-text-primary truncate mb-1">
         {nodeData.label}
       </div>
 
@@ -245,7 +245,7 @@ function KnowledgeGraphContent() {
           fontSize: 7, 
           fontFamily: 'JetBrains Mono', 
           fontWeight: 'bold',
-          background: '#13191D'
+          background: 'var(--surface)'
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
@@ -344,7 +344,7 @@ function KnowledgeGraphContent() {
     if (minimap) minimap.style.visibility = 'hidden';
 
     toPng(element, {
-      backgroundColor: '#0B0F12',
+      backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0B0F12',
       style: {
         transform: 'scale(1)',
       },
@@ -448,12 +448,12 @@ function KnowledgeGraphContent() {
                   setShowSearchDropdown(true);
                 }}
                 placeholder="Search tags, documents, events..."
-                className="w-full bg-[#1B242A] border border-border-custom rounded-md py-1.5 pl-8 pr-3 text-xs text-white placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
+                className="w-full bg-surface-muted border border-border-custom rounded-md py-1.5 pl-8 pr-3 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
               />
               {searchQuery && (
                 <button 
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -542,7 +542,7 @@ function KnowledgeGraphContent() {
               max="3" 
               value={depth} 
               onChange={(e) => setDepth(parseInt(e.target.value, 10))}
-              className="w-full h-1.5 bg-[#1B242A] rounded-lg appearance-none cursor-pointer accent-primary" 
+              className="w-full h-1.5 bg-surface-muted rounded-lg appearance-none cursor-pointer accent-primary" 
             />
             <div className="flex justify-between text-[8px] font-mono text-text-muted">
               <span>1 (Direct Only)</span>
@@ -565,17 +565,17 @@ function KnowledgeGraphContent() {
       {/* ----------------------------------------------------------------------
           MIDDLE FLOW CHART CANVAS AREA
           ---------------------------------------------------------------------- */}
-      <div className="flex-1 h-2/3 lg:h-full relative bg-[#090C0E] flex flex-col">
+      <div className="flex-1 h-2/3 lg:h-full relative bg-bg flex flex-col">
         
         {/* Top Control Bar inside canvas */}
         <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-2 pointer-events-auto">
           {/* Layout Pickers */}
-          <div className="bg-[#13191D]/90 backdrop-blur-md border border-border-custom px-2 py-1.5 rounded-lg shadow-2xl flex items-center space-x-1">
+          <div className="bg-surface/90 backdrop-blur-md border border-border-custom px-2 py-1.5 rounded-lg shadow-2xl flex items-center space-x-1">
             <span className="text-[10px] font-mono font-bold text-text-muted mr-1.5">LAYOUT:</span>
             <button
               onClick={() => setLayoutType('force')}
               className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
-                layoutType === 'force' ? 'bg-primary text-white' : 'text-text-secondary hover:text-white'
+                layoutType === 'force' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Organic
@@ -583,7 +583,7 @@ function KnowledgeGraphContent() {
             <button
               onClick={() => setLayoutType('hierarchical')}
               className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
-                layoutType === 'hierarchical' ? 'bg-primary text-white' : 'text-text-secondary hover:text-white'
+                layoutType === 'hierarchical' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Hierarchical
@@ -591,7 +591,7 @@ function KnowledgeGraphContent() {
             <button
               onClick={() => setLayoutType('grid')}
               className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-all ${
-                layoutType === 'grid' ? 'bg-primary text-white' : 'text-text-secondary hover:text-white'
+                layoutType === 'grid' ? 'bg-primary text-white' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Grid
@@ -601,7 +601,7 @@ function KnowledgeGraphContent() {
           {/* Export PNG */}
           <button
             onClick={handleExportPNG}
-            className="flex items-center space-x-1.5 bg-[#13191D]/90 backdrop-blur-md border border-border-custom hover:bg-surface-muted px-3 py-1.5 rounded-lg shadow-2xl text-xs font-semibold text-white transition-colors"
+            className="flex items-center space-x-1.5 bg-surface/90 backdrop-blur-md border border-border-custom hover:bg-surface-muted px-3 py-1.5 rounded-lg shadow-2xl text-xs font-semibold text-text-primary transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-primary" />
             <span>Export PNG</span>
@@ -609,7 +609,7 @@ function KnowledgeGraphContent() {
         </div>
 
         {/* Legend Panel (Floating Bottom Left) */}
-        <div className="absolute bottom-4 left-4 z-10 bg-[#13191D]/90 backdrop-blur-md border border-border-custom p-3 rounded-lg shadow-2xl max-w-xs text-[10px] hidden sm:block pointer-events-none">
+        <div className="absolute bottom-4 left-4 z-10 bg-surface/90 backdrop-blur-md border border-border-custom p-3 rounded-lg shadow-2xl max-w-xs text-[10px] hidden sm:block pointer-events-none">
           <span className="font-mono font-bold text-text-secondary uppercase block mb-1">Interactive Legend</span>
           <p className="text-text-muted mb-2">Double-click a node to fetch neighbor nodes dynamically.</p>
           <div className="grid grid-cols-2 gap-1 text-[9px] font-mono">
@@ -634,13 +634,13 @@ function KnowledgeGraphContent() {
 
         {/* Programmatic Zooms and Fit-View Controls */}
         <div className="absolute right-4 top-4 z-10 flex flex-col space-y-1.5 pointer-events-auto">
-          <button onClick={() => zoomIn()} className="p-2 bg-[#13191D]/90 border border-border-custom rounded-lg hover:bg-surface-muted text-white shadow-2xl transition-all" title="Zoom In">
+          <button onClick={() => zoomIn()} className="p-2 bg-surface/90 border border-border-custom rounded-lg hover:bg-surface-muted text-text-primary shadow-2xl transition-all" title="Zoom In">
             <ZoomIn className="w-4 h-4" />
           </button>
-          <button onClick={() => zoomOut()} className="p-2 bg-[#13191D]/90 border border-border-custom rounded-lg hover:bg-surface-muted text-white shadow-2xl transition-all" title="Zoom Out">
+          <button onClick={() => zoomOut()} className="p-2 bg-surface/90 border border-border-custom rounded-lg hover:bg-surface-muted text-text-primary shadow-2xl transition-all" title="Zoom Out">
             <ZoomOut className="w-4 h-4" />
           </button>
-          <button onClick={() => fitView()} className="p-2 bg-[#13191D]/90 border border-border-custom rounded-lg hover:bg-surface-muted text-white shadow-2xl transition-all" title="Fit View">
+          <button onClick={() => fitView()} className="p-2 bg-surface/90 border border-border-custom rounded-lg hover:bg-surface-muted text-text-primary shadow-2xl transition-all" title="Fit View">
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
@@ -661,15 +661,15 @@ function KnowledgeGraphContent() {
           >
             <MiniMap 
               position="bottom-right" 
-              className="!bg-[#0B0F12] border border-border-custom !rounded-lg overflow-hidden hidden md:block" 
+              className="!bg-surface border border-border-custom !rounded-lg overflow-hidden hidden md:block" 
               nodeColor={(node: any) => {
                 const nodeData = node.data?.nodeData as GraphNodeData;
                 if (!nodeData) return '#64748B';
                 return NODE_COLORS[nodeData.type]?.accent || '#64748B';
               }}
-              maskColor="rgba(11, 15, 18, 0.7)"
+              maskColor="rgba(127, 127, 127, 0.18)"
             />
-            <Background color="#1E293B" gap={18} size={1} />
+            <Background color="var(--border-strong)" gap={18} size={1} />
           </ReactFlow>
         </div>
       </div>
@@ -747,7 +747,7 @@ function KnowledgeGraphContent() {
                     <a
                       key={idx}
                       href={doc.url}
-                      className="flex items-center justify-between p-2 rounded border border-border-custom bg-[#13191D] hover:border-primary/50 text-text-secondary hover:text-white transition-all text-xs"
+                      className="flex items-center justify-between p-2 rounded border border-border-custom bg-surface hover:border-primary/50 text-text-secondary hover:text-text-primary transition-all text-xs"
                     >
                       <div className="flex items-center space-x-2 truncate">
                         <FileText className="w-3.5 h-3.5 text-[#3E7BFA]" />
@@ -838,7 +838,7 @@ function suggestionsDropdown(
         className="fixed inset-0 z-40" 
         onClick={onClose} 
       />
-      <div className="absolute left-0 right-0 mt-1.5 bg-[#13191D] border border-border-custom rounded-lg shadow-2xl max-h-[220px] overflow-y-auto z-50">
+      <div className="absolute left-0 right-0 mt-1.5 bg-surface border border-border-custom rounded-lg shadow-2xl max-h-[220px] overflow-y-auto z-50">
         {suggestions.length === 0 ? (
           <div className="p-3 text-text-muted text-center font-mono text-[10px]">
             No matching nodes found.
@@ -852,14 +852,14 @@ function suggestionsDropdown(
                 <button
                   key={node.id}
                   onClick={() => onSelect(node)}
-                  className="w-full text-left px-3 py-2 hover:bg-[#1B242A] border-b border-border-custom/30 last:border-b-0 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-3 py-2 hover:bg-surface-muted border-b border-border-custom/30 last:border-b-0 transition-colors flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-2 truncate">
                     <span className={`p-1 rounded ${colors.bg}`}>
                       <Icon className={`w-3 h-3 ${colors.text}`} />
                     </span>
                     <div className="truncate">
-                      <span className="text-white text-[11px] font-semibold block truncate">
+                      <span className="text-text-primary text-[11px] font-semibold block truncate">
                         {node.label}
                       </span>
                       <span className="text-text-muted text-[9px] font-mono uppercase block">

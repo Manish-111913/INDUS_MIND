@@ -130,13 +130,21 @@ function DocumentsLibraryTableAndGrid() {
       
       // Real pagination envelope
       const rawDocs = Array.isArray(response) ? response : (response?.data || []);
-      // Normalize each doc so optional collection fields are always arrays (older/uploaded
-      // records in localStorage may be missing `tags`, which would crash the table render).
+      // Normalize each doc so fields the table renders are always defined. Older/uploaded
+      // records in localStorage may be missing `tags`, `plant`, `uploader`, etc., which would
+      // crash the render (e.g. `doc.tags.map`, `doc.plant.split`, `doc.uploader.toUpperCase`).
       const normalizedDocs = (rawDocs as DocumentFile[]).map((d) => ({
         ...d,
         tags: Array.isArray(d?.tags) ? d.tags : [],
+        name: d?.name ?? 'Untitled Document',
+        type: d?.type ?? 'Unknown',
+        plant: d?.plant ?? '',
+        area: d?.area ?? '',
+        uploader: d?.uploader ?? 'Unknown',
+        status: d?.status ?? 'pending',
+        content: d?.content ?? '',
       }));
-      setDocuments(normalizedDocs);
+      setDocuments(normalizedDocs as DocumentFile[]);
       // In simulateNetworkCall we wrap in response, let's verify if response has a meta or if we need to get total from local DB length
       const fullDocs = getStoredDocuments();
       

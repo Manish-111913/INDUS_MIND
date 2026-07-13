@@ -24,6 +24,7 @@ from app.modules.auth import models as _auth  # noqa: F401
 from app.modules.documents import models as _documents  # noqa: F401
 from app.modules.equipment import models as _equipment  # noqa: F401
 from app.modules.ingestion import models as _ingestion  # noqa: F401
+from app.modules.knowledge import models as _knowledge  # noqa: F401
 from app.modules.lookups import models as _lookups  # noqa: F401
 from app.modules.tenants import models as _tenants  # noqa: F401
 from app.modules.users import models as _users  # noqa: F401
@@ -31,7 +32,7 @@ from app.modules.users import models as _users  # noqa: F401
 # Truncated between tests (CASCADE handles FK order).
 _TABLES = (
     "audit_log, feature_flags, lookups, user_roles, role_permissions, permissions, roles, "
-    "llm_usage, prompt_templates, ai_model_configs, extracted_entities, "
+    "saved_searches, llm_usage, prompt_templates, ai_model_configs, extracted_entities, "
     "document_chunks, ingestion_jobs, document_versions, documents, "
     "equipment, areas, plants, refresh_tokens, sessions, users, tenants"
 )

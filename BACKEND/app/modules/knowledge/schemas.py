@@ -5,6 +5,13 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel as _BaseModel
+from pydantic import ConfigDict
+
+
 class GraphQueryRequest(BaseModel):
     """Constrained pattern DSL — validated against the type whitelist (never raw Cypher)."""
     start_type: str
@@ -12,3 +19,19 @@ class GraphQueryRequest(BaseModel):
     edge_types: list[str] = Field(default_factory=list)
     node_types: list[str] = Field(default_factory=list)
     depth: int = Field(default=2, ge=1, le=3)
+
+
+class SavedSearchCreate(_BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=255)
+    query: str = Field(min_length=1)
+    filters: dict = Field(default_factory=dict)
+
+
+class SavedSearchRead(_BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    name: str
+    query: str
+    filters: dict
+    created_at: datetime

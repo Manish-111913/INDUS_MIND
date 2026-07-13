@@ -1,0 +1,6 @@
+{
+  "name": "IndusMind",
+  "description": "Enterprise Industrial Knowledge Intelligence SaaS foundation.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

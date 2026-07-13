@@ -7,7 +7,6 @@ dev. All logic lives in the service.
 
 from __future__ import annotations
 
-import json
 import uuid
 
 from fastapi import APIRouter, Depends, Request, Response
@@ -16,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.responses import success
 from app.core.config import settings
 from app.core.database import get_session
-from app.modules.auth import oauth, permissions
+from app.modules.auth import oauth
 from app.modules.auth.dependencies import CurrentUser, get_current_user
 from app.modules.auth.schemas import (
     ForgotPasswordRequest,
@@ -113,19 +112,20 @@ async def logout(
 
 
 # ── profile bootstrap ─────────────────────────────────────────────────────────
-@router.get("/me", summary="Profile + permissions + flags (frontend bootstrap)")
+@router.get("/me", summary="Profile + roles + permissions + flags (frontend bootstrap)")
 async def me(
     current: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
+    from app.modules.users.service import me_context
+
     user = await UserRepository(session).get(current.id)
-    perms = await permissions.get_effective_permissions(current.tenant_id, current.id)
-    flags = json.loads(settings.feature_defaults_json or "{}")
+    ctx = await me_context(session, user)
     return success({
         "user": UserRead.model_validate(user).model_dump(),
-        "roles": current.roles,
-        "permissions": sorted(perms),
-        "flags": flags,
+        "roles": ctx["roles"],
+        "permissions": ctx["permissions"],
+        "flags": ctx["flags"],
     })
 
 

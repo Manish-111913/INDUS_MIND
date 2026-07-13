@@ -21,7 +21,10 @@ log = get_logger("core.events")
 
 
 class EventType(StrEnum):
+    DOCUMENT_UPLOADED = "document.uploaded"
     DOCUMENT_INGESTED = "document.ingested"
+    DOCUMENT_REPROCESS = "document.reprocess"
+    INGESTION_FAILED = "ingestion.failed"
     ENTITY_EXTRACTED = "entity.extracted"
     WORKORDER_CLOSED = "workorder.closed"
     FAILURE_RECORDED = "failure.recorded"
@@ -30,7 +33,9 @@ class EventType(StrEnum):
     LESSON_PUBLISHED = "lesson.published"
     USER_ROLE_CHANGED = "user.role_changed"
     GRAPH_UPDATED = "graph.updated"
+    EQUIPMENT_CREATED = "equipment.created"
     EQUIPMENT_UPDATED = "equipment.updated"
+    EQUIPMENT_DELETED = "equipment.deleted"
     # auth / identity
     USER_LOGGED_IN = "user.logged_in"
     USER_LOGIN_FAILED = "user.login_failed"

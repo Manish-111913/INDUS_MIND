@@ -58,6 +58,11 @@ app.add_middleware(
 register_exception_handlers(app)
 app.include_router(api_router)
 
+# WebSocket routes (docs/02 §35) — mounted at the app root, not under /api/v1.
+from app.ws.router import router as ws_router  # noqa: E402
+
+app.include_router(ws_router)
+
 
 # ── health / readiness (docs/02 §29) ─────────────────────────────────────────
 @app.get("/healthz", tags=["meta"], summary="Liveness probe")

@@ -12,7 +12,13 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.common.responses import success
+from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
+from app.modules.documents.router import router as documents_router
+from app.modules.equipment.router import router as equipment_router
+from app.modules.ingestion.router import router as ingestion_router
+from app.modules.lookups.router import router as lookups_router
+from app.modules.users.router import router as users_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -24,4 +30,10 @@ async def api_root() -> dict:
 
 # ── module routers ───────────────────────────────────────────────────────────
 api_router.include_router(auth_router)
-# users, equipment, documents, ... register here as they are implemented.
+api_router.include_router(users_router)
+api_router.include_router(lookups_router)
+api_router.include_router(equipment_router)
+api_router.include_router(documents_router)
+api_router.include_router(ingestion_router)
+api_router.include_router(audit_router)
+# knowledge, ai, maintenance, ... register here as they are implemented.

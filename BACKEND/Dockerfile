@@ -11,7 +11,7 @@ RUN pip install --upgrade pip setuptools wheel \
 FROM python:3.11-slim AS runtime
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
-RUN apt-get update && apt-get install -y --no-install-recommends libpq5 curl \
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 curl libmagic1 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 appuser
 COPY --from=builder /wheels /wheels

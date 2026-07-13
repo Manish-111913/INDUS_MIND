@@ -17,6 +17,7 @@ celery = Celery(
     "indusmind",
     broker=settings.redis_url,
     backend=settings.redis_url,
+    include=["app.workers.tasks.ingestion_tasks"],
 )
 
 celery.conf.update(
@@ -42,9 +43,6 @@ celery.conf.update(
         "app.workers.tasks.scheduler_tasks.*": {"queue": "scheduled"},
     },
 )
-
-# celery.autodiscover_tasks(["app.workers.tasks"])  # enabled as task modules land
-
 
 @celery.task(name="app.workers.ping")
 def ping() -> str:

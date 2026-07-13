@@ -30,7 +30,8 @@ def _client():
         aws_access_key_id=settings.s3_access_key,
         aws_secret_access_key=settings.s3_secret_key,
         region_name=settings.aws_region,
-        config=Config(signature_version="s3v4"),
+        # path-style addressing is required for MinIO presigned URLs
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
 
@@ -57,6 +58,61 @@ def object_exists(key: str) -> bool:
         return True
     except ClientError:
         return False
+
+
+def stat_object(key: str) -> dict | None:
+    """Return {size, content_type} for an object, or None if it doesn't exist."""
+    from botocore.exceptions import ClientError
+
+    try:
+        resp = _client().head_object(Bucket=settings.s3_bucket, Key=key)
+        return {"size": resp["ContentLength"], "content_type": resp.get("ContentType")}
+    except ClientError:
+        return None
+
+
+def read_prefix(key: str, n: int = 2048) -> bytes:
+    """Read the first n bytes (range GET) — used for server-side MIME sniffing."""
+    resp = _client().get_object(Bucket=settings.s3_bucket, Key=key, Range=f"bytes=0-{n - 1}")
+    return resp["Body"].read()
+
+
+def read_object(key: str) -> bytes:
+    """Read a whole object into memory (used by the ingestion pipeline)."""
+    resp = _client().get_object(Bucket=settings.s3_bucket, Key=key)
+    return resp["Body"].read()
+
+
+def put_object(key: str, data: bytes, content_type: str | None = None) -> None:
+    """Server-side write (thumbnails, seed uploads, evidence packages)."""
+    extra = {"ContentType": content_type} if content_type else {}
+    _client().put_object(Bucket=settings.s3_bucket, Key=key, Body=data, **extra)
+
+
+def compute_sha256(key: str) -> str:
+    """Stream the object and return its SHA-256 hex (checksum verification, §12)."""
+    import hashlib
+
+    resp = _client().get_object(Bucket=settings.s3_bucket, Key=key)
+    digest = hashlib.sha256()
+    for chunk in resp["Body"].iter_chunks(1 << 16):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
+def sniff_mime(buf: bytes) -> str | None:
+    """Detect MIME from bytes via libmagic. Returns None if libmagic isn't available
+    (best-effort — the Docker images install libmagic; local dev may not have it)."""
+    try:
+        import magic
+    except Exception:  # noqa: BLE001 — ImportError or libmagic load failure
+        log.warning("libmagic_unavailable_skipping_mime_sniff")
+        return None
+    try:
+        return magic.from_buffer(buf, mime=True)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("mime_sniff_failed", error=str(exc))
+        return None
 
 
 def ping() -> bool:

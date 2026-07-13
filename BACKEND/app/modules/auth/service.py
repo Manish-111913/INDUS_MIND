@@ -298,13 +298,24 @@ class AuthService:
 
     # ── internals ────────────────────────────────────────────────────────────
     async def _issue_access(self, user: User, session_id: uuid.UUID | str) -> AccessBundle:
-        perms = await permissions.get_effective_permissions(user.tenant_id, user.id)
+        # Resolve with the session so the perm_hash reflects the real permission
+        # set (and populates the cache) — otherwise get_current_user's freshness
+        # check would reject the first request made with this token.
+        perms = await permissions.get_effective_permissions(
+            user.tenant_id, user.id, session=self.session
+        )
+        roles = await self._role_names(user)
         issued = build_access_token(
-            user_id=user.id, tenant_id=user.tenant_id, roles=[],
+            user_id=user.id, tenant_id=user.tenant_id, roles=roles,
             perm_hash=permissions.perm_hash(perms), token_version=user.token_version,
             session_id=session_id,
         )
         return AccessBundle(access_token=issued.token, expires_in=issued.expires_in)
+
+    async def _role_names(self, user: User) -> list[str]:
+        from app.modules.users.repository import UserRoleRepository
+
+        return await UserRoleRepository(self.session).role_names_for_user(user.id, user.tenant_id)
 
     async def _issue_refresh(
         self, user: User, session: Session, family_id: uuid.UUID, meta: RequestMeta

@@ -32,6 +32,7 @@ class CurrentUser:
     perm_hash: str = ""
     session_id: uuid.UUID | None = None
     token_version: int = 0
+    perms: frozenset[str] = frozenset()
 
 
 def _bearer(request: Request) -> str:
@@ -70,6 +71,13 @@ async def get_current_user(
         if sess is None or not sess.is_active:
             raise Unauthenticated("Session revoked", code="SESSION_REVOKED")
 
+    # Resolve effective permissions (cache-or-compute) and enforce perm_hash
+    # freshness: if the role graph changed, the token's hash no longer matches
+    # and the client must refresh to pick up the new permission set (docs/02 §6).
+    perms = await permissions.get_effective_permissions(user.tenant_id, user.id, session=session)
+    if claims.get("perm_hash", "") != permissions.perm_hash(perms):
+        raise Unauthenticated("Permissions changed", code="PERM_STALE")
+
     # Bind identity into log context for the remainder of the request.
     tenant_id_ctx.set(str(user.tenant_id))
     user_id_ctx.set(str(user.id))
@@ -81,6 +89,7 @@ async def get_current_user(
         perm_hash=claims.get("perm_hash", ""),
         session_id=uuid.UUID(session_id) if session_id else None,
         token_version=user.token_version,
+        perms=frozenset(perms),
     )
 
 
@@ -91,11 +100,14 @@ async def get_tenant_context(
 
 
 def require(permission: str):
-    """Router guard: `Depends(require("wo.close"))`. Deny by default."""
+    """Router guard: `Depends(require("wo.close"))`. Deny by default.
+
+    Reads the permission set already resolved by get_current_user (single
+    resolution per request); service-layer resource-scope checks layer on top.
+    """
 
     async def _dep(current: CurrentUser = Depends(get_current_user)) -> CurrentUser:
-        perms = await permissions.get_effective_permissions(current.tenant_id, current.id)
-        if permission not in perms:
+        if permission not in current.perms:
             raise PermissionDenied(f"Missing permission: {permission}")
         return current
 

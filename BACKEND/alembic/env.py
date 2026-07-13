@@ -21,7 +21,12 @@ from app.core.config import settings
 # autogenerate runs.
 from app.modules.audit import models as _audit  # noqa: E402,F401
 from app.modules.auth import models as _auth  # noqa: E402,F401
+from app.modules.documents import models as _documents  # noqa: E402,F401
+from app.modules.equipment import models as _equipment  # noqa: E402,F401
+from app.modules.ingestion import models as _ingestion  # noqa: E402,F401
+from app.modules.lookups import models as _lookups  # noqa: E402,F401
 from app.modules.tenants import models as _tenants  # noqa: E402,F401
+from app.modules.users import models as _users  # noqa: E402,F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

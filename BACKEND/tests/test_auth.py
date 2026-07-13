@@ -11,55 +11,13 @@ from __future__ import annotations
 import uuid
 
 import pyotp
-import pytest
-from sqlalchemy import text
 
-from app.core.database import SessionFactory, engine
-from app.core.redis import get_redis
+from app.core.database import SessionFactory
 from app.core.security import hash_password
-
-# Ensure every model is registered on Base.metadata before create_all.
-from app.modules.audit import models as _audit  # noqa: F401
-from app.modules.auth import models as _auth  # noqa: F401
 from app.modules.auth.models import User
-from app.modules.tenants import models as _tenants  # noqa: F401
 from app.modules.tenants.models import Tenant
 
 PASSWORD = "S3cret-pass!"
-_TABLES = "audit_log, refresh_tokens, sessions, users, tenants"
-
-
-@pytest.fixture
-async def db():
-    """Ensure schema + a clean slate (Postgres rows + Redis) for each test.
-
-    pytest-asyncio runs each test on its own event loop, but the app's async
-    engine / redis client are module-global singletons whose connections bind to
-    whichever loop created them. We create fresh connections on the current
-    loop here and dispose them at teardown (while that loop is still alive) so
-    nothing leaks across loops.
-    """
-    from app.common.base import Base
-    from app.core import redis as core_redis
-
-    try:
-        async with engine.begin() as conn:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
-            await conn.run_sync(Base.metadata.create_all)
-            await conn.execute(text(f"TRUNCATE {_TABLES} RESTART IDENTITY CASCADE"))
-    except Exception as exc:  # noqa: BLE001
-        pytest.skip(f"Postgres not available: {exc}")
-
-    try:
-        await get_redis().flushdb()
-    except Exception as exc:  # noqa: BLE001
-        pytest.skip(f"Redis not available: {exc}")
-
-    yield
-
-    # Tear down on the same loop that created the connections.
-    await engine.dispose()
-    await core_redis.close_redis()
 
 
 async def _seed_user(*, email: str = "user@acme.com", status: str = "active") -> tuple[Tenant, User]:

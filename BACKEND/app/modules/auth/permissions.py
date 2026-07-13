@@ -27,15 +27,25 @@ def perm_hash(perms: set[str]) -> str:
 
 
 async def get_effective_permissions(
-    tenant_id: uuid.UUID | str, user_id: uuid.UUID | str
+    tenant_id: uuid.UUID | str, user_id: uuid.UUID | str, session=None
 ) -> set[str]:
+    """Return the cached effective permissions. On a cache *miss* (key absent),
+    lazily compute from the DB and cache the result when a session is supplied —
+    so the cache is authoritative and never spuriously empty. A cached empty set
+    (key present, value ``[]``) is respected as-is."""
     raw = await get_redis().get(_cache_key(tenant_id, user_id))
-    if not raw:
+    if raw is not None:
+        try:
+            return set(json.loads(raw))
+        except (ValueError, TypeError):
+            return set()
+    if session is None:
         return set()
-    try:
-        return set(json.loads(raw))
-    except (ValueError, TypeError):
-        return set()
+    from app.modules.users.service import compute_effective_permissions
+
+    perms = await compute_effective_permissions(session, tenant_id, user_id)
+    await set_effective_permissions(tenant_id, user_id, perms)
+    return perms
 
 
 async def set_effective_permissions(

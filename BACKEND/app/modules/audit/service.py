@@ -18,6 +18,7 @@ from app.modules.audit.repository import AuditRepository
 
 class AuditService:
     def __init__(self, session: AsyncSession) -> None:
+        self.session = session
         self.repo = AuditRepository(session)
 
     async def write(
@@ -45,6 +46,13 @@ class AuditService:
             request_id=request_id or request_id_ctx.get(),
         )
         return await self.repo.add(row)
+
+    # ── reads (docs/02 §25) ──────────────────────────────────────────────────
+    async def query(self, **kwargs):
+        return await self.repo.query(**kwargs)
+
+    async def for_entity(self, **kwargs):
+        return await self.repo.for_entity(**kwargs)
 
 
 def _uuid(value: uuid.UUID | str | None) -> uuid.UUID | None:

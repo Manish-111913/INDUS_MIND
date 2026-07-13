@@ -9,7 +9,7 @@ import {
   Layers, RefreshCw, CheckCircle, Shield, Plus, Clock, ExternalLink, Sparkles
 } from 'lucide-react';
 import { Audit, EvidencePackage, INITIAL_AUDITS, INITIAL_EVIDENCE_PACKAGES } from './mockComplianceData';
-import { StatusChip } from '../../shared';
+import { StatusChip, Select } from '../../shared';
 
 interface ComplianceAuditsProps {
   audits: Audit[];
@@ -138,43 +138,46 @@ export function ComplianceAudits({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 text-left">
                   <label className="block text-[10px] font-mono text-text-muted uppercase">Regulatory Standard Set</label>
-                  <select 
+                  <Select
                     value={selectedRegSet}
-                    onChange={(e) => setSelectedRegSet(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-xs text-text-primary focus:outline-none"
-                  >
-                    <option value="OISD-STD-118">OISD-STD-118 (Firewater Protection)</option>
-                    <option value="Factory Act Sec 21">Factory Act Sec 21 (Machinery Guards)</option>
-                    <option value="PESO Valve Dir v5">PESO Valve Dir v5 (Overpressure)</option>
-                    <option value="EPA Rule Sec 12">EPA Rule Sec 12 (Stack Emissions)</option>
-                  </select>
+                    onValueChange={(v) => setSelectedRegSet(v)}
+                    className="w-full px-3 py-2 text-xs"
+                    options={[
+                      { value: 'OISD-STD-118', label: 'OISD-STD-118 (Firewater Protection)' },
+                      { value: 'Factory Act Sec 21', label: 'Factory Act Sec 21 (Machinery Guards)' },
+                      { value: 'PESO Valve Dir v5', label: 'PESO Valve Dir v5 (Overpressure)' },
+                      { value: 'EPA Rule Sec 12', label: 'EPA Rule Sec 12 (Stack Emissions)' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-1.5 text-left">
                   <label className="block text-[10px] font-mono text-text-muted uppercase">Target Plant Area</label>
-                  <select 
+                  <Select
                     value={selectedArea}
-                    onChange={(e) => setSelectedArea(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-xs text-text-primary focus:outline-none"
-                  >
-                    <option value="Utility Block (Area C)">Utility Block (Area C)</option>
-                    <option value="Crude Distillation (Area A)">Crude Distillation Unit (Area A)</option>
-                    <option value="Hydrotreater (Area B)">Hydrotreater Unit (Area B)</option>
-                    <option value="Tank Farm (Area D)">Tank Farm (Area D)</option>
-                  </select>
+                    onValueChange={(v) => setSelectedArea(v)}
+                    className="w-full px-3 py-2 text-xs"
+                    options={[
+                      { value: 'Utility Block (Area C)', label: 'Utility Block (Area C)' },
+                      { value: 'Crude Distillation (Area A)', label: 'Crude Distillation Unit (Area A)' },
+                      { value: 'Hydrotreater (Area B)', label: 'Hydrotreater Unit (Area B)' },
+                      { value: 'Tank Farm (Area D)', label: 'Tank Farm (Area D)' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-1.5 text-left md:col-span-2">
                   <label className="block text-[10px] font-mono text-text-muted uppercase">Assurance Date Range</label>
-                  <select 
+                  <Select
                     value={selectedDateRange}
-                    onChange={(e) => setSelectedDateRange(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-xs text-text-primary focus:outline-none"
-                  >
-                    <option value="2026-04-01 to 2026-07-01">Q2 2026 (2026-04-01 to 2026-07-01)</option>
-                    <option value="2026-01-01 to 2026-07-01">Last 6 Months (2026-01-01 to 2026-07-01)</option>
-                    <option value="2025-07-01 to 2026-07-01">Full Year Audit Span</option>
-                  </select>
+                    onValueChange={(v) => setSelectedDateRange(v)}
+                    className="w-full px-3 py-2 text-xs"
+                    options={[
+                      { value: '2026-04-01 to 2026-07-01', label: 'Q2 2026 (2026-04-01 to 2026-07-01)' },
+                      { value: '2026-01-01 to 2026-07-01', label: 'Last 6 Months (2026-01-01 to 2026-07-01)' },
+                      { value: '2025-07-01 to 2026-07-01', label: 'Full Year Audit Span' },
+                    ]}
+                  />
                 </div>
               </div>
 

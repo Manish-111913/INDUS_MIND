@@ -9,7 +9,7 @@ import {
   Wrench, FileText, Check, Plus, UserPlus, FileCheck, History, Info
 } from 'lucide-react';
 import { ComplianceGap, EvidenceRecord } from './mockComplianceData';
-import { StatusChip, ConfidenceBadge } from '../../shared';
+import { StatusChip, ConfidenceBadge, Select } from '../../shared';
 
 interface ComplianceGapsProps {
   gaps: ComplianceGap[];
@@ -256,30 +256,32 @@ export function ComplianceGaps({
         {!selectedGapId && (
           <div className="flex space-x-2">
             {/* Filter by severity */}
-            <select
+            <Select
               value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-surface border border-border-custom rounded text-xs font-mono text-text-secondary cursor-pointer focus:outline-none"
-            >
-              <option value="All">All Severities</option>
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
+              onValueChange={(v) => setSeverityFilter(v)}
+              className="px-2.5 py-1.5 text-xs font-mono"
+              options={[
+                { value: 'All', label: 'All Severities' },
+                { value: 'Critical', label: 'Critical' },
+                { value: 'High', label: 'High' },
+                { value: 'Medium', label: 'Medium' },
+                { value: 'Low', label: 'Low' },
+              ]}
+            />
 
             {/* Filter by status */}
-            <select
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2.5 py-1.5 bg-surface border border-border-custom rounded text-xs font-mono text-text-secondary cursor-pointer focus:outline-none"
-            >
-              <option value="All">All Statuses</option>
-              <option value="Open">Open</option>
-              <option value="Remediating">Remediating</option>
-              <option value="Risk Accepted">Risk Accepted</option>
-              <option value="Closed">Closed</option>
-            </select>
+              onValueChange={(v) => setStatusFilter(v)}
+              className="px-2.5 py-1.5 text-xs font-mono"
+              options={[
+                { value: 'All', label: 'All Statuses' },
+                { value: 'Open', label: 'Open' },
+                { value: 'Remediating', label: 'Remediating' },
+                { value: 'Risk Accepted', label: 'Risk Accepted' },
+                { value: 'Closed', label: 'Closed' },
+              ]}
+            />
           </div>
         )}
       </div>

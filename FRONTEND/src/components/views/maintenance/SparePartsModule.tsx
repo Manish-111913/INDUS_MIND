@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { api } from '../../../lib/api/client';
+import { Select } from '../../shared';
 
 export function SparePartsModule() {
   const [parts, setParts] = useState<any[]>([]);
@@ -159,17 +160,13 @@ export function SparePartsModule() {
 
             <div className="space-y-1">
               <label className="font-mono text-[9px] font-bold uppercase text-text-muted">Inventory Category</label>
-              <select
-                required
+              <Select
                 value={newPartCategory}
-                onChange={(e) => setNewPartCategory(e.target.value)}
-                className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary/50 text-xs min-h-[44px]"
-              >
-                <option value="">Select Category</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+                onValueChange={(v) => setNewPartCategory(v)}
+                placeholder="Select Category"
+                options={categories.map(cat => ({ value: cat, label: cat }))}
+                className="w-full px-3 py-2 text-xs min-h-[44px]"
+              />
             </div>
 
             <div className="space-y-1">
@@ -239,16 +236,15 @@ export function SparePartsModule() {
             <Icons.Search className="w-4 h-4 text-text-muted absolute left-3 top-3.5" />
           </div>
 
-          <select
+          <Select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-background-custom border border-border-custom rounded-lg px-3 py-2 text-text-primary focus:outline-none text-xs min-h-[44px] sm:w-48"
-          >
-            <option value="All">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
+            onValueChange={(v) => setSelectedCategory(v)}
+            options={[
+              { value: 'All', label: 'All Categories' },
+              ...categories.map(cat => ({ value: cat, label: cat }))
+            ]}
+            className="px-3 py-2 text-xs min-h-[44px] sm:w-48"
+          />
         </div>
 
         <button

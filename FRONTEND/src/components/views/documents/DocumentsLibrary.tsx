@@ -6,8 +6,8 @@ import {
   Trash2, Tag, Calendar, FileType, CheckSquare, Square, X, ChevronDown, Clock, Eye,
   ShieldCheck, ZoomIn, ZoomOut, RotateCw, RotateCcw, EyeOff, MessageSquare, Share2, Send, History
 } from 'lucide-react';
-import { 
-  StatusChip, ConfidenceBadge, SkeletonLoader, EmptyState, ErrorState, Can 
+import {
+  StatusChip, ConfidenceBadge, SkeletonLoader, EmptyState, ErrorState, Can, Select
 } from '../../shared';
 import { useAuthStore } from '../../../stores/authStore';
 import { api, getStoredDocuments } from '../../../lib/api/client';
@@ -337,64 +337,59 @@ function DocumentsLibraryTableAndGrid() {
           </div>
 
           {/* Doc Type Dropdown */}
-          <select
+          <Select
             value={selectedType}
-            onChange={(e) => { setSelectedType(e.target.value); setPage(1); }}
-            className="bg-background-custom text-xs px-3 py-2 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-text-primary"
-          >
-            <option value="">-- ALL DOCUMENT TYPES --</option>
-            {(lookups?.doc_types || []).map(t => (
-              <option key={t} value={t}>{t.toUpperCase()}</option>
-            ))}
-          </select>
+            onValueChange={(v) => { setSelectedType(v); setPage(1); }}
+            className="text-xs px-3 py-2"
+            options={[
+              { value: '', label: '-- ALL DOCUMENT TYPES --' },
+              ...(lookups?.doc_types || []).map(t => ({ value: t, label: t.toUpperCase() })),
+            ]}
+          />
 
           {/* Plant Selector */}
-          <select
+          <Select
             value={selectedPlant}
-            onChange={(e) => { setSelectedPlant(e.target.value); setPage(1); }}
-            className="bg-background-custom text-xs px-3 py-2 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-text-primary"
-          >
-            <option value="">-- ALL PLANT NODES --</option>
-            {(lookups?.plants || []).map(p => (
-              <option key={p} value={p}>{p.split(' - ')[1]?.toUpperCase() || p.toUpperCase()}</option>
-            ))}
-          </select>
+            onValueChange={(v) => { setSelectedPlant(v); setPage(1); }}
+            className="text-xs px-3 py-2"
+            options={[
+              { value: '', label: '-- ALL PLANT NODES --' },
+              ...(lookups?.plants || []).map(p => ({ value: p, label: p.split(' - ')[1]?.toUpperCase() || p.toUpperCase() })),
+            ]}
+          />
 
           {/* Area Selector */}
-          <select
+          <Select
             value={selectedArea}
-            onChange={(e) => { setSelectedArea(e.target.value); setPage(1); }}
-            className="bg-background-custom text-xs px-3 py-2 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-text-primary"
-          >
-            <option value="">-- ALL SECTOR AREAS --</option>
-            {(lookups?.areas || []).map(a => (
-              <option key={a} value={a}>{a.toUpperCase()}</option>
-            ))}
-          </select>
+            onValueChange={(v) => { setSelectedArea(v); setPage(1); }}
+            className="text-xs px-3 py-2"
+            options={[
+              { value: '', label: '-- ALL SECTOR AREAS --' },
+              ...(lookups?.areas || []).map(a => ({ value: a, label: a.toUpperCase() })),
+            ]}
+          />
 
           {/* Tag Selector */}
-          <select
+          <Select
             value={selectedTag}
-            onChange={(e) => { setSelectedTag(e.target.value); setPage(1); }}
-            className="bg-background-custom text-xs px-3 py-2 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-text-primary"
-          >
-            <option value="">-- EQUIPMENT TAG --</option>
-            {(lookups?.tags || []).map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+            onValueChange={(v) => { setSelectedTag(v); setPage(1); }}
+            className="text-xs px-3 py-2"
+            options={[
+              { value: '', label: '-- EQUIPMENT TAG --' },
+              ...(lookups?.tags || []).map(t => ({ value: t, label: t })),
+            ]}
+          />
 
           {/* Status Selector */}
-          <select
+          <Select
             value={selectedStatus}
-            onChange={(e) => { setSelectedStatus(e.target.value); setPage(1); }}
-            className="bg-background-custom text-xs px-3 py-2 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-text-primary"
-          >
-            <option value="">-- PIPELINE STATUS --</option>
-            {(lookups?.statuses || []).map(s => (
-              <option key={s} value={s}>{s.toUpperCase()}</option>
-            ))}
-          </select>
+            onValueChange={(v) => { setSelectedStatus(v); setPage(1); }}
+            className="text-xs px-3 py-2"
+            options={[
+              { value: '', label: '-- PIPELINE STATUS --' },
+              ...(lookups?.statuses || []).map(s => ({ value: s, label: s.toUpperCase() })),
+            ]}
+          />
 
           {/* Start Date */}
           <div className="relative flex items-center">
@@ -673,16 +668,17 @@ function DocumentsLibraryTableAndGrid() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border border-border-custom p-3 bg-surface rounded-lg text-xs gap-3 font-sans">
         <div className="flex items-center space-x-2 text-text-secondary justify-center">
           <span>Displaying page_size:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setPage(1); }}
-            className="bg-background-custom border border-border-custom text-[11px] rounded p-1 text-white focus:outline-none focus:border-primary font-mono font-bold"
-          >
-            <option value={10}>10 records</option>
-            <option value={25}>25 records</option>
-            <option value={50}>50 records</option>
-            <option value={100}>100 records</option>
-          </select>
+          <Select
+            value={String(pageSize)}
+            onValueChange={(v) => { setPageSize(parseInt(v, 10)); setPage(1); }}
+            className="text-[11px] p-1 font-mono font-bold"
+            options={[
+              { value: '10', label: '10 records' },
+              { value: '25', label: '25 records' },
+              { value: '50', label: '50 records' },
+              { value: '100', label: '100 records' },
+            ]}
+          />
         </div>
 
         <div className="flex items-center justify-center space-x-3 text-text-secondary">
@@ -1184,46 +1180,37 @@ function DocumentsUploadWorkspace() {
                   {/* Class select */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-text-muted uppercase">Doc Type Class</label>
-                    <select
+                    <Select
                       value={activeTask.docType}
                       disabled={activeTask.status !== 'pending'}
-                      onChange={(e) => updateTaskMetadata(activeTask.id, 'docType', e.target.value)}
-                      className="w-full bg-surface text-xs px-2.5 py-1.5 border border-border-custom focus:outline-none focus:border-primary rounded text-white"
-                    >
-                      {(lookups?.doc_types || []).map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                      onValueChange={(v) => updateTaskMetadata(activeTask.id, 'docType', v)}
+                      className="w-full text-xs px-2.5 py-1.5"
+                      options={(lookups?.doc_types || []).map(t => ({ value: t, label: t }))}
+                    />
                   </div>
 
                   {/* Plant select */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-text-muted uppercase">Plant Location</label>
-                    <select
+                    <Select
                       value={activeTask.plant}
                       disabled={activeTask.status !== 'pending'}
-                      onChange={(e) => updateTaskMetadata(activeTask.id, 'plant', e.target.value)}
-                      className="w-full bg-surface text-xs px-2.5 py-1.5 border border-border-custom focus:outline-none focus:border-primary rounded text-white"
-                    >
-                      {(lookups?.plants || []).map(p => (
-                        <option key={p} value={p}>{p}</option>
-                      ))}
-                    </select>
+                      onValueChange={(v) => updateTaskMetadata(activeTask.id, 'plant', v)}
+                      className="w-full text-xs px-2.5 py-1.5"
+                      options={(lookups?.plants || []).map(p => ({ value: p, label: p }))}
+                    />
                   </div>
 
                   {/* Area Location */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-text-muted uppercase">Sector Area</label>
-                    <select
+                    <Select
                       value={activeTask.area}
                       disabled={activeTask.status !== 'pending'}
-                      onChange={(e) => updateTaskMetadata(activeTask.id, 'area', e.target.value)}
-                      className="w-full bg-surface text-xs px-2.5 py-1.5 border border-border-custom focus:outline-none focus:border-primary rounded text-white"
-                    >
-                      {(lookups?.areas || []).map(a => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                    </select>
+                      onValueChange={(v) => updateTaskMetadata(activeTask.id, 'area', v)}
+                      className="w-full text-xs px-2.5 py-1.5"
+                      options={(lookups?.areas || []).map(a => ({ value: a, label: a }))}
+                    />
                   </div>
 
                   {/* Tags Input */}

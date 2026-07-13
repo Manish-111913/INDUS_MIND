@@ -13,7 +13,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
-import { StatusChip } from '../../shared';
+import { StatusChip, Select } from '../../shared';
 
 export interface ReportDefinition {
   id: string;
@@ -268,15 +268,12 @@ export function AnalyticsHub() {
                   </label>
 
                   {field.type === 'select' ? (
-                    <select
-                      value={paramValues[field.key] ?? field.defaultValue}
-                      onChange={(e) => handleParamChange(field.key, e.target.value)}
-                      className="w-full bg-background-custom border border-border-custom rounded p-2 text-xs text-text-primary focus:outline-none focus:border-primary cursor-pointer font-mono"
-                    >
-                      {field.options?.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
+                    <Select
+                      value={String(paramValues[field.key] ?? field.defaultValue)}
+                      onValueChange={(v) => handleParamChange(field.key, v)}
+                      options={(field.options ?? []).map((opt) => ({ value: opt, label: opt }))}
+                      className="w-full p-2 text-xs font-mono"
+                    />
                   ) : field.type === 'date' ? (
                     <input
                       type="date"
@@ -506,15 +503,16 @@ export function AnalyticsHub() {
                   <label className="block text-[10px] font-mono font-bold text-text-muted uppercase tracking-wide">
                     Recurring Frequency
                   </label>
-                  <select
+                  <Select
                     value={scheduleFrequency}
-                    onChange={(e) => setScheduleFrequency(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded p-2 text-xs text-text-primary focus:outline-none focus:border-primary cursor-pointer font-mono"
-                  >
-                    <option value="Daily">Daily Shift Transition Briefing</option>
-                    <option value="Weekly">Weekly Friday Summary Digest</option>
-                    <option value="Monthly">Monthly Operational Audit Wrap</option>
-                  </select>
+                    onValueChange={(v) => setScheduleFrequency(v)}
+                    options={[
+                      { value: 'Daily', label: 'Daily Shift Transition Briefing' },
+                      { value: 'Weekly', label: 'Weekly Friday Summary Digest' },
+                      { value: 'Monthly', label: 'Monthly Operational Audit Wrap' },
+                    ]}
+                    className="w-full p-2 text-xs font-mono"
+                  />
                 </div>
               </div>
 

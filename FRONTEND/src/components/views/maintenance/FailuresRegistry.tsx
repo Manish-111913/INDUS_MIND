@@ -28,6 +28,7 @@ import {
   FileCheck
 } from 'lucide-react';
 import { FailureRecord, MOCK_PARETO_DATA } from './mockMaintData';
+import { Select } from '../../shared';
 
 interface FailuresRegistryProps {
   failures: FailureRecord[];
@@ -209,32 +210,34 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
           {/* Severity filter */}
           <div className="flex items-center space-x-1.5 bg-background-custom border border-border-custom px-2 py-1 rounded text-xs">
             <AlertOctagon className="w-3.5 h-3.5 text-text-muted" />
-            <select
+            <Select
               value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-text-secondary pr-4 font-mono text-[11px]"
-            >
-              <option value="ALL">Severity: All</option>
-              <option value="Critical">Critical Only</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
+              onValueChange={(v) => setSeverityFilter(v)}
+              options={[
+                { value: 'ALL', label: 'Severity: All' },
+                { value: 'Critical', label: 'Critical Only' },
+                { value: 'High', label: 'High' },
+                { value: 'Medium', label: 'Medium' },
+                { value: 'Low', label: 'Low' }
+              ]}
+              className="pr-4 font-mono text-[11px]"
+            />
           </div>
 
           {/* RCA Status filter */}
           <div className="flex items-center space-x-1.5 bg-background-custom border border-border-custom px-2 py-1 rounded text-xs">
             <SlidersHorizontal className="w-3.5 h-3.5 text-text-muted" />
-            <select
+            <Select
               value={rcaFilter}
-              onChange={(e) => setRcaFilter(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-text-secondary pr-4 font-mono text-[11px]"
-            >
-              <option value="ALL">RCA: All</option>
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Published">Published</option>
-            </select>
+              onValueChange={(v) => setRcaFilter(v)}
+              options={[
+                { value: 'ALL', label: 'RCA: All' },
+                { value: 'Pending', label: 'Pending' },
+                { value: 'In Progress', label: 'In Progress' },
+                { value: 'Published', label: 'Published' }
+              ]}
+              className="pr-4 font-mono text-[11px]"
+            />
           </div>
 
         </div>

@@ -4,6 +4,7 @@ import { useAuthStore } from '../../../stores/authStore';
 import { useAdminStore } from '../../../stores/adminStore';
 import { useSettingsStore } from '../../../stores/settingsStore';
 import { api } from '../../../lib/api/client';
+import { Select } from '../../shared';
 
 interface ProfileSettingsProps {
   currentHash: string;
@@ -513,15 +514,16 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Translate console terminology into local dialects.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={lang}
-                        onChange={(e) => setLang(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="en-IN">English (India) [Standard]</option>
-                        <option value="hi-IN">हिन्दी (Hindi)</option>
-                        <option value="gu-IN">ગુજરાતી (Gujarati)</option>
-                      </select>
+                        onValueChange={(v) => setLang(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'en-IN', label: 'English (India) [Standard]' },
+                          { value: 'hi-IN', label: 'हिन्दी (Hindi)' },
+                          { value: 'gu-IN', label: 'ગુજરાતી (Gujarati)' },
+                        ]}
+                      />
                     </div>
                   </div>
                 </div>
@@ -542,15 +544,16 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Currency symbol used in financials and downtime audits.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="INR">INR (₹) - Indian Rupee</option>
-                        <option value="USD">USD ($) - United States Dollar</option>
-                        <option value="EUR">EUR (€) - Euro</option>
-                      </select>
+                        onValueChange={(v) => setCurrency(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'INR', label: 'INR (₹) - Indian Rupee' },
+                          { value: 'USD', label: 'USD ($) - United States Dollar' },
+                          { value: 'EUR', label: 'EUR (€) - Euro' },
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -561,15 +564,16 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Preferred calendar representation for logs.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={dateFormat}
-                        onChange={(e) => setDateFormat(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="dd MMM yyyy">dd MMM yyyy (e.g. 12 Jul 2026)</option>
-                        <option value="yyyy-MM-dd">yyyy-MM-dd (e.g. 2026-07-12)</option>
-                        <option value="MM/dd/yyyy">MM/dd/yyyy (e.g. 07/12/2026)</option>
-                      </select>
+                        onValueChange={(v) => setDateFormat(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'dd MMM yyyy', label: 'dd MMM yyyy (e.g. 12 Jul 2026)' },
+                          { value: 'yyyy-MM-dd', label: 'yyyy-MM-dd (e.g. 2026-07-12)' },
+                          { value: 'MM/dd/yyyy', label: 'MM/dd/yyyy (e.g. 07/12/2026)' },
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -580,15 +584,16 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Target timezone for live scheduler triggers.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={timezone}
-                        onChange={(e) => setTimezone(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="Asia/Kolkata">Asia/Kolkata (IST - UTC+5:30)</option>
-                        <option value="UTC">Coordinated Universal Time (UTC)</option>
-                        <option value="America/New_York">America/New_York (EST - UTC-5)</option>
-                      </select>
+                        onValueChange={(v) => setTimezone(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST - UTC+5:30)' },
+                          { value: 'UTC', label: 'Coordinated Universal Time (UTC)' },
+                          { value: 'America/New_York', label: 'America/New_York (EST - UTC-5)' },
+                        ]}
+                      />
                     </div>
                   </div>
                 </div>
@@ -609,14 +614,15 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Target baseline system of physical metrics.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={unitSystem}
-                        onChange={(e) => setUnitSystem(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="metric">Metric System (SI Standard)</option>
-                        <option value="imperial">Imperial System</option>
-                      </select>
+                        onValueChange={(v) => setUnitSystem(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'metric', label: 'Metric System (SI Standard)' },
+                          { value: 'imperial', label: 'Imperial System' },
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -627,15 +633,16 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Conversion unit used on pressure booster displays.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={pressureUnit}
-                        onChange={(e) => setPressureUnit(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="bar">Bar (Metric Pressure)</option>
-                        <option value="psi">PSI (Pounds per Square Inch)</option>
-                        <option value="kPa">kPa (Kilopascal)</option>
-                      </select>
+                        onValueChange={(v) => setPressureUnit(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'bar', label: 'Bar (Metric Pressure)' },
+                          { value: 'psi', label: 'PSI (Pounds per Square Inch)' },
+                          { value: 'kPa', label: 'kPa (Kilopascal)' },
+                        ]}
+                      />
                     </div>
                   </div>
 
@@ -646,14 +653,15 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                       <span className="block text-[11px] text-text-muted mt-0.5">Calibration metrics used on reactor thermowells.</span>
                     </div>
                     <div>
-                      <select
+                      <Select
                         value={tempUnit}
-                        onChange={(e) => setTempUnit(e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="C">Celsius (°C)</option>
-                        <option value="F">Fahrenheit (°F)</option>
-                      </select>
+                        onValueChange={(v) => setTempUnit(v)}
+                        className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+                        options={[
+                          { value: 'C', label: 'Celsius (°C)' },
+                          { value: 'F', label: 'Fahrenheit (°F)' },
+                        ]}
+                      />
                     </div>
                   </div>
                 </div>
@@ -892,15 +900,16 @@ function NotificationsMatrixModule() {
                     </button>
                   </td>
                   <td className="p-3">
-                    <select
+                    <Select
                       value={row.digest}
-                      onChange={(e) => handleDigestChange(evt, e.target.value)}
-                      className="bg-background-custom border border-border-custom rounded px-2.5 py-1 text-text-primary text-xs focus:outline-none focus:border-primary"
-                    >
-                      <option value="Instant">Instant Delivery</option>
-                      <option value="Daily">Daily Summary Digest</option>
-                      <option value="Off">Delivery Deactivated</option>
-                    </select>
+                      onValueChange={(v) => handleDigestChange(evt, v)}
+                      className="px-2.5 py-1 text-xs"
+                      options={[
+                        { value: 'Instant', label: 'Instant Delivery' },
+                        { value: 'Daily', label: 'Daily Summary Digest' },
+                        { value: 'Off', label: 'Delivery Deactivated' },
+                      ]}
+                    />
                   </td>
                   <td className="p-3 text-right">
                     {isSaving ? (

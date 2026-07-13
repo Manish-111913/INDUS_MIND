@@ -194,3 +194,7 @@ export function RiskBadge({ level, className = '' }: RiskBadgeProps) {
     </span>
   );
 }
+
+// Re-export shadcn-style Select dropdown
+export { Select } from './Select';
+export type { SelectOption } from './Select';

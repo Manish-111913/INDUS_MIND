@@ -20,6 +20,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { RiskPrediction, MOCK_PREDICTIONS, MOCK_ASSIGNEES, WorkOrder } from './mockMaintData';
+import { Select } from '../../shared';
 
 interface RiskPredictionsProps {
   predictions: RiskPrediction[];
@@ -195,32 +196,32 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
           {/* Risk Band Select */}
           <div className="flex items-center space-x-1.5 bg-background-custom border border-border-custom px-2.5 py-1.5 rounded text-xs font-mono">
             <span className="text-text-muted">RISK:</span>
-            <select
+            <Select
               value={riskFilter}
-              onChange={(e) => setRiskFilter(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-text-secondary pr-4 font-bold text-[11px]"
-            >
-              <option value="ALL">All Bands</option>
-              <option value="Critical">Critical (≥80%)</option>
-              <option value="High">High (60-79%)</option>
-              <option value="Medium">Medium (40-59%)</option>
-              <option value="Low">Low (&lt;40%)</option>
-            </select>
+              onValueChange={(v) => setRiskFilter(v)}
+              options={[
+                { value: 'ALL', label: 'All Bands' },
+                { value: 'Critical', label: 'Critical (≥80%)' },
+                { value: 'High', label: 'High (60-79%)' },
+                { value: 'Medium', label: 'Medium (40-59%)' },
+                { value: 'Low', label: 'Low (<40%)' }
+              ]}
+              className="pr-4 font-bold text-[11px]"
+            />
           </div>
 
           {/* Area Select */}
           <div className="flex items-center space-x-1.5 bg-background-custom border border-border-custom px-2.5 py-1.5 rounded text-xs font-mono">
             <span className="text-text-muted">AREA:</span>
-            <select
+            <Select
               value={areaFilter}
-              onChange={(e) => setAreaFilter(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-text-secondary pr-4 font-bold text-[11px]"
-            >
-              <option value="ALL">All Areas</option>
-              {uniqueAreas.map(area => (
-                <option key={area} value={area}>{area}</option>
-              ))}
-            </select>
+              onValueChange={(v) => setAreaFilter(v)}
+              options={[
+                { value: 'ALL', label: 'All Areas' },
+                ...uniqueAreas.map(area => ({ value: area, label: area }))
+              ]}
+              className="pr-4 font-bold text-[11px]"
+            />
           </div>
         </div>
       </div>
@@ -415,16 +416,17 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
                       {activeDismissId === pred.id && (
                         <div className="absolute left-0 bottom-full mb-1 bg-surface border border-border-custom rounded shadow-2xl p-2.5 z-30 flex flex-col w-48 font-mono text-[10px] space-y-2">
                           <span className="text-[8px] text-text-muted font-bold uppercase tracking-wider block">REASON:</span>
-                          <select
+                          <Select
                             value={selectedDismissReason}
-                            onChange={(e) => setSelectedDismissReason(e.target.value)}
-                            className="bg-background-custom border border-border-custom p-1 rounded text-[10px] text-text-secondary focus:outline-none"
-                          >
-                            <option value="False Positive / Instrument Noise">False Positive / Noise</option>
-                            <option value="Already Repaired / Checked">Already Repaired</option>
-                            <option value="Planned turnaround shutdown cover">Planned Turnaround</option>
-                            <option value="Operational Risk Accepted">Risk Accepted</option>
-                          </select>
+                            onValueChange={(v) => setSelectedDismissReason(v)}
+                            options={[
+                              { value: 'False Positive / Instrument Noise', label: 'False Positive / Noise' },
+                              { value: 'Already Repaired / Checked', label: 'Already Repaired' },
+                              { value: 'Planned turnaround shutdown cover', label: 'Planned Turnaround' },
+                              { value: 'Operational Risk Accepted', label: 'Risk Accepted' }
+                            ]}
+                            className="w-full p-1 text-[10px]"
+                          />
                           <button 
                             onClick={() => handleDismiss(pred.id)}
                             className="w-full py-1 bg-status-critical/10 hover:bg-status-critical/20 text-status-critical rounded font-bold border border-status-critical/20 cursor-pointer"

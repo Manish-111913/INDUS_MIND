@@ -382,7 +382,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background-custom text-text-primary">
+    <div className="h-screen overflow-hidden flex flex-col bg-background-custom text-text-primary">
       
       {/* 1. FIXED TOP BAR */}
       <header className="fixed top-0 left-0 right-0 h-14 bg-surface border-b border-border-custom flex items-center justify-between px-4 z-40 shadow-sm">
@@ -757,10 +757,10 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
         </div>
       </header>
 
-      <div className="flex-1 flex pt-14 pb-16 md:pb-0">
-        
+      <div className="flex-1 flex pt-14 pb-16 md:pb-0 min-h-0">
+
         {/* 2. DYNAMIC COLLAPSIBLE LEFT SIDEBAR */}
-        <aside className={`tour-step-menu hidden md:flex flex-col bg-surface border-r border-border-custom transition-all duration-200 z-30 ${
+        <aside className={`tour-step-menu hidden md:flex flex-col bg-surface border-r border-border-custom transition-all duration-200 z-30 overflow-hidden ${
           isSidebarCollapsed ? 'w-16' : 'w-60'
         }`}>
           {/* Collapse toggle */}
@@ -777,7 +777,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
             </button>
           </div>
 
-          <nav className="flex-1 p-2 space-y-1">
+          <nav className="flex-1 p-2 space-y-1 overflow-y-auto scrollbar-thin">
             {navLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="h-10 bg-surface-muted animate-pulse rounded-md m-1" />
@@ -827,7 +827,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
         </aside>
 
         {/* 3. MAIN WORKSPACE CONTENT */}
-        <main className="flex-1 flex flex-col p-4 md:p-6 overflow-x-hidden min-h-0 bg-background-custom">
+        <main className="flex-1 flex flex-col p-4 md:p-6 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 bg-background-custom scrollbar-thin">
           
           {/* dynamic breadcrumbs */}
           {!currentRoute.startsWith('#copilot') && (

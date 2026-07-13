@@ -114,10 +114,66 @@
   --shadow-card:none; --shadow-pop:0 12px 32px rgb(0 0 0 / .5);
 }
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
+}
+
+/* ==========================================================================
+   Global thin, translucent scrollbars (no ash-gray tracks)
+   ========================================================================== */
+* {
+  scrollbar-width: thin;                       /* Firefox */
+  scrollbar-color: color-mix(in srgb, var(--text-3) 35%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in srgb, var(--text-3) 30%, transparent);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--primary) 45%, transparent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Extra-slim variant for dense panels (sidebars, nav, chat rails) */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-3) 30%, transparent) transparent;
+}
+
+/* Fully hidden scrollbar (still scrollable) */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* Custom HMI engineering style details */

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../lib/api/client';
 import { Globe, AlertCircle, Check, Search, Save, Plus, ArrowRight, BookOpen } from 'lucide-react';
+import { Select } from '../../shared';
 
 interface TranslationKV {
   key: string;
@@ -195,27 +196,29 @@ export function TranslationsModule() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full md:w-auto">
               <div>
                 <label className="block text-[10px] font-mono text-text-muted uppercase tracking-wider mb-1.5">Target Locale</label>
-                <select
+                <Select
                   value={selectedLocale}
-                  onChange={(e) => setSelectedLocale(e.target.value)}
-                  className="w-full sm:w-48 px-3 py-2 bg-surface text-text-primary text-xs border border-border-custom rounded focus:outline-none focus:border-primary font-mono"
-                >
-                  <option value="en">en (English)</option>
-                  <option value="hi">hi (हिन्दी / Hindi)</option>
-                </select>
+                  onValueChange={(v) => setSelectedLocale(v)}
+                  className="w-full sm:w-48 px-3 py-2 text-xs font-mono"
+                  options={[
+                    { value: 'en', label: 'en (English)' },
+                    { value: 'hi', label: 'hi (हिन्दी / Hindi)' },
+                  ]}
+                />
               </div>
 
               <div>
                 <label className="block text-[10px] font-mono text-text-muted uppercase tracking-wider mb-1.5">Namespace Catalog</label>
-                <select
+                <Select
                   value={selectedNs}
-                  onChange={(e) => setSelectedNs(e.target.value)}
-                  className="w-full sm:w-48 px-3 py-2 bg-surface text-text-primary text-xs border border-border-custom rounded focus:outline-none focus:border-primary font-mono"
-                >
-                  <option value="nav">nav (System Shell Navigation)</option>
-                  <option value="auth">auth (Credential Gateway)</option>
-                  <option value="copilot">copilot (AI Agent Assistant)</option>
-                </select>
+                  onValueChange={(v) => setSelectedNs(v)}
+                  className="w-full sm:w-48 px-3 py-2 text-xs font-mono"
+                  options={[
+                    { value: 'nav', label: 'nav (System Shell Navigation)' },
+                    { value: 'auth', label: 'auth (Credential Gateway)' },
+                    { value: 'copilot', label: 'copilot (AI Agent Assistant)' },
+                  ]}
+                />
               </div>
             </div>
 

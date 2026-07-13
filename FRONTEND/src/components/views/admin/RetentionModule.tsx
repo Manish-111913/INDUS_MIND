@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { api } from '../../../lib/api/client';
+import { Select } from '../../shared';
 
 export function RetentionModule() {
   const [policies, setPolicies] = useState<any[]>([]);
@@ -138,18 +139,19 @@ export function RetentionModule() {
                       {/* Configuration Period */}
                       <div className="space-y-1 w-32">
                         <label className="font-mono text-[9px] font-bold text-text-muted uppercase">Retention Lifespan</label>
-                        <select
+                        <Select
                           disabled={updatingId === policy.id}
-                          value={policy.retention_days}
-                          onChange={(e) => handleUpdateDays(policy.id, parseInt(e.target.value))}
-                          className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-text-primary text-xs font-mono font-bold focus:outline-none focus:border-primary/50 cursor-pointer min-h-[38px]"
-                        >
-                          <option value="14">14 Days</option>
-                          <option value="30">30 Days</option>
-                          <option value="90">90 Days</option>
-                          <option value="180">180 Days</option>
-                          <option value="365">365 Days</option>
-                        </select>
+                          value={String(policy.retention_days)}
+                          onValueChange={(v) => handleUpdateDays(policy.id, parseInt(v))}
+                          className="w-full px-2.5 py-1.5 text-xs font-mono font-bold min-h-[38px]"
+                          options={[
+                            { value: '14', label: '14 Days' },
+                            { value: '30', label: '30 Days' },
+                            { value: '90', label: '90 Days' },
+                            { value: '180', label: '180 Days' },
+                            { value: '365', label: '365 Days' },
+                          ]}
+                        />
                       </div>
 
                       {/* Run Action */}

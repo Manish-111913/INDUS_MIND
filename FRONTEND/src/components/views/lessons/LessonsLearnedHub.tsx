@@ -10,7 +10,7 @@ import {
   CheckCircle, AlertTriangle, Info, Users, MapPin, Share2, 
   TrendingUp, Compass, Bookmark, BookmarkCheck, ArrowLeft, Bell
 } from 'lucide-react';
-import { StatusChip, ConfidenceBadge, SkeletonLoader } from '../../shared';
+import { StatusChip, ConfidenceBadge, SkeletonLoader, Select } from '../../shared';
 
 export interface Lesson {
   id: string;
@@ -527,29 +527,27 @@ export function LessonsLearnedHub() {
             </div>
 
             <div>
-              <select
+              <Select
                 value={selectedArea}
-                onChange={(e) => setSelectedArea(e.target.value)}
-                className="w-full bg-surface border border-border-custom rounded p-2.5 text-xs text-text-secondary focus:outline-none focus:border-primary cursor-pointer capitalize font-mono"
-              >
-                <option value="all">-- All Refinery Blocks --</option>
-                {uniqueAreas.filter(a => a !== 'all').map((a) => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
+                onValueChange={(v) => setSelectedArea(v)}
+                options={[
+                  { value: 'all', label: '-- All Refinery Blocks --' },
+                  ...uniqueAreas.filter(a => a !== 'all').map((a) => ({ value: a, label: a })),
+                ]}
+                className="w-full p-2.5 text-xs capitalize font-mono"
+              />
             </div>
 
             <div>
-              <select
+              <Select
                 value={selectedEquip}
-                onChange={(e) => setSelectedEquip(e.target.value)}
-                className="w-full bg-surface border border-border-custom rounded p-2.5 text-xs text-text-secondary focus:outline-none focus:border-primary cursor-pointer font-mono"
-              >
-                <option value="all">-- All Machine Tags --</option>
-                {uniqueEquip.filter(eq => eq !== 'all').map((eq) => (
-                  <option key={eq} value={eq}>{eq}</option>
-                ))}
-              </select>
+                onValueChange={(v) => setSelectedEquip(v)}
+                options={[
+                  { value: 'all', label: '-- All Machine Tags --' },
+                  ...uniqueEquip.filter(eq => eq !== 'all').map((eq) => ({ value: eq, label: eq })),
+                ]}
+                className="w-full p-2.5 text-xs font-mono"
+              />
             </div>
           </div>
 

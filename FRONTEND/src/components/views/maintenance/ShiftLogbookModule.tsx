@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { api } from '../../../lib/api/client';
+import { Select } from '../../shared';
 
 export function ShiftLogbookModule() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -183,28 +184,30 @@ export function ShiftLogbookModule() {
           <form onSubmit={handleAddLog} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="font-mono text-[9px] font-bold uppercase text-text-muted">Target Operating Shift</label>
-              <select
+              <Select
                 value={newLogShift}
-                onChange={(e) => setNewLogShift(e.target.value)}
-                className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary/50 text-xs min-h-[44px]"
-              >
-                <option value="Morning Shift">Morning Shift (06:00 - 14:00)</option>
-                <option value="Evening Shift">Evening Shift (14:00 - 22:00)</option>
-                <option value="Night Shift">Night Shift (22:00 - 06:00)</option>
-              </select>
+                onValueChange={(v) => setNewLogShift(v)}
+                options={[
+                  { value: 'Morning Shift', label: 'Morning Shift (06:00 - 14:00)' },
+                  { value: 'Evening Shift', label: 'Evening Shift (14:00 - 22:00)' },
+                  { value: 'Night Shift', label: 'Night Shift (22:00 - 06:00)' }
+                ]}
+                className="w-full px-3 py-2 text-xs min-h-[44px]"
+              />
             </div>
 
             <div className="space-y-1">
               <label className="font-mono text-[9px] font-bold uppercase text-text-muted">Refinery Unit Branch</label>
-              <select
+              <Select
                 value={newLogPlant}
-                onChange={(e) => setNewLogPlant(e.target.value)}
-                className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary/50 text-xs min-h-[44px]"
-              >
-                <option value="jam-a">Reliance Jamnagar Refinery - Sector A</option>
-                <option value="jam-b">Reliance Jamnagar Refinery - Sector B</option>
-                <option value="hazira-4">Hazira Petrochemicals Complex - Unit 4</option>
-              </select>
+                onValueChange={(v) => setNewLogPlant(v)}
+                options={[
+                  { value: 'jam-a', label: 'Reliance Jamnagar Refinery - Sector A' },
+                  { value: 'jam-b', label: 'Reliance Jamnagar Refinery - Sector B' },
+                  { value: 'hazira-4', label: 'Hazira Petrochemicals Complex - Unit 4' }
+                ]}
+                className="w-full px-3 py-2 text-xs min-h-[44px]"
+              />
             </div>
 
             <div className="space-y-1">
@@ -272,16 +275,15 @@ export function ShiftLogbookModule() {
             <Icons.Search className="w-4 h-4 text-text-muted absolute left-3 top-3.5" />
           </div>
 
-          <select
+          <Select
             value={selectedTag}
-            onChange={(e) => setSelectedTag(e.target.value)}
-            className="bg-background-custom border border-border-custom rounded-lg px-3 py-2 text-text-primary focus:outline-none text-xs min-h-[44px] sm:w-48"
-          >
-            <option value="All">All Operations Tags</option>
-            {allTags.map(tag => (
-              <option key={tag} value={tag}>{tag}</option>
-            ))}
-          </select>
+            onValueChange={(v) => setSelectedTag(v)}
+            options={[
+              { value: 'All', label: 'All Operations Tags' },
+              ...allTags.map(tag => ({ value: tag, label: tag }))
+            ]}
+            className="px-3 py-2 text-xs min-h-[44px] sm:w-48"
+          />
         </div>
       </div>
 

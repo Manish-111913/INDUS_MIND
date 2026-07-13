@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import * as Icons from 'lucide-react';
+import { Select } from '../../shared';
 import { useAdminStore, AdminUser, Permission, AiCapability, PromptTemplate, FeatureFlag, AuditRecord, LookupOption } from '../../../stores/adminStore';
 import { renderIcon } from '../../layout/AppShell';
 import { useSettingsStore } from '../../../stores/settingsStore';
@@ -275,16 +276,16 @@ function AdminSettingsModule() {
                     <p className="text-[11px] text-text-muted">{def.description}</p>
                     
                     {def.value_type === 'select' ? (
-                      <select
+                      <Select
                         value={val}
-                        onChange={(e) => handleValueChange(def.key, e.target.value)}
-                        className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-text-primary font-medium focus:outline-none text-xs min-h-[44px]"
-                      >
-                        <option value="">-- Choose Option --</option>
-                        {def.options?.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                        onValueChange={(v) => handleValueChange(def.key, v)}
+                        className="w-full px-3 py-2.5 font-medium text-xs min-h-[44px]"
+                        placeholder="-- Choose Option --"
+                        options={[
+                          { value: '', label: '-- Choose Option --' },
+                          ...(def.options?.map(opt => ({ value: opt, label: opt })) ?? []),
+                        ]}
+                      />
                     ) : def.value_type === 'number' ? (
                       <input
                         type="number"
@@ -388,17 +389,18 @@ function UsersModule() {
           />
         </div>
         <div>
-          <select
+          <Select
             value={selectedRoleFilter}
-            onChange={(e) => setSelectedRoleFilter(e.target.value)}
-            className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-xs text-text-primary focus:outline-none focus:border-primary/50 min-h-[44px]"
-          >
-            <option value="">All Plant Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="Plant Manager">Plant Manager</option>
-            <option value="Maintenance Engineer">Maintenance Engineer</option>
-            <option value="Compliance Officer">Compliance Officer</option>
-          </select>
+            onValueChange={(v) => setSelectedRoleFilter(v)}
+            className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+            options={[
+              { value: '', label: 'All Plant Roles' },
+              { value: 'Admin', label: 'Admin' },
+              { value: 'Plant Manager', label: 'Plant Manager' },
+              { value: 'Maintenance Engineer', label: 'Maintenance Engineer' },
+              { value: 'Compliance Officer', label: 'Compliance Officer' },
+            ]}
+          />
         </div>
       </div>
 
@@ -760,15 +762,16 @@ function AiConfigModule() {
         {/* Fallback Model Option */}
         <div className="flex items-center space-x-2 bg-background-custom border border-border-custom px-3 py-1.5 rounded-lg">
           <span className="font-mono text-[9px] text-text-muted uppercase font-bold">Fallback Model:</span>
-          <select
+          <Select
             value={fallbackModel}
-            onChange={(e) => setFallbackModel(e.target.value)}
-            className="bg-transparent border-0 text-xs text-primary font-mono font-bold focus:outline-none focus:ring-0 cursor-pointer min-h-[32px]"
-          >
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Precision)</option>
-            <option value="gemini-2.5-flash">Gemini 2.5 Flash (Speed)</option>
-            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Legacy)</option>
-          </select>
+            onValueChange={(v) => setFallbackModel(v)}
+            className="text-xs font-mono font-bold min-h-[32px]"
+            options={[
+              { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Precision)' },
+              { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Speed)' },
+              { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro (Legacy)' },
+            ]}
+          />
         </div>
       </div>
 
@@ -1378,17 +1381,18 @@ function AuditLogModule() {
           />
         </div>
         <div>
-          <select
+          <Select
             value={operatorFilter}
-            onChange={(e) => setOperatorFilter(e.target.value)}
-            className="w-full bg-background-custom border border-border-custom rounded-lg px-3 py-2.5 text-xs text-text-primary focus:outline-none focus:border-primary/50 min-h-[44px]"
-          >
-            <option value="">All Actors/Operators</option>
-            <option value="Aditya Vardhan">Aditya Vardhan (Admin)</option>
-            <option value="Rajesh Nair">Rajesh Nair (Manager)</option>
-            <option value="Priya Sharma">Priya Sharma (Engineer)</option>
-            <option value="Arun Kumar">Arun Kumar (Tech)</option>
-          </select>
+            onValueChange={(v) => setOperatorFilter(v)}
+            className="w-full px-3 py-2.5 text-xs min-h-[44px]"
+            options={[
+              { value: '', label: 'All Actors/Operators' },
+              { value: 'Aditya Vardhan', label: 'Aditya Vardhan (Admin)' },
+              { value: 'Rajesh Nair', label: 'Rajesh Nair (Manager)' },
+              { value: 'Priya Sharma', label: 'Priya Sharma (Engineer)' },
+              { value: 'Arun Kumar', label: 'Arun Kumar (Tech)' },
+            ]}
+          />
         </div>
       </div>
 
@@ -2173,14 +2177,15 @@ function NotificationTemplatesModule() {
                   <div className="grid grid-cols-2 gap-3 text-xs">
                     <div className="space-y-1">
                       <label className="font-mono text-[9px] font-bold text-text-muted uppercase">Target Delivery Channel</label>
-                      <select
+                      <Select
                         value={channel}
-                        onChange={(e) => setChannel(e.target.value)}
-                        className="w-full bg-[#0B0F12] border border-border-custom rounded px-3 py-2 text-text-primary text-xs"
-                      >
-                        <option value="email">EMAIL RELAY</option>
-                        <option value="inApp">IN-APP HUD ALERTS</option>
-                      </select>
+                        onValueChange={(v) => setChannel(v)}
+                        className="w-full px-3 py-2 text-xs"
+                        options={[
+                          { value: 'email', label: 'EMAIL RELAY' },
+                          { value: 'inApp', label: 'IN-APP HUD ALERTS' },
+                        ]}
+                      />
                     </div>
                     <div className="space-y-1">
                       <label className="font-mono text-[9px] font-bold text-text-muted uppercase">Version Identifier</label>
@@ -3328,14 +3333,15 @@ function ExtractionRulesModule() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-text-muted uppercase">Matching Method:</label>
-                    <select
+                    <Select
                       value={editingRule.method || 'regex'}
-                      onChange={(e) => setEditingRule({ ...editingRule, method: e.target.value as 'regex' | 'llm' })}
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary"
-                    >
-                      <option value="regex">Regular Expression Pattern (Speed/Local)</option>
-                      <option value="llm">LLM Cognitive Parsing (Contextual)</option>
-                    </select>
+                      onValueChange={(v) => setEditingRule({ ...editingRule, method: v as 'regex' | 'llm' })}
+                      className="w-full px-3 py-2 font-sans"
+                      options={[
+                        { value: 'regex', label: 'Regular Expression Pattern (Speed/Local)' },
+                        { value: 'llm', label: 'LLM Cognitive Parsing (Contextual)' },
+                      ]}
+                    />
                   </div>
 
                   <div className="space-y-1">

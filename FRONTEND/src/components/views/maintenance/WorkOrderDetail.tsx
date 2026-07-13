@@ -10,7 +10,7 @@ import {
   Clock, Paperclip, ChevronDown, ChevronUp, User, Lock, Activity, Eye
 } from 'lucide-react';
 import { WorkOrder, MOCK_AI_CONTEXTS, MOCK_LOOKUPS, SafetyItem, ProcedureStep, PartItem } from './mockMaintData';
-import { StatusChip, ConfidenceBadge } from '../../shared';
+import { StatusChip, ConfidenceBadge, Select } from '../../shared';
 
 interface WorkOrderDetailProps {
   workOrder: WorkOrder;
@@ -771,30 +771,24 @@ export function WorkOrderDetail({
               <div className="space-y-3 text-xs font-sans">
                 <div>
                   <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Select Failure Code</label>
-                  <select
+                  <Select
                     value={failCode}
-                    onChange={(e) => setFailCode(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-status-ok font-mono"
-                  >
-                    <option value="">-- Choose Fail Code --</option>
-                    {MOCK_LOOKUPS.failureCodes.map(fc => (
-                      <option key={fc.code} value={fc.code}>{fc.code} - {fc.label}</option>
-                    ))}
-                  </select>
+                    onValueChange={(v) => setFailCode(v)}
+                    placeholder="-- Choose Fail Code --"
+                    options={MOCK_LOOKUPS.failureCodes.map(fc => ({ value: fc.code, label: `${fc.code} - ${fc.label}` }))}
+                    className="w-full px-2.5 py-1.5 font-mono"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Root Cause Quick Pick</label>
-                  <select
+                  <Select
                     value={rootCause}
-                    onChange={(e) => setRootCause(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-status-ok font-mono"
-                  >
-                    <option value="">-- Choose Root Cause --</option>
-                    {MOCK_LOOKUPS.rootCauses.map(rc => (
-                      <option key={rc.cause} value={rc.cause}>{rc.cause} - {rc.desc}</option>
-                    ))}
-                  </select>
+                    onValueChange={(v) => setRootCause(v)}
+                    placeholder="-- Choose Root Cause --"
+                    options={MOCK_LOOKUPS.rootCauses.map(rc => ({ value: rc.cause, label: `${rc.cause} - ${rc.desc}` }))}
+                    className="w-full px-2.5 py-1.5 font-mono"
+                  />
                 </div>
 
                 <div>

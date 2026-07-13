@@ -24,7 +24,7 @@ import { RiskPredictions } from './RiskPredictions';
 import { PmScheduling } from './PmScheduling';
 import { SparePartsModule } from './SparePartsModule';
 import { ShiftLogbookModule } from './ShiftLogbookModule';
-import { StatusChip } from '../../shared';
+import { StatusChip, Select } from '../../shared';
 import { Layers, HelpCircle, Wrench, AlertTriangle, TrendingUp, Calendar, UserCheck } from 'lucide-react';
 
 export function MaintenanceHub() {
@@ -250,15 +250,16 @@ export function MaintenanceHub() {
             <div className="flex items-center space-x-1.5 bg-surface border border-border-custom px-2.5 py-1.5 rounded text-xs font-mono">
               <UserCheck className="w-3.5 h-3.5 text-primary" />
               <span className="text-text-muted">ACTING ROLE:</span>
-              <select
+              <Select
                 value={actingRole}
-                onChange={(e) => setActingRole(e.target.value as 'Planner' | 'Technician')}
-                className="bg-transparent border-none focus:outline-none text-text-secondary pr-4 font-bold text-[11px] cursor-pointer"
-                title="Saves hours of testing! Toggle role directly to test Technician views vs Planner workflows."
-              >
-                <option value="Planner">Planner (Gantt, Bulk Actions, Desk View)</option>
-                <option value="Technician">Technician (Today's Card Swipe Deck)</option>
-              </select>
+                onValueChange={(v) => setActingRole(v as 'Planner' | 'Technician')}
+                options={[
+                  { value: 'Planner', label: 'Planner (Gantt, Bulk Actions, Desk View)' },
+                  { value: 'Technician', label: "Technician (Today's Card Swipe Deck)" }
+                ]}
+                className="pr-4 font-bold text-[11px]"
+                aria-label="Acting role"
+              />
             </div>
 
             {/* Modular Tab Switchers */}

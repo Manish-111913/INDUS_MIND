@@ -17,7 +17,7 @@ import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, 
   ChevronDown, Download, EyeOff, Table, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
-import { EmptyState, ErrorState, SkeletonLoader } from '../shared';
+import { EmptyState, ErrorState, SkeletonLoader, Select } from '../shared';
 import { api } from '../../lib/api/client';
 import { useNotificationStore } from '../../stores/notificationStore';
 
@@ -340,26 +340,27 @@ export function DataTable<TData>({
               <span>Active View:</span>
             </span>
             <div className="flex items-center space-x-2">
-              <select
+              <Select
                 value={selectedViewId}
-                onChange={(e) => {
-                  const view = savedViews.find(v => v.id === e.target.value);
+                onValueChange={(v) => {
+                  const view = savedViews.find(sv => sv.id === v);
                   if (view) applySavedView(view);
                 }}
-                className="bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-text-primary text-xs font-semibold focus:outline-none min-h-[36px]"
-              >
-                <option value="">-- Standard View --</option>
-                <optgroup label="System & Shared Views">
-                  {savedViews.filter(v => v.isShared).map(v => (
-                    <option key={v.id} value={v.id}>🖧 {v.name} (by {v.createdBy})</option>
-                  ))}
-                </optgroup>
-                <optgroup label="My Personal Views">
-                  {savedViews.filter(v => !v.isShared).map(v => (
-                    <option key={v.id} value={v.id}>👤 {v.name}</option>
-                  ))}
-                </optgroup>
-              </select>
+                options={[
+                  { value: '', label: '-- Standard View --' },
+                  { value: '__shared_header', label: 'System & Shared Views', disabled: true },
+                  ...savedViews.filter(v => v.isShared).map(v => ({
+                    value: v.id,
+                    label: `🖧 ${v.name} (by ${v.createdBy})`,
+                  })),
+                  { value: '__personal_header', label: 'My Personal Views', disabled: true },
+                  ...savedViews.filter(v => !v.isShared).map(v => ({
+                    value: v.id,
+                    label: `👤 ${v.name}`,
+                  })),
+                ]}
+                className="px-2.5 py-1.5 text-xs min-h-[36px]"
+              />
 
               {selectedViewId && !savedViews.find(v => v.id === selectedViewId)?.isShared && (
                 <button
@@ -663,19 +664,17 @@ export function DataTable<TData>({
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface p-3 border border-border-custom rounded-lg text-xs font-sans">
             <div className="flex items-center space-x-2">
               <span className="font-mono text-[10px] text-text-muted uppercase">Rows per page:</span>
-              <select
-                value={table.getState().pagination.pageSize}
-                onChange={e => {
-                  table.setPageSize(Number(e.target.value));
+              <Select
+                value={String(table.getState().pagination.pageSize)}
+                onValueChange={(v) => {
+                  table.setPageSize(Number(v));
                 }}
-                className="bg-background-custom border border-border-custom rounded p-1 text-text-primary focus:outline-none focus:border-primary text-xs"
-              >
-                {[25, 50, 100].map(size => (
-                  <option key={size} value={size}>
-                    {size} rows
-                  </option>
-                ))}
-              </select>
+                options={[25, 50, 100].map(size => ({
+                  value: String(size),
+                  label: `${size} rows`,
+                }))}
+                className="p-1 text-xs"
+              />
             </div>
 
             <div className="flex items-center space-x-1.5">

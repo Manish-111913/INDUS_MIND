@@ -9,7 +9,7 @@ import {
   Sparkles, AlertTriangle, ArrowLeft, RefreshCw, Layers, UploadCloud, Check
 } from 'lucide-react';
 import { Regulation, ClauseNode, MappedItem } from './mockComplianceData';
-import { StatusChip, ConfidenceBadge } from '../../shared';
+import { StatusChip, ConfidenceBadge, Select } from '../../shared';
 
 interface ComplianceRegulationsProps {
   regulations: Regulation[];
@@ -307,15 +307,16 @@ export function ComplianceRegulations({
 
               <div className="text-left space-y-1.5">
                 <label className="block text-[10px] font-mono text-text-muted uppercase">Ingested Files Available</label>
-                <select 
+                <Select
                   value={selectedDocToImport}
-                  onChange={(e) => setSelectedDocToImport(e.target.value)}
-                  className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-xs text-text-primary focus:outline-none"
-                >
-                  <option value="OISD-STD-118-Addendum.pdf">OISD-STD-118-Addendum.pdf (Ingested 2h ago)</option>
-                  <option value="Machinery_Guarding_Rules_2026.pdf">Machinery_Guarding_Rules_2026.pdf (Ingested 1d ago)</option>
-                  <option value="Environmental_Particulates_EPA_Draft.pdf">Environmental_Particulates_EPA_Draft.pdf (Ingested 3d ago)</option>
-                </select>
+                  onValueChange={(v) => setSelectedDocToImport(v)}
+                  className="w-full px-3 py-2 text-xs"
+                  options={[
+                    { value: 'OISD-STD-118-Addendum.pdf', label: 'OISD-STD-118-Addendum.pdf (Ingested 2h ago)' },
+                    { value: 'Machinery_Guarding_Rules_2026.pdf', label: 'Machinery_Guarding_Rules_2026.pdf (Ingested 1d ago)' },
+                    { value: 'Environmental_Particulates_EPA_Draft.pdf', label: 'Environmental_Particulates_EPA_Draft.pdf (Ingested 3d ago)' },
+                  ]}
+                />
               </div>
 
               <button

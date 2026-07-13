@@ -14,7 +14,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer, ComposedChart 
 } from 'recharts';
-import { StatusChip, ConfidenceBadge } from '../../shared';
+import { StatusChip, ConfidenceBadge, Select } from '../../shared';
 
 export interface Ncr {
   id: string;
@@ -301,15 +301,16 @@ export function QualityHub() {
 
               {/* Status and Delete Actions */}
               <div className="flex items-center space-x-2">
-                <select
+                <Select
                   value={activeNcr.status}
-                  onChange={(e) => handleUpdateNcrStatus(activeNcr.id, e.target.value as any)}
-                  className="bg-background-custom border border-border-custom rounded px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-primary cursor-pointer"
-                >
-                  <option value="Open">OPEN STATUS</option>
-                  <option value="In Progress">IN PROGRESS</option>
-                  <option value="Resolved">RESOLVED</option>
-                </select>
+                  onValueChange={(v) => handleUpdateNcrStatus(activeNcr.id, v as any)}
+                  options={[
+                    { value: 'Open', label: 'OPEN STATUS' },
+                    { value: 'In Progress', label: 'IN PROGRESS' },
+                    { value: 'Resolved', label: 'RESOLVED' },
+                  ]}
+                  className="px-3 py-1.5 text-xs font-mono"
+                />
 
                 <button
                   onClick={() => handleDeleteNcr(activeNcr.id)}
@@ -507,30 +508,32 @@ export function QualityHub() {
                 </div>
 
                 <div>
-                  <select
+                  <Select
                     value={selectedSeverity}
-                    onChange={(e) => setSelectedSeverity(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded p-2 text-xs text-text-secondary focus:outline-none focus:border-primary cursor-pointer font-mono"
-                  >
-                    <option value="all">-- All Severity Levels --</option>
-                    <option value="Critical">Critical</option>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
+                    onValueChange={(v) => setSelectedSeverity(v)}
+                    options={[
+                      { value: 'all', label: '-- All Severity Levels --' },
+                      { value: 'Critical', label: 'Critical' },
+                      { value: 'High', label: 'High' },
+                      { value: 'Medium', label: 'Medium' },
+                      { value: 'Low', label: 'Low' },
+                    ]}
+                    className="w-full p-2 text-xs font-mono"
+                  />
                 </div>
 
                 <div>
-                  <select
+                  <Select
                     value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded p-2 text-xs text-text-secondary focus:outline-none focus:border-primary cursor-pointer font-mono"
-                  >
-                    <option value="all">-- All Status Types --</option>
-                    <option value="Open">Open</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Resolved">Resolved</option>
-                  </select>
+                    onValueChange={(v) => setSelectedStatus(v)}
+                    options={[
+                      { value: 'all', label: '-- All Status Types --' },
+                      { value: 'Open', label: 'Open' },
+                      { value: 'In Progress', label: 'In Progress' },
+                      { value: 'Resolved', label: 'Resolved' },
+                    ]}
+                    className="w-full p-2 text-xs font-mono"
+                  />
                 </div>
               </div>
 

@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { api } from '../../lib/api/client';
-import { ConfidenceBadge } from '../shared';
+import { ConfidenceBadge, Select } from '../shared';
 
 // ============================================================================
 // Types
@@ -1084,7 +1084,7 @@ export function ExpertCopilot() {
         </div>
 
         {/* Sessions scroll container */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-4">
+        <div className="flex-1 overflow-y-auto p-2 space-y-4 scrollbar-thin">
           
           {/* PINNED SECTION */}
           {groupedSessions.pinned.length > 0 && (
@@ -1568,16 +1568,15 @@ export function ExpertCopilot() {
                     {/* Plant Dropdown */}
                     <div className="space-y-1">
                       <label className="block text-[10px] font-mono text-text-muted uppercase">Target Plant Node</label>
-                      <select 
+                      <Select
                         value={filters.plant}
-                        onChange={(e) => setFilters(prev => ({ ...prev, plant: e.target.value }))}
-                        className="w-full bg-bg border border-border-custom p-1.5 rounded text-text-primary focus:outline-none focus:border-primary text-xs"
-                      >
-                        <option value="all">All Plant Nodes</option>
-                        {ALL_PLANTS.map(p => (
-                          <option key={p} value={p}>{p.split(' - ')[1]}</option>
-                        ))}
-                      </select>
+                        onValueChange={(v) => setFilters(prev => ({ ...prev, plant: v }))}
+                        className="w-full p-1.5 text-xs"
+                        options={[
+                          { value: 'all', label: 'All Plant Nodes' },
+                          ...ALL_PLANTS.map(p => ({ value: p, label: p.split(' - ')[1] })),
+                        ]}
+                      />
                     </div>
 
                     {/* Tag Typeahead / multiselect */}
@@ -1643,17 +1642,18 @@ export function ExpertCopilot() {
                     {/* Date range dropdown */}
                     <div className="space-y-1">
                       <label className="block text-[10px] font-mono text-text-muted uppercase">History Depth</label>
-                      <select 
+                      <Select
                         value={filters.dateRange}
-                        onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
-                        className="w-full bg-bg border border-border-custom p-1.5 rounded text-text-primary focus:outline-none focus:border-primary text-xs"
-                      >
-                        <option value="All Time">All Time Records</option>
-                        <option value="Last 24 Hours">Last 24 Hours</option>
-                        <option value="Last 7 Days">Last 7 Days</option>
-                        <option value="Last 30 Days">Last 30 Days</option>
-                        <option value="Custom Range">Custom Audit Range</option>
-                      </select>
+                        onValueChange={(v) => setFilters(prev => ({ ...prev, dateRange: v }))}
+                        className="w-full p-1.5 text-xs"
+                        options={[
+                          { value: 'All Time', label: 'All Time Records' },
+                          { value: 'Last 24 Hours', label: 'Last 24 Hours' },
+                          { value: 'Last 7 Days', label: 'Last 7 Days' },
+                          { value: 'Last 30 Days', label: 'Last 30 Days' },
+                          { value: 'Custom Range', label: 'Custom Audit Range' },
+                        ]}
+                      />
                     </div>
 
                     <button 

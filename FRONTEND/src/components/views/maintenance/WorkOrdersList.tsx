@@ -12,7 +12,7 @@ import {
   Trash2, HelpCircle
 } from 'lucide-react';
 import { WorkOrder, MOCK_ASSIGNEES, MOCK_LOOKUPS } from './mockMaintData';
-import { StatusChip } from '../../shared';
+import { StatusChip, Select } from '../../shared';
 
 interface WorkOrdersListProps {
   workOrders: WorkOrder[];
@@ -351,50 +351,55 @@ export function WorkOrdersList({
             </div>
             
             <div className="flex flex-wrap gap-2 text-xs">
-              <select 
-                value={filterType} 
-                onChange={(e) => setFilterType(e.target.value)}
-                className="bg-background-custom border border-border-custom rounded px-2 py-1.5 text-text-secondary focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="All">All Types</option>
-                {MOCK_LOOKUPS.workOrderTypes.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <Select
+                value={filterType}
+                onValueChange={(v) => setFilterType(v)}
+                options={[
+                  { value: 'All', label: 'All Types' },
+                  ...MOCK_LOOKUPS.workOrderTypes.map(t => ({ value: t, label: t }))
+                ]}
+                className="px-2 py-1.5"
+              />
 
-              <select 
-                value={filterPriority} 
-                onChange={(e) => setFilterPriority(e.target.value)}
-                className="bg-background-custom border border-border-custom rounded px-2 py-1.5 text-text-secondary focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="All">All Priorities</option>
-                {MOCK_LOOKUPS.priorities.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <Select
+                value={filterPriority}
+                onValueChange={(v) => setFilterPriority(v)}
+                options={[
+                  { value: 'All', label: 'All Priorities' },
+                  ...MOCK_LOOKUPS.priorities.map(p => ({ value: p, label: p }))
+                ]}
+                className="px-2 py-1.5"
+              />
 
-              <select 
-                value={filterStatus} 
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-background-custom border border-border-custom rounded px-2 py-1.5 text-text-secondary focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="All">All Statuses</option>
-                {MOCK_LOOKUPS.statuses.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Select
+                value={filterStatus}
+                onValueChange={(v) => setFilterStatus(v)}
+                options={[
+                  { value: 'All', label: 'All Statuses' },
+                  ...MOCK_LOOKUPS.statuses.map(s => ({ value: s, label: s }))
+                ]}
+                className="px-2 py-1.5"
+              />
 
-              <select 
-                value={filterEquipment} 
-                onChange={(e) => setFilterEquipment(e.target.value)}
-                className="bg-background-custom border border-border-custom rounded px-2 py-1.5 text-text-secondary focus:outline-none focus:border-primary cursor-pointer font-mono"
-              >
-                <option value="All">All Tags</option>
-                {MOCK_LOOKUPS.equipmentTags.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-              </select>
+              <Select
+                value={filterEquipment}
+                onValueChange={(v) => setFilterEquipment(v)}
+                options={[
+                  { value: 'All', label: 'All Tags' },
+                  ...MOCK_LOOKUPS.equipmentTags.map(eq => ({ value: eq, label: eq }))
+                ]}
+                className="px-2 py-1.5 font-mono"
+              />
 
-              <select 
-                value={filterAssignee} 
-                onChange={(e) => setFilterAssignee(e.target.value)}
-                className="bg-background-custom border border-border-custom rounded px-2 py-1.5 text-text-secondary focus:outline-none focus:border-primary cursor-pointer"
-              >
-                <option value="All">All Crew</option>
-                {MOCK_ASSIGNEES.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
-              </select>
+              <Select
+                value={filterAssignee}
+                onValueChange={(v) => setFilterAssignee(v)}
+                options={[
+                  { value: 'All', label: 'All Crew' },
+                  ...MOCK_ASSIGNEES.map(a => ({ value: a.name, label: a.name }))
+                ]}
+                className="px-2 py-1.5"
+              />
             </div>
           </div>
 

@@ -10,7 +10,7 @@ import {
   Activity, Info, FileText, Camera, QrCode, HelpCircle, Check, ArrowRight,
   History as HistoryIcon, Plus, FileCheck, Network, ArrowUpRight, Loader2, Download
 } from 'lucide-react';
-import { StatusChip, ConfidenceBadge, SkeletonLoader } from '../../shared';
+import { StatusChip, ConfidenceBadge, SkeletonLoader, Select } from '../../shared';
 import { useAuthStore } from '../../../stores/authStore';
 import { api } from '../../../lib/api/client';
 import { 
@@ -1494,31 +1494,33 @@ export function Equipment360() {
                     <label className="block font-mono text-[10px] text-text-secondary uppercase">
                       Urgency Priority Level
                     </label>
-                    <select
+                    <Select
                       value={woPriority}
-                      onChange={(e: any) => setWoPriority(e.target.value)}
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-text-primary text-xs focus:outline-none"
-                    >
-                      <option value="Critical">Critical (Immediate Outage Risk)</option>
-                      <option value="High">High Priority</option>
-                      <option value="Medium">Medium Priority</option>
-                      <option value="Low">Low / General</option>
-                    </select>
+                      onValueChange={(v) => setWoPriority(v as any)}
+                      className="w-full px-3 py-2 text-xs"
+                      options={[
+                        { value: 'Critical', label: 'Critical (Immediate Outage Risk)' },
+                        { value: 'High', label: 'High Priority' },
+                        { value: 'Medium', label: 'Medium Priority' },
+                        { value: 'Low', label: 'Low / General' },
+                      ]}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block font-mono text-[10px] text-text-secondary uppercase">
                       Linked SOP / Safety Guide
                     </label>
-                    <select
+                    <Select
                       value={woSop}
-                      onChange={(e) => setWoSop(e.target.value)}
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-text-primary text-xs focus:outline-none"
-                    >
-                      <option value="Standard Calibration Protocol">SOP-REF-112 (Pumps Calibration)</option>
-                      <option value="SOP-GCU-COMP-99">SOP-GCU-99 (Gas Safety)</option>
-                      <option value="General Mechanical Alignment Standard">Gen-Mech Alignment</option>
-                    </select>
+                      onValueChange={(v) => setWoSop(v)}
+                      className="w-full px-3 py-2 text-xs"
+                      options={[
+                        { value: 'Standard Calibration Protocol', label: 'SOP-REF-112 (Pumps Calibration)' },
+                        { value: 'SOP-GCU-COMP-99', label: 'SOP-GCU-99 (Gas Safety)' },
+                        { value: 'General Mechanical Alignment Standard', label: 'Gen-Mech Alignment' },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -1599,15 +1601,16 @@ export function Equipment360() {
                   <label className="block font-mono text-[10px] text-text-secondary uppercase">
                     Severity Level
                   </label>
-                  <select
+                  <Select
                     value={issueSeverity}
-                    onChange={(e) => setIssueSeverity(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-text-primary text-xs focus:outline-none"
-                  >
-                    <option value="Severe">Severe Outage (Bypass tripped or leaking)</option>
-                    <option value="Moderate">Moderate Deviation (Thermal/Vibration alarm)</option>
-                    <option value="Low">Low / Aesthetic (Warning placard scratched)</option>
-                  </select>
+                    onValueChange={(v) => setIssueSeverity(v)}
+                    className="w-full px-3 py-2 text-xs"
+                    options={[
+                      { value: 'Severe', label: 'Severe Outage (Bypass tripped or leaking)' },
+                      { value: 'Moderate', label: 'Moderate Deviation (Thermal/Vibration alarm)' },
+                      { value: 'Low', label: 'Low / Aesthetic (Warning placard scratched)' },
+                    ]}
+                  />
                 </div>
 
                 <div className="p-3 bg-surface-muted/50 border border-border-custom/50 rounded font-sans text-text-secondary leading-normal">
@@ -1862,58 +1865,62 @@ export function Equipment360() {
 
             {/* Area Filter */}
             <div>
-              <select
+              <Select
                 value={filterArea}
-                onChange={(e) => setFilterArea(e.target.value)}
-                className="w-full px-2 py-1.5 bg-background-custom border border-border-custom rounded text-text-secondary text-xs focus:outline-none"
-              >
-                <option value="All">All Sectors</option>
-                <option value="Area A - Crude Block">Crude Block</option>
-                <option value="Utilities & Offsites">Utilities</option>
-              </select>
+                onValueChange={(v) => setFilterArea(v)}
+                className="w-full px-2 py-1.5 text-xs"
+                options={[
+                  { value: 'All', label: 'All Sectors' },
+                  { value: 'Area A - Crude Block', label: 'Crude Block' },
+                  { value: 'Utilities & Offsites', label: 'Utilities' },
+                ]}
+              />
             </div>
 
             {/* Type Filter */}
             <div>
-              <select
+              <Select
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-2 py-1.5 bg-background-custom border border-border-custom rounded text-text-secondary text-xs focus:outline-none"
-              >
-                <option value="All">All Types</option>
-                <option value="Pump">Pumps</option>
-                <option value="Compressor">Compressors</option>
-                <option value="Valve">Valves</option>
-                <option value="Tank">Tanks</option>
-              </select>
+                onValueChange={(v) => setFilterType(v)}
+                className="w-full px-2 py-1.5 text-xs"
+                options={[
+                  { value: 'All', label: 'All Types' },
+                  { value: 'Pump', label: 'Pumps' },
+                  { value: 'Compressor', label: 'Compressors' },
+                  { value: 'Valve', label: 'Valves' },
+                  { value: 'Tank', label: 'Tanks' },
+                ]}
+              />
             </div>
 
             {/* Criticality Filter */}
             <div>
-              <select
+              <Select
                 value={filterCriticality}
-                onChange={(e) => setFilterCriticality(e.target.value)}
-                className="w-full px-2 py-1.5 bg-background-custom border border-border-custom rounded text-text-secondary text-xs focus:outline-none"
-              >
-                <option value="All">All Crit</option>
-                <option value="A">Class A</option>
-                <option value="B">Class B</option>
-                <option value="C">Class C</option>
-              </select>
+                onValueChange={(v) => setFilterCriticality(v)}
+                className="w-full px-2 py-1.5 text-xs"
+                options={[
+                  { value: 'All', label: 'All Crit' },
+                  { value: 'A', label: 'Class A' },
+                  { value: 'B', label: 'Class B' },
+                  { value: 'C', label: 'Class C' },
+                ]}
+              />
             </div>
 
             {/* Health Band Filter */}
             <div>
-              <select
+              <Select
                 value={filterHealthBand}
-                onChange={(e) => setFilterHealthBand(e.target.value)}
-                className="w-full px-2 py-1.5 bg-background-custom border border-border-custom rounded text-text-secondary text-xs focus:outline-none"
-              >
-                <option value="All">All Health</option>
-                <option value="Good">Optimal ({'>'}80%)</option>
-                <option value="Fair">Fair (50-80%)</option>
-                <option value="Poor">Poor ({'<'}50%)</option>
-              </select>
+                onValueChange={(v) => setFilterHealthBand(v)}
+                className="w-full px-2 py-1.5 text-xs"
+                options={[
+                  { value: 'All', label: 'All Health' },
+                  { value: 'Good', label: 'Optimal (>80%)' },
+                  { value: 'Fair', label: 'Fair (50-80%)' },
+                  { value: 'Poor', label: 'Poor (<50%)' },
+                ]}
+              />
             </div>
 
           </div>
@@ -2563,15 +2570,12 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
                 {/* Meter Sensor Select */}
                 <div className="space-y-1">
                   <label className="text-[10px] font-mono text-text-muted uppercase">Select Sensor Meter:</label>
-                  <select
+                  <Select
                     value={newMeterId}
-                    onChange={(e) => setNewMeterId(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary"
-                  >
-                    {meters.map(m => (
-                      <option key={m.id} value={m.id}>{m.label} ({m.unit})</option>
-                    ))}
-                  </select>
+                    onValueChange={(v) => setNewMeterId(v)}
+                    className="w-full px-3 py-2 font-mono"
+                    options={meters.map(m => ({ value: m.id, label: `${m.label} (${m.unit})` }))}
+                  />
                 </div>
 
                 {/* Value Input */}

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { api } from '../../../lib/api/client';
+import { Select } from '../../shared';
 
 interface LookupResponse {
   data: string[];
@@ -370,20 +371,17 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
             {/* Entity Select dropdown */}
             <div className="space-y-1.5">
               <label className="text-[10px] font-mono text-text-muted uppercase block">Select Target Entity Core:</label>
-              <select
+              <Select
                 value={selectedEntity}
-                onChange={(e) => {
-                  setSelectedEntity(e.target.value);
+                onValueChange={(v) => {
+                  setSelectedEntity(v);
                   setFileName(null);
                   setFileHeaders([]);
                   setCsvRowsCount(0);
                 }}
-                className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-xs text-white focus:outline-none focus:border-primary capitalize"
-              >
-                {entities.map(ent => (
-                  <option key={ent} value={ent}>{ent}</option>
-                ))}
-              </select>
+                options={entities.map(ent => ({ value: ent, label: ent }))}
+                className="w-full px-3 py-2 font-mono text-xs capitalize"
+              />
             </div>
 
             {/* Template Download Option */}
@@ -567,18 +565,18 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
 
                         {/* Database Target Field Dropdown */}
                         <td className="px-4 py-3.5">
-                          <select
+                          <Select
                             value={mappedValue}
-                            onChange={(e) => setColumnMapping(prev => ({ ...prev, [header]: e.target.value }))}
-                            className="px-2.5 py-1.5 bg-background-custom border border-border-custom rounded text-xs text-white focus:outline-none focus:border-primary font-mono w-full max-w-xs capitalize cursor-pointer"
-                          >
-                            <option value="">-- Ignore Column --</option>
-                            {targetFields.map(field => (
-                              <option key={field.name} value={field.name}>
-                                {field.label} ({field.name})
-                              </option>
-                            ))}
-                          </select>
+                            onValueChange={(v) => setColumnMapping(prev => ({ ...prev, [header]: v }))}
+                            options={[
+                              { value: '', label: '-- Ignore Column --' },
+                              ...targetFields.map(field => ({
+                                value: field.name,
+                                label: `${field.label} (${field.name})`,
+                              })),
+                            ]}
+                            className="px-2.5 py-1.5 text-xs font-mono w-full max-w-xs capitalize"
+                          />
                           {currentTarget && (
                             <span className="block text-[10px] text-text-muted mt-1 font-mono uppercase">
                               SAMPLE STATE: {currentTarget.sample} • {currentTarget.desc}

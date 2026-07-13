@@ -32,6 +32,7 @@ from app.modules.users import models as _users  # noqa: F401
 # Truncated between tests (CASCADE handles FK order).
 _TABLES = (
     "audit_log, feature_flags, lookups, user_roles, role_permissions, permissions, roles, "
+    "eval_runs, ai_insights, chat_messages, chat_sessions, "
     "saved_searches, llm_usage, prompt_templates, ai_model_configs, extracted_entities, "
     "document_chunks, ingestion_jobs, document_versions, documents, "
     "equipment, areas, plants, refresh_tokens, sessions, users, tenants"

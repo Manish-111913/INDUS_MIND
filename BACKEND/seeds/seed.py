@@ -399,6 +399,37 @@ async def _seed_ai(session) -> int:
     return len(AI_CONFIGS)
 
 
+DEMO_INSIGHTS = [
+    ("Plant Manager", "risk", "Unplanned downtime risk on P-101",
+     "P-101 shows a repeat mechanical-seal failure pattern; the predictive model flags elevated "
+     "risk this month. Consider bringing the next PM forward.", 0.82),
+    ("Maintenance Engineer", "prediction", "Rising discharge temperature on C-3",
+     "C-3 overhead compressor discharge temperature is trending 6°C above baseline — recommend "
+     "intercooler cleaning before the next run.", 0.76),
+    ("Compliance Officer", "compliance", "Firewater pump test window approaching",
+     "OISD-STD-118 clause 6.4 quarterly firewater test for FW-P1 is due soon; schedule per SOP-114 "
+     "to avoid a compliance gap.", 0.88),
+]
+
+
+async def _seed_insights(session, tenant) -> int:
+    from app.modules.ai.models import AIInsight
+
+    existing = {
+        i.title for i in (
+            await session.execute(select(AIInsight).where(AIInsight.tenant_id == tenant.id))
+        ).scalars()
+    }
+    added = 0
+    for role, category, title, body, confidence in DEMO_INSIGHTS:
+        if title not in existing:
+            session.add(AIInsight(tenant_id=tenant.id, role=role, category=category, title=title,
+                                  body=body, confidence=confidence, evidence=[], actions=[]))
+            added += 1
+    await session.flush()
+    return added
+
+
 async def run(*, with_documents: bool = False) -> None:
     # Document ingestion (needs MinIO + pipeline deps) is opt-in so unit tests that
     # only need the config/asset seed stay fast; `make seed` enables it below.
@@ -414,6 +445,7 @@ async def run(*, with_documents: bool = False) -> None:
         users = await _seed_users(session, tenant, roles)
         n_plants, n_areas, n_equipment = await _seed_assets(session, tenant)
         await _seed_ai(session)
+        await _seed_insights(session, tenant)
         admin = next((u for u in users if u.email == "admin@indusmind.io"), users[0])
         n_docs = await _seed_documents(session, tenant, admin) if with_documents else 0
         await session.commit()

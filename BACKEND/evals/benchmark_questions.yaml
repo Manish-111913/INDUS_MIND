@@ -1,5 +1,104 @@
-# AI eval benchmark (docs/02 §15, §54) — 25 domain Q&A with expected sources.
-# Scored on answer-contains-facts + citation-correctness + latency. Populated
-# with the demo corpus (§55 M6). Scaffold ships the file so evals/run_eval.py
-# and the eval APIs have a stable target.
-questions: []
+# AI eval benchmark (docs/02 §15, §54) — 25 domain Q&A grounded in the seeded
+# corpus (seeds/sample_data.py). Scored on fact-coverage + citation-correctness
+# + latency by evals/run_eval.py and POST /ai/evals/run.
+questions:
+  - id: q1
+    question: What is the bonnet bolt torque specification for pump P-101?
+    expected_facts: ["210 Nm"]
+    expected_doc: "P-101"
+  - id: q2
+    question: Which mechanical seal type is used on pump P-101?
+    expected_facts: ["John Crane"]
+    expected_doc: "P-101"
+  - id: q3
+    question: What bearing lubrication oil grade does P-101 use?
+    expected_facts: ["ISO VG 68"]
+    expected_doc: "P-101"
+  - id: q4
+    question: What is the vibration trip level for pump P-101?
+    expected_facts: ["7.1"]
+    expected_doc: "P-101"
+  - id: q5
+    question: What is the rated flow of centrifugal pump P-101?
+    expected_facts: ["450 m3/h"]
+    expected_doc: "P-101"
+  - id: q6
+    question: What failure code was recorded when closing WO-2041 on P-101?
+    expected_facts: ["seal_leak"]
+    expected_doc: "WO-2041"
+  - id: q7
+    question: What API flush plan is used on the P-101 mechanical seal?
+    expected_facts: ["Plan 11"]
+    expected_doc: "P-101"
+  - id: q8
+    question: What did the C-3 compressor inspection under WO-2042 recommend?
+    expected_facts: ["intercooler"]
+    expected_doc: "WO-2042"
+  - id: q9
+    question: At what pressure did the V-230 relief valve pop during WO-2043?
+    expected_facts: ["9.8 barg"]
+    expected_doc: "WO-2043"
+  - id: q10
+    question: How long is the firewater pump FW-P1 quarterly test run?
+    expected_facts: ["30 minutes"]
+    expected_doc: "SOP-114"
+  - id: q11
+    question: What is the rated flow for firewater pump FW-P1?
+    expected_facts: ["1000 m3/h"]
+    expected_doc: "SOP-114"
+  - id: q12
+    question: What auto-start time is required for the firewater pump?
+    expected_facts: ["10 seconds"]
+    expected_doc: "SOP-114"
+  - id: q13
+    question: How often must firewater pumps be tested per OISD-STD-118?
+    expected_facts: ["quarterly"]
+    expected_doc: "OISD-STD-118"
+  - id: q14
+    question: What is the pressure relief valve test interval in OISD-STD-118 clause 7.2?
+    expected_facts: ["twelve months"]
+    expected_doc: "OISD-STD-118"
+  - id: q15
+    question: What monitoring is required for criticality A rotating equipment?
+    expected_facts: ["vibration monitoring"]
+    expected_doc: "OISD-STD-118"
+  - id: q16
+    question: What was the iron content in the C-3 lube oil sample?
+    expected_facts: ["12 ppm"]
+    expected_doc: "C-3"
+  - id: q17
+    question: What is the corrosion rate measured on vessel V-230?
+    expected_facts: ["0.05 mm/year"]
+    expected_doc: "V-230"
+  - id: q18
+    question: What vibration level caused pump P-101 to trip in the incident?
+    expected_facts: ["7.3"]
+    expected_doc: "Incident"
+  - id: q19
+    question: Which standby pump auto-started when P-101 tripped?
+    expected_facts: ["P-102"]
+    expected_doc: "Incident"
+  - id: q20
+    question: What lesson was learned from the P-101 high vibration trip?
+    expected_facts: ["alignment"]
+    expected_doc: "Incident"
+  - id: q21
+    question: What weld defect was found on the E-101 nozzle in NCR-2026-014?
+    expected_facts: ["porosity"]
+    expected_doc: "NCR-2026-014"
+  - id: q22
+    question: What code standard applies to the E-101 nozzle weld?
+    expected_facts: ["ASME B31.3"]
+    expected_doc: "NCR-2026-014"
+  - id: q23
+    question: What CAPA hold point was added for exchanger nozzle welds?
+    expected_facts: ["100% RT"]
+    expected_doc: "NCR-2026-014"
+  - id: q24
+    question: Which equipment tags appear on the crude distillation unit P&ID?
+    expected_facts: ["V-230"]
+    expected_doc: "P&ID"
+  - id: q25
+    question: What did the CDU night shift log note about C-3 discharge temperature?
+    expected_facts: ["6 C"]
+    expected_doc: "Shift Log"

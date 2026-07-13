@@ -37,6 +37,8 @@ dependencies = [
     "Pillow>=10.3",
     # observability
     "structlog>=24.1",
+    # config / eval question files
+    "pyyaml>=6.0",
     # security
     "pyjwt[crypto]>=2.8",
     "argon2-cffi>=23.1",

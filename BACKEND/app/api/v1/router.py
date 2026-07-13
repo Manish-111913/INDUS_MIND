@@ -12,6 +12,8 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.common.responses import success
+from app.modules.ai.ai_router import router as ai_router
+from app.modules.ai.chat_router import router as chat_router
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.documents.router import router as documents_router
@@ -41,5 +43,7 @@ api_router.include_router(ingestion_router)
 api_router.include_router(entities_router)
 api_router.include_router(knowledge_router)
 api_router.include_router(search_router)
+api_router.include_router(ai_router)
+api_router.include_router(chat_router)
 api_router.include_router(audit_router)
 # ai, maintenance, compliance, ... register here as they are implemented.

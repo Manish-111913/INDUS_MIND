@@ -254,7 +254,7 @@ export function QualityHub() {
         <div className="space-y-6">
           <button 
             onClick={() => { window.location.hash = '#quality'; }}
-            className="flex items-center space-x-2 text-xs font-mono text-text-secondary hover:text-white cursor-pointer group"
+            className="flex items-center space-x-2 text-xs font-mono text-text-secondary hover:text-text-primary cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>BACK TO NCR REGISTER</span>
@@ -285,15 +285,15 @@ export function QualityHub() {
                   </span>
                 </div>
                 
-                <h1 className="font-display text-xl md:text-2xl font-bold text-white tracking-tight">
+                <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary tracking-tight">
                   Defect Vector: {activeNcr.defectType}
                 </h1>
                 
                 <p className="text-xs text-text-secondary mt-1 flex items-center space-x-2">
                   <Cpu className="w-3.5 h-3.5 text-accent" />
-                  <span>Equipment Ref: <a href={`#equipment?tag=${activeNcr.equipment}`} className="text-white font-bold font-mono hover:underline">{activeNcr.equipment}</a></span>
+                  <span>Equipment Ref: <a href={`#equipment?tag=${activeNcr.equipment}`} className="text-text-primary font-bold font-mono hover:underline">{activeNcr.equipment}</a></span>
                   <span>•</span>
-                  <span>Logged on: <span className="text-white font-semibold font-mono">{activeNcr.date}</span></span>
+                  <span>Logged on: <span className="text-text-primary font-semibold font-mono">{activeNcr.date}</span></span>
                   <span>•</span>
                   <span>Lead Investigator: <span className="text-primary font-semibold">{activeNcr.operator}</span></span>
                 </p>
@@ -327,7 +327,7 @@ export function QualityHub() {
               {/* Left 2 Columns: Description and CAPA checklist */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-background-custom/40 border border-border-custom rounded-lg p-5">
-                  <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-2.5">
+                  <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider mb-2.5">
                     Anomalous Defect Findings
                   </h3>
                   <p className="text-sm text-text-secondary leading-relaxed font-sans">
@@ -337,7 +337,7 @@ export function QualityHub() {
                   {activeNcr.docName && (
                     <div className="mt-4 flex items-center space-x-2 p-2 bg-surface rounded border border-border-custom max-w-sm">
                       <FileText className="w-4 h-4 text-primary" />
-                      <span className="text-xs text-white font-mono truncate">{activeNcr.docName}</span>
+                      <span className="text-xs text-text-primary font-mono truncate">{activeNcr.docName}</span>
                       <a 
                         href={activeNcr.docLink}
                         className="text-[10px] text-primary hover:underline ml-auto font-mono font-bold"
@@ -351,7 +351,7 @@ export function QualityHub() {
                 {/* Interactive CAPA list */}
                 <div className="bg-surface border border-border-custom rounded-lg p-5 space-y-4">
                   <div className="flex items-center justify-between border-b border-border-custom pb-2">
-                    <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                    <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2">
                       <ListTodo className="w-4 h-4 text-primary" />
                       <span>Corrective and Preventive Action (CAPA) Checklist</span>
                     </h3>
@@ -412,7 +412,7 @@ export function QualityHub() {
                     Equipment Lifecycle Details
                   </span>
                   <div className="p-3.5 bg-background-custom/40 border border-border-custom rounded font-sans text-xs space-y-2">
-                    <p className="text-white font-semibold">Machinery Ref: {activeNcr.equipment}</p>
+                    <p className="text-text-primary font-semibold">Machinery Ref: {activeNcr.equipment}</p>
                     <p className="text-text-secondary leading-relaxed">This unit is mapped to refinery sector Block A. Continuous mechanical tracking and localized vibration logs are available.</p>
                     <button
                       onClick={() => { window.location.hash = `#equipment?tag=${activeNcr.equipment}`; }}
@@ -434,7 +434,7 @@ export function QualityHub() {
                   <div className="p-3.5 bg-primary/5 border border-primary/10 rounded font-sans text-xs space-y-2">
                     <div className="flex items-center space-x-1.5">
                       <span className="font-mono text-[9px] font-bold text-primary bg-primary/10 px-1 rounded">LL-2041</span>
-                      <span className="font-semibold text-white">Monsoon Startup Pattern</span>
+                      <span className="font-semibold text-text-primary">Monsoon Startup Pattern</span>
                     </div>
                     <p className="text-text-secondary text-[11px] leading-relaxed">
                       Core AI correlates this seal leak directly with historical cluster failure Mode LL-2041. Review winter/monsoon moisture purging steps to avoid recurrences.
@@ -460,7 +460,7 @@ export function QualityHub() {
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border-custom pb-4 gap-4">
             <div>
-              <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+              <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
                 <ShieldAlert className="w-6.5 h-6.5 text-[#F5A524] animate-pulse" />
                 <span>Quality Management Command</span>
               </h1>
@@ -474,7 +474,7 @@ export function QualityHub() {
               <button
                 onClick={() => { window.location.hash = '#quality'; }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'register' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'register' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 NCR Register ({ncrs.length})
@@ -482,7 +482,7 @@ export function QualityHub() {
               <button
                 onClick={() => { window.location.hash = '#quality/trends'; }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'trends' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'trends' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Defect & Quality Trends
@@ -502,7 +502,7 @@ export function QualityHub() {
                     placeholder="Search NCR records, equipment tags, defects..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded p-2 pl-8.5 text-xs text-white focus:outline-none focus:border-primary placeholder-text-muted"
+                    className="w-full bg-background-custom border border-border-custom rounded p-2 pl-8.5 text-xs text-text-primary focus:outline-none focus:border-primary placeholder-text-muted"
                   />
                   <Filter className="w-4 h-4 text-text-muted absolute left-2.5 top-2.5" />
                 </div>
@@ -571,7 +571,7 @@ export function QualityHub() {
                             onClick={() => { window.location.hash = `#quality/ncr/${n.id}`; }}
                             className="hover:bg-background-custom/30 transition-colors cursor-pointer group"
                           >
-                            <td className="p-3 font-mono font-bold text-white select-all">{n.id}</td>
+                            <td className="p-3 font-mono font-bold text-text-primary select-all">{n.id}</td>
                             <td className="p-3 font-mono text-accent">{n.equipment}</td>
                             <td className="p-3 font-sans text-text-primary">
                               <span className="block font-semibold">{n.defectType}</span>
@@ -635,9 +635,9 @@ export function QualityHub() {
                   </div>
                   <div className="space-y-1">
                     <span className="text-[10px] font-mono font-bold text-primary tracking-wider uppercase block">Emerging Quality Pattern Diagnostic [AI Core]</span>
-                    <h3 className="text-sm font-bold text-white leading-tight">Mechanical Seal Failures Cluster Identified Near Monsoon Startup Thresholds</h3>
+                    <h3 className="text-sm font-bold text-text-primary leading-tight">Mechanical Seal Failures Cluster Identified Near Monsoon Startup Thresholds</h3>
                     <p className="text-xs text-text-secondary leading-relaxed max-w-4xl pt-1">
-                      Data analytics crossed <span className="text-white font-semibold">18 active seal ruptures</span> in the Pareto database and highlighted a sharp <span className="text-white font-semibold">42% surge</span> during high-humidity seasonal startup sequences. This pattern traces directly to particulate hydration in external buffer fluid.
+                      Data analytics crossed <span className="text-text-primary font-semibold">18 active seal ruptures</span> in the Pareto database and highlighted a sharp <span className="text-text-primary font-semibold">42% surge</span> during high-humidity seasonal startup sequences. This pattern traces directly to particulate hydration in external buffer fluid.
                     </p>
                     <div className="pt-3">
                       <button
@@ -658,7 +658,7 @@ export function QualityHub() {
                 {/* Defect Pareto Chart */}
                 <div className="bg-surface border border-border-custom rounded-xl p-5 space-y-3">
                   <div>
-                    <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">Defect Category Pareto Principle Analysis</h3>
+                    <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider">Defect Category Pareto Principle Analysis</h3>
                     <p className="text-[11px] text-text-secondary">Pareto distribution charting total frequency counts against cumulative percentages.</p>
                   </div>
 
@@ -681,7 +681,7 @@ export function QualityHub() {
                 {/* Line deviation rate trends chart */}
                 <div className="bg-surface border border-border-custom rounded-xl p-5 space-y-3">
                   <div>
-                    <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">Monthly Deviation Rates by Refinery Line</h3>
+                    <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider">Monthly Deviation Rates by Refinery Line</h3>
                     <p className="text-[11px] text-text-secondary">Percentage of components showing deviations during weekly safety checks.</p>
                   </div>
 

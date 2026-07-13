@@ -237,13 +237,13 @@ export function ComplianceGaps({
                 onSelectGap(null);
                 setRemediationSuccess(null);
               }}
-              className="p-1.5 bg-surface hover:bg-surface-muted text-text-secondary hover:text-white rounded border border-border-custom cursor-pointer transition-colors"
+              className="p-1.5 bg-surface hover:bg-surface-muted text-text-secondary hover:text-text-primary rounded border border-border-custom cursor-pointer transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
           <div>
-            <h2 className="font-display text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+            <h2 className="font-display text-lg font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2">
               <ShieldAlert className="w-5 h-5 text-red-500" />
               <span>{selectedGapId ? `Deficiency Workspace: ${activeGap?.id}` : 'Compliance Deficiency Gaps'}</span>
             </h2>
@@ -318,7 +318,7 @@ export function ComplianceGaps({
               <tbody className="divide-y divide-border-custom/50 text-text-secondary">
                 {filteredGaps.map((gap) => (
                   <tr key={gap.id} className="hover:bg-background-custom/30 transition-colors">
-                    <td className="p-4 font-mono font-bold text-white">{gap.id}</td>
+                    <td className="p-4 font-mono font-bold text-text-primary">{gap.id}</td>
                     <td className="p-4 font-mono font-semibold text-primary">{gap.clauseCode}</td>
                     <td className="p-4 max-w-xs truncate" title={gap.description}>
                       {gap.description}
@@ -483,7 +483,7 @@ export function ComplianceGaps({
                       {activeGap.evidenceRecords.map(rec => (
                         <div key={rec.id} className="p-2 bg-surface border border-border-custom/50 rounded text-[11px] space-y-1">
                           <div className="flex justify-between items-center">
-                            <span className="font-bold text-white font-mono">{rec.id}</span>
+                            <span className="font-bold text-text-primary font-mono">{rec.id}</span>
                             <span className="font-mono text-text-muted text-[9px]">{rec.date}</span>
                           </div>
                           <p className="text-text-secondary font-sans leading-tight">{rec.details}</p>
@@ -559,7 +559,7 @@ export function ComplianceGaps({
             {/* INTERACTIVE FORM POPUPS FOR ACTIONS */}
             {isAssigning && (
               <form onSubmit={handleAssignOwnerSubmit} className="bg-surface border border-border-custom p-4 rounded-xl space-y-3">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Assign Gap Ownership</h4>
+                <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">Assign Gap Ownership</h4>
                 <div className="flex gap-2">
                   <input 
                     type="text" 
@@ -578,7 +578,7 @@ export function ComplianceGaps({
 
             {isAcceptingRisk && (
               <form onSubmit={handleAcceptRiskSubmit} className="bg-surface border border-border-custom p-4 rounded-xl space-y-3">
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider text-red-400">Formal Risk Acceptance Sign-off</h4>
+                <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider text-red-400">Formal Risk Acceptance Sign-off</h4>
                 <p className="text-[10px] text-text-secondary">Justification is cryptographically locked into operational audit logs.</p>
                 <div className="space-y-2">
                   <textarea 
@@ -603,7 +603,7 @@ export function ComplianceGaps({
 
             {/* HISTORY AUDIT TIMELINE */}
             <div className="bg-surface border border-border-custom rounded-xl p-4 space-y-4">
-              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center border-b border-border-custom/50 pb-2">
+              <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider flex items-center border-b border-border-custom/50 pb-2">
                 <History className="w-4 h-4 text-primary mr-1" /> Audit Trail & History Timeline
               </h3>
 
@@ -615,7 +615,7 @@ export function ComplianceGaps({
                     
                     <div className="space-y-0.5">
                       <div className="flex items-center space-x-2">
-                        <span className="font-bold text-white">{item.action}</span>
+                        <span className="font-bold text-text-primary">{item.action}</span>
                         <span className="font-mono text-[9px] text-text-muted">{item.date}</span>
                         <span className="text-text-muted text-[10px] font-mono">• by {item.user}</span>
                       </div>

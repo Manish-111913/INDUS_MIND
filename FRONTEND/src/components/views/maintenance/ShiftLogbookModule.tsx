@@ -116,7 +116,7 @@ export function ShiftLogbookModule() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border-custom pb-4 gap-4">
         <div>
-          <h2 className="font-display text-xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <h2 className="font-display text-xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
             <Icons.History className="w-5 h-5 text-primary" />
             <span>Shift Handover Logbook</span>
           </h2>
@@ -129,7 +129,7 @@ export function ShiftLogbookModule() {
           <button
             onClick={handleGenerateSummary}
             disabled={isSummarizing || logs.length === 0}
-            className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-muted border border-border-custom text-white text-xs font-bold rounded-lg cursor-pointer transition-colors disabled:opacity-50 min-h-[44px]"
+            className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 bg-surface hover:bg-surface-muted border border-border-custom text-text-primary text-xs font-bold rounded-lg cursor-pointer transition-colors disabled:opacity-50 min-h-[44px]"
           >
             {isSummarizing ? (
               <Icons.Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -165,7 +165,7 @@ export function ShiftLogbookModule() {
                 navigator.clipboard.writeText(handoverSummary);
                 alert('Handover summary copied to clipboard.');
               }}
-              className="px-2 py-1 bg-surface-muted border border-border-custom text-[10px] font-mono text-text-secondary hover:text-white rounded cursor-pointer transition-all"
+              className="px-2 py-1 bg-surface-muted border border-border-custom text-[10px] font-mono text-text-secondary hover:text-text-primary rounded cursor-pointer transition-all"
             >
               Copy Report
             </button>
@@ -308,7 +308,7 @@ export function ShiftLogbookModule() {
                     <Icons.User className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <span className="block font-sans font-semibold text-white text-xs">{log.operator}</span>
+                    <span className="block font-sans font-semibold text-text-primary text-xs">{log.operator}</span>
                     <span className="block text-[10px] text-text-muted font-mono mt-0.5">{log.timestamp}</span>
                   </div>
                 </div>

@@ -63,7 +63,7 @@ export function AdminSuite({ currentHash, onRouteChange }: AdminSuiteProps) {
       <div className="w-full lg:w-64 flex-shrink-0 bg-surface border border-border-custom rounded-xl p-3 flex flex-col justify-between shadow-sm">
         <div className="space-y-4">
           <div className="px-3 py-2 border-b border-border-custom">
-            <span className="block font-display font-bold text-sm tracking-tight text-white">Console Administration</span>
+            <span className="block font-display font-bold text-sm tracking-tight text-text-primary">Console Administration</span>
             <span className="block font-mono text-[9px] text-text-muted mt-0.5 tracking-wider uppercase">NODE-A ACCESS GRANTED</span>
           </div>
           <nav className="space-y-1">
@@ -232,7 +232,7 @@ function AdminSettingsModule() {
   return (
     <div className="space-y-6 animate-fade-in text-xs font-sans">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">System & Tenant Settings Definition</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">System & Tenant Settings Definition</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Define global system defaults, baseline physics unit configurations, and client tenant white-label branding variables.
         </p>
@@ -270,7 +270,7 @@ function AdminSettingsModule() {
                 return (
                   <div key={def.key} className="space-y-1.5">
                     <div className="flex justify-between items-start">
-                      <label className="font-sans font-semibold text-white text-xs">{def.name}</label>
+                      <label className="font-sans font-semibold text-text-primary text-xs">{def.name}</label>
                       <span className="font-mono text-[9px] text-text-muted bg-background-custom px-1.5 py-0.5 rounded border border-border-custom/50 uppercase">{def.value_type}</span>
                     </div>
                     <p className="text-[11px] text-text-muted">{def.description}</p>
@@ -364,7 +364,7 @@ function UsersModule() {
     <div className="space-y-5 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border-custom pb-4 gap-3">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight">Plant User Directory</h2>
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Plant User Directory</h2>
           <p className="text-xs text-text-secondary mt-0.5">Invite, provision credentials, and toggle status for terminal operation staff.</p>
         </div>
         <button
@@ -487,11 +487,11 @@ function UsersModule() {
             <div className="flex justify-between items-center border-b border-border-custom pb-3">
               <div className="flex items-center space-x-2.5">
                 <Icons.UserPlus className="w-5 h-5 text-primary" />
-                <span className="font-display font-bold text-sm text-white">Invite Plant Staff</span>
+                <span className="font-display font-bold text-sm text-text-primary">Invite Plant Staff</span>
               </div>
               <button 
                 onClick={() => setIsInviteOpen(false)} 
-                className="text-text-muted hover:text-white p-1 rounded transition-colors bg-transparent border-0 cursor-pointer min-h-[44px]"
+                className="text-text-muted hover:text-text-primary p-1 rounded transition-colors bg-transparent border-0 cursor-pointer min-h-[44px]"
               >
                 <Icons.X className="w-5 h-5" />
               </button>
@@ -616,7 +616,7 @@ function RolesPermissionsModule() {
   return (
     <div className="space-y-5 animate-fade-in relative pb-16">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">Plant Permissions Matrix</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Plant Permissions Matrix</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Explicitly map OISD operations, document control stages, and administrative rights to plant personnel tiers.
         </p>
@@ -683,7 +683,7 @@ function RolesPermissionsModule() {
               <Icons.SlidersHorizontal className="w-4 h-4 animate-pulse" />
             </div>
             <div>
-              <span className="block text-xs font-bold text-white">Unsaved modifications to Access Control Matrix!</span>
+              <span className="block text-xs font-bold text-text-primary">Unsaved modifications to Access Control Matrix!</span>
               <span className="block text-[10px] text-text-muted">Uncommitted changes will reset on session reload or node reconnect.</span>
             </div>
           </div>
@@ -753,7 +753,7 @@ function AiConfigModule() {
     <div className="space-y-5 animate-fade-in relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border-custom pb-4 gap-3">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight">AI Engine Capability Configurations</h2>
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">AI Engine Capability Configurations</h2>
           <p className="text-xs text-text-secondary mt-0.5">
             Configure default large language models, generation temperature settings, and semantic confidence matching thresholds.
           </p>
@@ -787,7 +787,7 @@ function AiConfigModule() {
                 <Icons.Sliders className="w-4 h-4 text-text-muted" />
               </div>
               <div>
-                <h3 className="font-display font-semibold text-white text-xs">{cap.title}</h3>
+                <h3 className="font-display font-semibold text-text-primary text-xs">{cap.title}</h3>
                 <span className="text-[11px] font-mono text-text-muted block mt-0.5">{cap.provider} &bull; {cap.model}</span>
               </div>
 
@@ -821,7 +821,7 @@ function AiConfigModule() {
 
             <button
               onClick={() => handleEditClick(cap)}
-              className="mt-4 w-full bg-surface border border-border-custom hover:border-primary/40 text-text-secondary hover:text-white text-xs font-semibold py-2 rounded-lg transition-colors cursor-pointer min-h-[44px]"
+              className="mt-4 w-full bg-surface border border-border-custom hover:border-primary/40 text-text-secondary hover:text-text-primary text-xs font-semibold py-2 rounded-lg transition-colors cursor-pointer min-h-[44px]"
             >
               Tune Hyperparameters
             </button>
@@ -839,12 +839,12 @@ function AiConfigModule() {
             <div className="space-y-5 text-xs">
               <div className="flex justify-between items-center border-b border-border-custom pb-3">
                 <div>
-                  <h3 className="font-display font-bold text-sm text-white">Tuning Panel: {editingCap.title}</h3>
+                  <h3 className="font-display font-bold text-sm text-text-primary">Tuning Panel: {editingCap.title}</h3>
                   <span className="text-[10px] text-text-muted font-mono">Tuning Module ID: {editingCap.key.toUpperCase()}</span>
                 </div>
                 <button 
                   onClick={() => setEditingCap(null)} 
-                  className="text-text-muted hover:text-white p-1 rounded cursor-pointer min-h-[44px]"
+                  className="text-text-muted hover:text-text-primary p-1 rounded cursor-pointer min-h-[44px]"
                 >
                   <Icons.X className="w-5 h-5" />
                 </button>
@@ -1019,7 +1019,7 @@ function PromptsModule() {
   return (
     <div className="space-y-5 animate-fade-in relative">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">AI Prompt Template Engine</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">AI Prompt Template Engine</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Write, version, and test core system prompts. Dynamic curly brace variables are highlighted automatically.
         </p>
@@ -1065,7 +1065,7 @@ function PromptsModule() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => handleEditClick(p)}
-                      className="inline-flex items-center space-x-1.5 bg-surface border border-border-custom hover:border-primary/45 text-text-secondary hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer min-h-[32px]"
+                      className="inline-flex items-center space-x-1.5 bg-surface border border-border-custom hover:border-primary/45 text-text-secondary hover:text-text-primary text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer min-h-[32px]"
                     >
                       <Icons.Terminal className="w-3.5 h-3.5 text-primary" />
                       <span>Edit & Test Run</span>
@@ -1088,12 +1088,12 @@ function PromptsModule() {
               
               <div className="flex justify-between items-center border-b border-border-custom pb-3">
                 <div>
-                  <h3 className="font-display font-bold text-sm text-white">System Prompt Architect: {editingPrompt.key}</h3>
+                  <h3 className="font-display font-bold text-sm text-text-primary">System Prompt Architect: {editingPrompt.key}</h3>
                   <span className="text-[10px] text-text-muted font-mono">{editingPrompt.capability}</span>
                 </div>
                 <button 
                   onClick={() => setEditingPrompt(null)} 
-                  className="text-text-muted hover:text-white p-1 rounded cursor-pointer min-h-[44px]"
+                  className="text-text-muted hover:text-text-primary p-1 rounded cursor-pointer min-h-[44px]"
                 >
                   <Icons.X className="w-5 h-5" />
                 </button>
@@ -1252,7 +1252,7 @@ function FeatureFlagsModule() {
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">Enterprise Feature Toggles & Guards</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Enterprise Feature Toggles & Guards</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Enable or restrict modular IndusMind components on a per-tenant (refinery branch) or per-role access level basis.
         </p>
@@ -1263,7 +1263,7 @@ function FeatureFlagsModule() {
           <div key={flag.key} className="bg-background-custom border border-border-custom rounded-xl p-5 hover:border-primary/20 transition-all">
             <div className="flex justify-between items-start border-b border-border-custom/50 pb-3 mb-4">
               <div>
-                <h3 className="font-display font-bold text-sm text-white flex items-center space-x-2">
+                <h3 className="font-display font-bold text-sm text-text-primary flex items-center space-x-2">
                   <span>{flag.title}</span>
                   <span className="font-mono text-[9px] text-text-muted uppercase">[{flag.key}]</span>
                 </h3>
@@ -1362,7 +1362,7 @@ function AuditLogModule() {
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">Cryptographic Security Audit Ledger</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Cryptographic Security Audit Ledger</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Read-only, append-only operational chain recording precise user logins, policy modifications, and AI prompt adjustments.
         </p>
@@ -1453,12 +1453,12 @@ function AuditLogModule() {
             <div className="space-y-5 text-xs flex-1">
               <div className="flex justify-between items-center border-b border-border-custom pb-3">
                 <div>
-                  <h3 className="font-display font-bold text-sm text-white">Cryptographic Node State Delta Viewer</h3>
+                  <h3 className="font-display font-bold text-sm text-text-primary">Cryptographic Node State Delta Viewer</h3>
                   <span className="text-[10px] text-text-muted font-mono">Record Verification Signature: secure-hash-{selectedRecord.id}</span>
                 </div>
                 <button 
                   onClick={() => setSelectedRecord(null)} 
-                  className="text-text-muted hover:text-white p-1 rounded cursor-pointer min-h-[44px]"
+                  className="text-text-muted hover:text-text-primary p-1 rounded cursor-pointer min-h-[44px]"
                 >
                   <Icons.X className="w-5 h-5" />
                 </button>
@@ -1468,7 +1468,7 @@ function AuditLogModule() {
                 <div className="grid grid-cols-2 gap-4 bg-background-custom p-3.5 rounded-xl border border-border-custom font-mono text-[10px] text-text-secondary">
                   <div>
                     <span className="text-text-muted uppercase">OPERATOR:</span>
-                    <p className="font-sans font-bold text-white mt-0.5">{selectedRecord.actor}</p>
+                    <p className="font-sans font-bold text-text-primary mt-0.5">{selectedRecord.actor}</p>
                   </div>
                   <div>
                     <span className="text-text-muted uppercase">ACTION:</span>
@@ -1541,7 +1541,7 @@ function IngestionModule() {
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">Structured Document Ingestion Pipeline</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Structured Document Ingestion Pipeline</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Real-time status of OISD ingestion threads, vector embedding indexing queues, and failed parsing jobs.
         </p>
@@ -1558,7 +1558,7 @@ function IngestionModule() {
           <div key={i} className="bg-background-custom border border-border-custom rounded-xl p-4 flex flex-col justify-between">
             <span className="font-mono text-[9px] font-bold text-text-muted uppercase tracking-wider">{card.label}</span>
             <div className="mt-1.5 flex justify-between items-baseline">
-              <span className="font-display text-lg font-bold text-white">{card.count}</span>
+              <span className="font-display text-lg font-bold text-text-primary">{card.count}</span>
               <span className={`font-mono text-[8px] font-bold px-1.5 rounded uppercase ${
                 card.status === 'ok' ? 'bg-status-ok/10 text-status-ok' : 'bg-status-warn/10 text-status-warn'
               }`}>
@@ -1695,7 +1695,7 @@ function LookupsModule() {
     <div className="space-y-5 animate-fade-in">
       <div className="border-b border-border-custom pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight">Global Schema Dictionary Tables (Lookups)</h2>
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Global Schema Dictionary Tables (Lookups)</h2>
           <p className="text-xs text-text-secondary mt-0.5">
             Configure dropdown options, plant names, and compliance area selections mapped into general dropdown elements.
           </p>
@@ -1880,7 +1880,7 @@ function SystemHealthModule() {
   return (
     <div className="space-y-5 animate-fade-in text-xs">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">System Node Telemetry & Diagnostic Health</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">System Node Telemetry & Diagnostic Health</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Real-time performance measurements of API server request latency, error distribution curves, and database node status.
         </p>
@@ -1945,7 +1945,7 @@ function SystemHealthModule() {
             <div key={i} className="bg-background-custom border border-border-custom rounded-xl p-4 space-y-3 hover:border-primary/20 transition-colors">
               <div className="flex justify-between items-start">
                 <div>
-                  <h4 className="font-display font-semibold text-white text-xs">{dep.name}</h4>
+                  <h4 className="font-display font-semibold text-text-primary text-xs">{dep.name}</h4>
                   <span className="font-mono text-[9px] text-text-muted uppercase mt-0.5 block">{dep.type}</span>
                 </div>
                 <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-status-ok/10 text-status-ok border border-status-ok/20">
@@ -1956,11 +1956,11 @@ function SystemHealthModule() {
               <div className="grid grid-cols-3 gap-2 border-t border-border-custom/40 pt-2.5 text-[10px] font-mono">
                 <div>
                   <span className="text-text-muted text-[8px] uppercase">Ping Rate</span>
-                  <p className="font-bold text-white mt-0.5">{dep.latency}</p>
+                  <p className="font-bold text-text-primary mt-0.5">{dep.latency}</p>
                 </div>
                 <div>
                   <span className="text-text-muted text-[8px] uppercase">Uptime Avg</span>
-                  <p className="font-bold text-white mt-0.5">{dep.uptime}</p>
+                  <p className="font-bold text-text-primary mt-0.5">{dep.uptime}</p>
                 </div>
                 <div>
                   <span className="text-text-muted text-[8px] uppercase">Load State</span>
@@ -2087,7 +2087,7 @@ function NotificationTemplatesModule() {
     <div className="space-y-6">
       <div className="border-b border-border-custom pb-4 flex justify-between items-center">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight">Notification Template Manager</h2>
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Notification Template Manager</h2>
           <p className="text-xs text-text-muted mt-0.5">Edit alert headers and operational templates with dynamic syntax tokens.</p>
         </div>
       </div>
@@ -2107,7 +2107,7 @@ function NotificationTemplatesModule() {
           <tbody className="divide-y divide-border-custom/40">
             {templates.map(tpl => (
               <tr key={tpl.id} className="hover:bg-background-custom/30 transition-colors">
-                <td className="p-3 font-mono text-white font-semibold select-all">
+                <td className="p-3 font-mono text-text-primary font-semibold select-all">
                   {tpl.event}
                 </td>
                 <td className="p-3 font-mono">
@@ -2400,7 +2400,7 @@ function AiObservabilityModule() {
     <div className="space-y-6 animate-fade-in text-xs font-sans">
       <div className="border-b border-border-custom pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight flex items-center gap-2">
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight flex items-center gap-2">
             <Icons.Eye className="w-5 h-5 text-primary" />
             <span>AI LLM Observability & Quality Ledger</span>
           </h2>
@@ -2415,7 +2415,7 @@ function AiObservabilityModule() {
         <div className="bg-surface-muted/30 border border-border-custom rounded-xl p-4 space-y-1.5 hover:border-primary/20 transition-all shadow-sm">
           <span className="font-mono text-[9px] font-bold text-text-muted uppercase block">Cumulative API Calls</span>
           <div className="flex justify-between items-baseline">
-            <span className="font-display font-bold text-lg text-white">{summary.totalRequests.toLocaleString()}</span>
+            <span className="font-display font-bold text-lg text-text-primary">{summary.totalRequests.toLocaleString()}</span>
             <span className="font-mono text-[9px] font-bold text-status-ok flex items-center space-x-0.5">
               <span>▲ 14.2%</span>
             </span>
@@ -2426,7 +2426,7 @@ function AiObservabilityModule() {
         <div className="bg-surface-muted/30 border border-border-custom rounded-xl p-4 space-y-1.5 hover:border-primary/20 transition-all shadow-sm">
           <span className="font-mono text-[9px] font-bold text-text-muted uppercase block">Mean Network Latency</span>
           <div className="flex justify-between items-baseline">
-            <span className="font-display font-bold text-lg text-white">{summary.avgLatency} ms</span>
+            <span className="font-display font-bold text-lg text-text-primary">{summary.avgLatency} ms</span>
             <span className="font-mono text-[9px] font-bold text-status-ok">▼ 45ms optimizer</span>
           </div>
           <p className="text-[10px] text-text-muted mt-0.5">Average parsing latency threshold.</p>
@@ -2435,7 +2435,7 @@ function AiObservabilityModule() {
         <div className="bg-surface-muted/30 border border-border-custom rounded-xl p-4 space-y-1.5 hover:border-primary/20 transition-all shadow-sm">
           <span className="font-mono text-[9px] font-bold text-text-muted uppercase block">Calculated API Expense</span>
           <div className="flex justify-between items-baseline">
-            <span className="font-display font-bold text-lg text-white">${summary.totalCost.toFixed(2)}</span>
+            <span className="font-display font-bold text-lg text-text-primary">${summary.totalCost.toFixed(2)}</span>
             <span className="font-mono text-[9px] font-bold text-primary">Est. token weights</span>
           </div>
           <p className="text-[10px] text-text-muted mt-0.5">Based on context input/output rates.</p>
@@ -2444,7 +2444,7 @@ function AiObservabilityModule() {
         <div className="bg-surface-muted/30 border border-border-custom rounded-xl p-4 space-y-1.5 hover:border-primary/20 transition-all shadow-sm">
           <span className="font-mono text-[9px] font-bold text-text-muted uppercase block">Semantic Cache Hits</span>
           <div className="flex justify-between items-baseline">
-            <span className="font-display font-bold text-lg text-white">{summary.avgCacheHit}%</span>
+            <span className="font-display font-bold text-lg text-text-primary">{summary.avgCacheHit}%</span>
             <span className="font-mono text-[9px] font-bold text-status-ok">▲ 3.4% hitrate</span>
           </div>
           <div className="w-full bg-[#0E1316] h-1.5 rounded-full overflow-hidden mt-1.5 border border-border-custom/40">
@@ -2531,7 +2531,7 @@ function AiObservabilityModule() {
             <tbody className="divide-y divide-border-custom/30 font-mono text-[11px]">
               {models.map((model: any) => (
                 <tr key={model.name} className="hover:bg-background-custom/20 transition-colors">
-                  <td className="p-2.5 text-white font-semibold">{model.name}</td>
+                  <td className="p-2.5 text-text-primary font-semibold">{model.name}</td>
                   <td className="p-2.5 text-right text-text-secondary">{model.requests.toLocaleString()}</td>
                   <td className="p-2.5 text-right text-text-secondary">{model.percentage}%</td>
                   <td className="p-2.5 text-right text-text-secondary">{model.latency} ms</td>
@@ -2576,7 +2576,7 @@ function AiObservabilityModule() {
                         {fb.reason.split('_').join(' ')}
                       </span>
                     </td>
-                    <td className="p-2.5 text-white italic">
+                    <td className="p-2.5 text-text-primary italic">
                       "{fb.comment || '(No written commentary provided)'}"
                     </td>
                   </tr>
@@ -2747,7 +2747,7 @@ function ReportsModule() {
 
       {/* Heading Block */}
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight">Scheduled Reports & Generation Engine</h2>
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">Scheduled Reports & Generation Engine</h2>
         <p className="text-xs text-text-secondary mt-0.5">
           Manage regulatory report schedules, dispatch target lists, and review compiled system audit PDF logs.
         </p>
@@ -2760,7 +2760,7 @@ function ReportsModule() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center space-x-1.5 pb-1">
             <Icons.Calendar className="w-4 h-4 text-primary" />
-            <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Scheduled Templates</span>
+            <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">Scheduled Templates</span>
           </div>
 
           {loadingTemplates ? (
@@ -2773,7 +2773,7 @@ function ReportsModule() {
                 <div key={tpl.id} className="bg-background-custom/35 border border-border-custom hover:border-border-custom/80 p-4 rounded-xl flex flex-col justify-between space-y-4 transition-all">
                   <div className="space-y-3">
                     <div className="flex justify-between items-start">
-                      <span className="font-display text-xs font-bold text-white uppercase tracking-wide">
+                      <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wide">
                         {tpl.name}
                       </span>
                       <span className="font-mono text-[8px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded uppercase">
@@ -2804,7 +2804,7 @@ function ReportsModule() {
                   <div className="pt-2 border-t border-border-custom/50 flex justify-between gap-2">
                     <button
                       onClick={() => handleOpenEdit(tpl)}
-                      className="flex-1 py-1.5 bg-surface-muted hover:bg-surface border border-border-custom text-white text-[10px] font-mono font-bold rounded transition-colors cursor-pointer flex items-center justify-center space-x-1"
+                      className="flex-1 py-1.5 bg-surface-muted hover:bg-surface border border-border-custom text-text-primary text-[10px] font-mono font-bold rounded transition-colors cursor-pointer flex items-center justify-center space-x-1"
                     >
                       <Icons.Settings className="w-3 h-3 text-text-muted" />
                       <span>EDIT SCHEDULE</span>
@@ -2827,11 +2827,11 @@ function ReportsModule() {
         <div className="space-y-4">
           <div className="flex items-center space-x-1.5 pb-1">
             <Icons.ShieldAlert className="w-4 h-4 text-primary" />
-            <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Compliance Context</span>
+            <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">Compliance Context</span>
           </div>
 
           <div className="bg-background-custom/35 border border-border-custom p-4 rounded-xl space-y-3 text-xs leading-relaxed">
-            <h4 className="font-display text-xs font-bold text-white uppercase tracking-wide">
+            <h4 className="font-display text-xs font-bold text-text-primary uppercase tracking-wide">
               Automated Plant Audit Mandate
             </h4>
             <p className="text-text-secondary">
@@ -2841,7 +2841,7 @@ function ReportsModule() {
               Report compiling triggers automated validation runs, matching OEE telemetry alerts, compliance safety indices, and technician work orders against registered nodes.
             </p>
             <div className="p-3 bg-primary/5 border border-primary/20 rounded font-mono text-[10px] text-text-secondary">
-              SECURE INTEGRITY SEAL: <span className="text-white font-bold">SHA-256 REGISTERED</span>
+              SECURE INTEGRITY SEAL: <span className="text-text-primary font-bold">SHA-256 REGISTERED</span>
             </div>
           </div>
         </div>
@@ -2853,7 +2853,7 @@ function ReportsModule() {
         <div className="flex items-center justify-between border-b border-border-custom pb-2">
           <div className="flex items-center space-x-1.5">
             <Icons.History className="w-4 h-4 text-primary" />
-            <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Historical Runs Ledger</span>
+            <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">Historical Runs Ledger</span>
           </div>
           <span className="text-[10px] font-mono text-text-muted uppercase">Showing Latest Generation Instances</span>
         </div>
@@ -2877,7 +2877,7 @@ function ReportsModule() {
               <tbody className="divide-y divide-border-custom/40">
                 {runs.map(run => (
                   <tr key={run.id} className="hover:bg-surface-muted/30">
-                    <td className="px-4 py-3.5 font-mono text-white font-semibold">
+                    <td className="px-4 py-3.5 font-mono text-text-primary font-semibold">
                       {run.id}
                     </td>
                     <td className="px-4 py-3.5 text-text-primary font-medium">
@@ -2954,8 +2954,8 @@ function ReportsModule() {
 
               <form onSubmit={handleSaveTemplate} className="p-5 space-y-4 text-xs">
                 <div className="p-3 bg-primary/5 rounded border border-primary/20 font-mono text-[10px] text-text-secondary">
-                  TARGET TEMPLATE ID: <strong className="text-white">{editingTemplate.id}</strong>
-                  <span className="block mt-1">REPORT NAME: <strong className="text-white uppercase">{editingTemplate.name}</strong></span>
+                  TARGET TEMPLATE ID: <strong className="text-text-primary">{editingTemplate.id}</strong>
+                  <span className="block mt-1">REPORT NAME: <strong className="text-text-primary uppercase">{editingTemplate.name}</strong></span>
                 </div>
 
                 {/* Cron Schedule */}
@@ -2967,7 +2967,7 @@ function ReportsModule() {
                     value={editSchedule}
                     onChange={(e) => setEditSchedule(e.target.value)}
                     placeholder="e.g. 0 6 * * *"
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary"
+                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-text-primary focus:outline-none focus:border-primary"
                   />
                   <span className="block text-[9px] text-text-muted font-mono uppercase mt-1">
                     Standard 5-field unix cron interval. Example: '0 6 * * *' generates every shift cycle.
@@ -2983,7 +2983,7 @@ function ReportsModule() {
                     value={editRecipients}
                     onChange={(e) => setEditRecipients(e.target.value)}
                     placeholder="engineer@indusmind.io, manager@indusmind.io"
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary resize-none"
+                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-text-primary focus:outline-none focus:border-primary resize-none"
                   />
                   <span className="block text-[9px] text-text-muted font-mono uppercase mt-1">
                     Provide comma delimited email strings. Notifications with PDF logs are compiled and dispatched directly.
@@ -3173,7 +3173,7 @@ function ExtractionRulesModule() {
     return (
       <div className="p-8 text-center border border-border-custom rounded-xl bg-background-custom/10">
         <Icons.ShieldAlert className="w-12 h-12 text-status-critical mx-auto mb-4" />
-        <h3 className="text-sm font-bold text-white uppercase tracking-wider font-display">Access Control Restriction</h3>
+        <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider font-display">Access Control Restriction</h3>
         <p className="text-text-secondary text-xs mt-1">You do not possess the required permission [<strong>extraction.rules.manage</strong>] to access this node module.</p>
       </div>
     );
@@ -3192,7 +3192,7 @@ function ExtractionRulesModule() {
       {/* Heading Block */}
       <div className="border-b border-border-custom pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight">AI SOP & Metadata Extraction Rules</h2>
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">AI SOP & Metadata Extraction Rules</h2>
           <p className="text-xs text-text-secondary mt-0.5">
             Configure regex-based and LLM-assisted structural entity matching rules used in plant compliance ingestion pipelines.
           </p>
@@ -3228,7 +3228,7 @@ function ExtractionRulesModule() {
             <tbody className="divide-y divide-border-custom/40">
               {rules.map(rule => (
                 <tr key={rule.id} className="hover:bg-surface-muted/30">
-                  <td className="px-4 py-3.5 font-display text-white font-semibold">
+                  <td className="px-4 py-3.5 font-display text-text-primary font-semibold">
                     <span className={`px-2 py-0.5 rounded font-mono text-[9px] border ${getEntityColorClass(rule.entityType)}`}>
                       {rule.entityType}
                     </span>
@@ -3262,7 +3262,7 @@ function ExtractionRulesModule() {
                   <td className="px-4 py-3.5 text-right">
                     <button
                       onClick={() => handleOpenEdit(rule)}
-                      className="inline-flex items-center space-x-1 px-2.5 py-1 bg-surface-muted hover:bg-surface text-white border border-border-custom rounded font-mono text-[9px] font-bold transition-colors cursor-pointer"
+                      className="inline-flex items-center space-x-1 px-2.5 py-1 bg-surface-muted hover:bg-surface text-text-primary border border-border-custom rounded font-mono text-[9px] font-bold transition-colors cursor-pointer"
                     >
                       <Icons.Edit className="w-3 h-3 text-text-muted" />
                       <span>EDIT / TEST RULE</span>
@@ -3300,7 +3300,7 @@ function ExtractionRulesModule() {
               <form onSubmit={handleSave} className="p-5 space-y-4 text-xs">
                 {editingRule.id && (
                   <div className="p-3 bg-primary/5 rounded border border-primary/20 font-mono text-[10px] text-text-secondary">
-                    RULE TARGET ID: <strong className="text-white">{editingRule.id}</strong>
+                    RULE TARGET ID: <strong className="text-text-primary">{editingRule.id}</strong>
                   </div>
                 )}
 
@@ -3313,7 +3313,7 @@ function ExtractionRulesModule() {
                       value={editingRule.entityType || ''}
                       onChange={(e) => setEditingRule({ ...editingRule, entityType: e.target.value })}
                       placeholder="e.g. Pressure Indicator"
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none focus:border-primary"
                     />
                   </div>
 
@@ -3325,7 +3325,7 @@ function ExtractionRulesModule() {
                       value={editingRule.version || ''}
                       onChange={(e) => setEditingRule({ ...editingRule, version: e.target.value })}
                       placeholder="e.g. V1.0"
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none focus:border-primary"
                     />
                   </div>
                 </div>
@@ -3373,7 +3373,7 @@ function ExtractionRulesModule() {
                       max={100}
                       value={editingRule.priority || 1}
                       onChange={(e) => setEditingRule({ ...editingRule, priority: Number(e.target.value) })}
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none focus:border-primary"
                     />
                   </div>
 
@@ -3386,7 +3386,7 @@ function ExtractionRulesModule() {
                       max={100}
                       value={editingRule.confidence || 90}
                       onChange={(e) => setEditingRule({ ...editingRule, confidence: Number(e.target.value) })}
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none focus:border-primary"
                     />
                   </div>
                 </div>
@@ -3400,7 +3400,7 @@ function ExtractionRulesModule() {
                       value={editingRule.pattern || ''}
                       onChange={(e) => setEditingRule({ ...editingRule, pattern: e.target.value })}
                       placeholder="e.g. [A-Z]{2}-\d+"
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary"
+                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-text-primary focus:outline-none focus:border-primary"
                     />
                     <span className="block text-[9px] text-text-muted font-sans mt-1">
                       Provide a standard javascript regex syntax pattern. Do not include leading/trailing slashes.
@@ -3414,7 +3414,7 @@ function ExtractionRulesModule() {
                       value={editingRule.hint || ''}
                       onChange={(e) => setEditingRule({ ...editingRule, hint: e.target.value })}
                       placeholder="e.g. Match temperature mentions in text, extracting both the numerical value and scale unit."
-                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary resize-none"
+                      className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none focus:border-primary resize-none"
                     />
                   </div>
                 )}
@@ -3422,7 +3422,7 @@ function ExtractionRulesModule() {
                 {/* LIVE RULE TESTER PASS */}
                 <div className="border border-border-custom/50 rounded-xl p-4 bg-background-custom/25 space-y-3">
                   <div className="flex items-center justify-between border-b border-border-custom pb-2">
-                    <span className="font-mono text-[10px] font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+                    <span className="font-mono text-[10px] font-bold text-text-primary uppercase tracking-wider flex items-center space-x-1.5">
                       <Icons.PlayCircle className="w-3.5 h-3.5 text-primary" />
                       <span>Extraction dry-run tester</span>
                     </span>
@@ -3452,7 +3452,7 @@ function ExtractionRulesModule() {
                       rows={2}
                       value={sampleText}
                       onChange={(e) => setSampleText(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none text-[11px] resize-none text-left"
+                      className="w-full px-2.5 py-1.5 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none text-[11px] resize-none text-left"
                     />
                   </div>
 
@@ -3725,7 +3725,7 @@ function IntegrationsModule() {
       {/* Heading Block */}
       <div className="border-b border-border-custom pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="font-display text-lg font-bold text-white tracking-tight text-left">System Integrations & API Access</h2>
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight text-left">System Integrations & API Access</h2>
           <p className="text-xs text-text-secondary mt-0.5 text-left">
             Manage third-party telemetry ingest API tokens, register outbound notification webhooks, and audit compliance message delivery status logs.
           </p>
@@ -3755,7 +3755,7 @@ function IntegrationsModule() {
       {activeTab === 'api-keys' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Registered Client Ingest Keys</span>
+            <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">Registered Client Ingest Keys</span>
             <button
               onClick={() => setIsCreateKeyOpen(true)}
               className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white font-mono text-xs font-bold rounded flex items-center space-x-1 cursor-pointer transition-colors"
@@ -3786,7 +3786,7 @@ function IntegrationsModule() {
                 <tbody className="divide-y divide-border-custom/40">
                   {apiKeys.map(key => (
                     <tr key={key.id} className="hover:bg-surface-muted/30">
-                      <td className="px-4 py-3.5 font-display text-white font-semibold">
+                      <td className="px-4 py-3.5 font-display text-text-primary font-semibold">
                         {key.name}
                       </td>
                       <td className="px-4 py-3.5 font-mono text-text-secondary text-[11px]">
@@ -3840,7 +3840,7 @@ function IntegrationsModule() {
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Outbound Webhook Recipient Targets</span>
+              <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">Outbound Webhook Recipient Targets</span>
               <button
                 onClick={handleOpenWebhookCreate}
                 className="px-3 py-1.5 bg-primary hover:bg-primary/90 text-white font-mono text-xs font-bold rounded flex items-center space-x-1 cursor-pointer transition-colors"
@@ -3860,7 +3860,7 @@ function IntegrationsModule() {
                   <div key={wh.id} className="bg-background-custom/35 border border-border-custom hover:border-border-custom/80 p-4 rounded-xl flex flex-col justify-between space-y-4 transition-all text-left">
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
-                        <span className="font-display text-xs font-bold text-white uppercase tracking-wide truncate max-w-[70%]">
+                        <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wide truncate max-w-[70%]">
                           {wh.url}
                         </span>
                         <span className="font-mono text-[8px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded uppercase font-bold">
@@ -3897,7 +3897,7 @@ function IntegrationsModule() {
                       </button>
                       <button
                         onClick={() => handleOpenWebhookEdit(wh)}
-                        className="flex-1 py-1 bg-surface-muted hover:bg-surface border border-border-custom text-white text-[9px] font-mono font-bold rounded transition-colors cursor-pointer flex items-center justify-center space-x-1"
+                        className="flex-1 py-1 bg-surface-muted hover:bg-surface border border-border-custom text-text-primary text-[9px] font-mono font-bold rounded transition-colors cursor-pointer flex items-center justify-center space-x-1"
                       >
                         <Icons.Settings className="w-3 h-3 text-text-muted" />
                         <span>EDIT TARGET</span>
@@ -3912,7 +3912,7 @@ function IntegrationsModule() {
           {/* Webhook deliveries ledger */}
           <div className="space-y-4 pt-4 border-t border-border-custom text-left">
             <div className="flex items-center justify-between border-b border-border-custom pb-2">
-              <span className="font-display text-xs font-bold text-white uppercase tracking-wider">Outgoing Delivery Attempt Ledger</span>
+              <span className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">Outgoing Delivery Attempt Ledger</span>
               <span className="text-[9px] font-mono text-text-muted uppercase">REAL-TIME WEBHOOK METRICS</span>
             </div>
 
@@ -3937,7 +3937,7 @@ function IntegrationsModule() {
                   <tbody className="divide-y divide-border-custom/40 text-left">
                     {deliveries.map(del => (
                       <tr key={del.id} className="hover:bg-surface-muted/30">
-                        <td className="px-4 py-3.5 font-mono text-white font-semibold">
+                        <td className="px-4 py-3.5 font-mono text-text-primary font-semibold">
                           {del.id}
                         </td>
                         <td className="px-4 py-3.5 font-mono text-text-primary text-[11px]">
@@ -3966,7 +3966,7 @@ function IntegrationsModule() {
                         <td className="px-4 py-3.5 text-right flex justify-end space-x-2">
                           <button
                             onClick={() => setSelectedPayload(del.payload)}
-                            className="inline-flex items-center space-x-1 px-2.5 py-1 bg-surface-muted hover:bg-surface text-white border border-border-custom rounded font-mono text-[9px] font-bold transition-colors cursor-pointer"
+                            className="inline-flex items-center space-x-1 px-2.5 py-1 bg-surface-muted hover:bg-surface text-text-primary border border-border-custom rounded font-mono text-[9px] font-bold transition-colors cursor-pointer"
                           >
                             <Icons.Code className="w-3 h-3 text-text-muted" />
                             <span>VIEW JSON</span>
@@ -4000,8 +4000,8 @@ function IntegrationsModule() {
           <div className="fixed inset-0" onClick={() => setIsCreateKeyOpen(false)} />
           <div className="bg-surface border border-border-custom w-full max-w-md rounded-xl p-5 shadow-2xl relative z-10 space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-border-custom">
-              <span className="font-display font-bold text-sm text-white uppercase tracking-wider">Generate Client Token Credentials</span>
-              <button onClick={() => setIsCreateKeyOpen(false)} className="text-text-secondary hover:text-white cursor-pointer">
+              <span className="font-display font-bold text-sm text-text-primary uppercase tracking-wider">Generate Client Token Credentials</span>
+              <button onClick={() => setIsCreateKeyOpen(false)} className="text-text-secondary hover:text-text-primary cursor-pointer">
                 <Icons.X className="w-4 h-4" />
               </button>
             </div>
@@ -4015,7 +4015,7 @@ function IntegrationsModule() {
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                   placeholder="e.g. Reliance Jamnagar SCADA Node"
-                  className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-white font-sans focus:outline-none focus:border-primary"
+                  className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded text-text-primary font-sans focus:outline-none focus:border-primary"
                 />
               </div>
 
@@ -4066,14 +4066,14 @@ function IntegrationsModule() {
           <div className="bg-surface border border-status-warn/40 w-full max-w-md rounded-xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center space-x-2 text-status-warn">
               <Icons.ShieldAlert className="w-5 h-5" />
-              <span className="font-display font-bold text-sm text-white uppercase tracking-wider">Secure token compiled once</span>
+              <span className="font-display font-bold text-sm text-text-primary uppercase tracking-wider">Secure token compiled once</span>
             </div>
 
             <p className="text-text-secondary text-xs leading-relaxed text-left">
               Copy this API client ingestion token immediately. It is stored securely in hashed format on the master nodes, and <strong>you won't see this again</strong> under any circumstances.
             </p>
 
-            <div className="p-3 bg-background-custom rounded-lg border border-border-custom font-mono text-[11px] text-white select-all break-all flex items-center justify-between gap-4">
+            <div className="p-3 bg-background-custom rounded-lg border border-border-custom font-mono text-[11px] text-text-primary select-all break-all flex items-center justify-between gap-4">
               <span>{oneTimeRawKey}</span>
               <button
                 onClick={() => {
@@ -4125,7 +4125,7 @@ function IntegrationsModule() {
               <form onSubmit={handleSaveWebhook} className="p-5 space-y-4 text-xs">
                 {editingWebhook.id && (
                   <div className="p-3 bg-primary/5 rounded border border-primary/20 font-mono text-[10px] text-text-secondary text-left">
-                    WEBHOOK TARGET ID: <strong className="text-white">{editingWebhook.id}</strong>
+                    WEBHOOK TARGET ID: <strong className="text-text-primary">{editingWebhook.id}</strong>
                   </div>
                 )}
 
@@ -4137,7 +4137,7 @@ function IntegrationsModule() {
                     value={editingWebhook.url || ''}
                     onChange={(e) => setEditingWebhook({ ...editingWebhook, url: e.target.value })}
                     placeholder="https://api.yourplantserver.com/v1/webhook"
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-white focus:outline-none focus:border-primary"
+                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-sans text-text-primary focus:outline-none focus:border-primary"
                   />
                 </div>
 
@@ -4150,7 +4150,7 @@ function IntegrationsModule() {
                       value={editingWebhook.secret || ''}
                       onChange={(e) => setEditingWebhook({ ...editingWebhook, secret: e.target.value })}
                       placeholder="whsec_xxxxx"
-                      className="flex-1 px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary"
+                      className="flex-1 px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-text-primary focus:outline-none focus:border-primary"
                     />
                     <button
                       type="button"
@@ -4214,7 +4214,7 @@ function IntegrationsModule() {
           <div className="bg-surface border border-border-custom w-full max-w-lg rounded-xl p-5 shadow-2xl relative z-10 space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-border-custom">
               <span className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider font-sans text-left">Outbound Webhook payload logs</span>
-              <button onClick={() => setSelectedPayload(null)} className="text-text-secondary hover:text-white cursor-pointer">
+              <button onClick={() => setSelectedPayload(null)} className="text-text-secondary hover:text-text-primary cursor-pointer">
                 <Icons.X className="w-4 h-4" />
               </button>
             </div>
@@ -4226,7 +4226,7 @@ function IntegrationsModule() {
             <div className="flex justify-end">
               <button
                 onClick={() => setSelectedPayload(null)}
-                className="px-4 py-2 bg-surface-muted hover:bg-surface border border-border-custom text-white rounded font-mono text-xs font-bold cursor-pointer transition-colors"
+                className="px-4 py-2 bg-surface-muted hover:bg-surface border border-border-custom text-text-primary rounded font-mono text-xs font-bold cursor-pointer transition-colors"
               >
                 CLOSE VIEWER
               </button>

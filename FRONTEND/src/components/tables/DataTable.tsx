@@ -445,7 +445,7 @@ export function DataTable<TData>({
       <div className="flex flex-wrap items-center justify-between gap-2 bg-surface p-3 border border-border-custom rounded-lg text-xs">
         <div className="flex items-center space-x-3">
           <span className="font-mono text-text-muted uppercase text-[10px] tracking-wider">
-            Total records: <strong className="text-white">{total}</strong>
+            Total records: <strong className="text-text-primary">{total}</strong>
           </span>
         </div>
 
@@ -694,7 +694,7 @@ export function DataTable<TData>({
               </button>
               
               <span className="font-mono text-[10px] uppercase text-text-muted px-2">
-                Page <strong className="text-white">{table.getState().pagination.pageIndex + 1}</strong> of <strong className="text-white">{pageCount || 1}</strong>
+                Page <strong className="text-text-primary">{table.getState().pagination.pageIndex + 1}</strong> of <strong className="text-text-primary">{pageCount || 1}</strong>
               </span>
 
               <button

@@ -84,7 +84,7 @@ export function ComplianceOverview({
           <div className="space-y-2 z-10">
             <span className="block text-[10px] font-mono text-text-muted uppercase tracking-wider">Overall Compliance Score</span>
             <div className="flex items-baseline space-x-1">
-              <span className="text-3xl font-display font-bold text-white">88.5%</span>
+              <span className="text-3xl font-display font-bold text-text-primary">88.5%</span>
               <span className="text-[10px] font-mono text-emerald-400 font-semibold flex items-center">
                 +1.2% this Q
               </span>
@@ -100,7 +100,7 @@ export function ComplianceOverview({
         <div className="bg-surface border border-border-custom p-4 rounded-xl flex items-center justify-between relative overflow-hidden group">
           <div className="space-y-1.5 z-10">
             <span className="block text-[10px] font-mono text-text-muted uppercase tracking-wider">Active Regulatory Gaps</span>
-            <div className="text-3xl font-display font-bold text-white">{gapsCount.total}</div>
+            <div className="text-3xl font-display font-bold text-text-primary">{gapsCount.total}</div>
             <div className="flex gap-2 text-[9px] font-mono">
               <span className="text-red-500 font-bold">{gapsCount.critical} Crit</span>
               <span className="text-amber-500 font-bold">{gapsCount.high + gapsCount.medium} High/Med</span>
@@ -116,7 +116,7 @@ export function ComplianceOverview({
         <div className="bg-surface border border-border-custom p-4 rounded-xl flex items-center justify-between relative overflow-hidden group">
           <div className="space-y-2 z-10">
             <span className="block text-[10px] font-mono text-text-muted uppercase tracking-wider">Audits (Next 30 Days)</span>
-            <div className="text-3xl font-display font-bold text-white">2</div>
+            <div className="text-3xl font-display font-bold text-text-primary">2</div>
             <span className="block text-[10px] text-text-secondary flex items-center">
               <Clock className="w-3 h-3 mr-1 text-amber-500" /> Next: OISD Audit July 25
             </span>
@@ -130,7 +130,7 @@ export function ComplianceOverview({
         <div className="bg-surface border border-border-custom p-4 rounded-xl flex items-center justify-between relative overflow-hidden group">
           <div className="space-y-2 z-10">
             <span className="block text-[10px] font-mono text-text-muted uppercase tracking-wider">Expiring Certificates</span>
-            <div className="text-3xl font-display font-bold text-white">3</div>
+            <div className="text-3xl font-display font-bold text-text-primary">3</div>
             <span className="block text-[10px] text-text-secondary">PESO valve certificate requires calibration</span>
           </div>
           <div className="p-3 bg-[#F5A524]/5 text-[#F5A524] rounded-lg group-hover:bg-[#F5A524]/10 transition-colors">
@@ -142,7 +142,7 @@ export function ComplianceOverview({
         <div className="bg-surface border border-border-custom p-4 rounded-xl flex items-center justify-between relative overflow-hidden group">
           <div className="space-y-2 z-10">
             <span className="block text-[10px] font-mono text-text-muted uppercase tracking-wider">Overdue Remediations</span>
-            <div className="text-3xl font-display font-bold text-white">1</div>
+            <div className="text-3xl font-display font-bold text-text-primary">1</div>
             <span className="block text-[10px] text-red-500 font-mono font-bold flex items-center">
               FW-P1 testing (147d overdue)
             </span>
@@ -161,7 +161,7 @@ export function ComplianceOverview({
         <div className="xl:col-span-7 bg-surface border border-border-custom rounded-xl p-5 space-y-4">
           <div className="flex justify-between items-center border-b border-border-custom/50 pb-3">
             <div>
-              <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">Regulation × Plant Area Coverage Heatmap</h3>
+              <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider">Regulation × Plant Area Coverage Heatmap</h3>
               <p className="text-[11px] text-text-secondary mt-0.5">Cells show mapped compliance coverage % and current gaps. Click cell to filter gaps.</p>
             </div>
             <div className="flex items-center space-x-2 text-[10px] font-mono">
@@ -191,7 +191,7 @@ export function ComplianceOverview({
                     {/* Regulation Label */}
                     <div 
                       onClick={() => onNavigateToRegulations(reg.id)}
-                      className="text-xs text-white font-mono hover:text-primary hover:underline cursor-pointer font-semibold truncate"
+                      className="text-xs text-text-primary font-mono hover:text-primary hover:underline cursor-pointer font-semibold truncate"
                       title={reg.title}
                     >
                       {reg.code}
@@ -231,7 +231,7 @@ export function ComplianceOverview({
         {/* Gap Trend Chart - 5 Columns equivalent */}
         <div className="xl:col-span-5 bg-surface border border-border-custom rounded-xl p-5 space-y-4">
           <div>
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">Gap Velocity & Trend Analysis</h3>
+            <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider">Gap Velocity & Trend Analysis</h3>
             <p className="text-[11px] text-text-secondary mt-0.5">Historical tracking of regulatory gaps opened, resolved, and active backlog.</p>
           </div>
 
@@ -285,7 +285,7 @@ export function ComplianceOverview({
           <div className="flex justify-between items-center border-b border-border-custom/50 pb-3">
             <div className="flex items-center space-x-2">
               <Bell className="w-4 h-4 text-primary animate-bounce" />
-              <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">Regulatory Change Alerts Feed</h3>
+              <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider">Regulatory Change Alerts Feed</h3>
             </div>
             <span className="text-[10px] font-mono text-text-muted bg-surface-muted border border-border-custom px-2 py-0.5 rounded">
               3 ACTIONS REQUIRED
@@ -327,7 +327,7 @@ export function ComplianceOverview({
                   </div>
                 </div>
 
-                <h4 className="text-xs font-bold text-white mt-1.5 hover:text-primary cursor-pointer flex items-center justify-between" onClick={() => setSelectedAlertId(selectedAlertId === alert.id ? null : alert.id)}>
+                <h4 className="text-xs font-bold text-text-primary mt-1.5 hover:text-primary cursor-pointer flex items-center justify-between" onClick={() => setSelectedAlertId(selectedAlertId === alert.id ? null : alert.id)}>
                   <span>{alert.title}</span>
                   <span className="text-[10px] font-mono text-text-muted font-normal hover:underline ml-2">
                     {selectedAlertId === alert.id ? 'Collapse' : 'Review Impact →'}
@@ -339,7 +339,7 @@ export function ComplianceOverview({
                     <p className="leading-relaxed">{alert.description}</p>
                     
                     <div className="bg-background-custom border border-border-custom p-2.5 rounded font-mono text-[11px] space-y-2">
-                      <div className="text-white font-bold uppercase flex items-center text-[10px]">
+                      <div className="text-text-primary font-bold uppercase flex items-center text-[10px]">
                         <Activity className="w-3.5 h-3.5 mr-1 text-primary" /> AI Impact Assessment:
                       </div>
                       {alert.id === 'AL-2' ? (
@@ -388,7 +388,7 @@ export function ComplianceOverview({
         {/* Quick Links & Scope overview - 4 Columns */}
         <div className="xl:col-span-4 bg-surface border border-border-custom rounded-xl p-5 flex flex-col justify-between">
           <div className="space-y-4">
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider border-b border-border-custom/50 pb-2">Compliance Links</h3>
+            <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider border-b border-border-custom/50 pb-2">Compliance Links</h3>
             
             <div className="space-y-2.5 text-xs">
               <div 
@@ -396,7 +396,7 @@ export function ComplianceOverview({
                 className="p-3 bg-surface-muted/30 border border-border-custom hover:border-primary/50 rounded-lg cursor-pointer flex justify-between items-center group transition-all"
               >
                 <div>
-                  <h4 className="font-bold text-white group-hover:text-primary">Regulation Standards</h4>
+                  <h4 className="font-bold text-text-primary group-hover:text-primary">Regulation Standards</h4>
                   <p className="text-[10px] text-text-secondary mt-0.5">5 Enforced baseline frameworks</p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-primary transition-colors" />
@@ -407,7 +407,7 @@ export function ComplianceOverview({
                 className="p-3 bg-surface-muted/30 border border-border-custom hover:border-primary/50 rounded-lg cursor-pointer flex justify-between items-center group transition-all"
               >
                 <div>
-                  <h4 className="font-bold text-white group-hover:text-primary">Gaps & Deficiencies</h4>
+                  <h4 className="font-bold text-text-primary group-hover:text-primary">Gaps & Deficiencies</h4>
                   <p className="text-[10px] text-text-secondary mt-0.5">4 Active gaps require remediation</p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-primary transition-colors" />
@@ -418,7 +418,7 @@ export function ComplianceOverview({
                 className="p-3 bg-surface-muted/30 border border-border-custom hover:border-primary/50 rounded-lg cursor-pointer flex justify-between items-center group transition-all"
               >
                 <div>
-                  <h4 className="font-bold text-white group-hover:text-primary">Audits & Evidence Packs</h4>
+                  <h4 className="font-bold text-text-primary group-hover:text-primary">Audits & Evidence Packs</h4>
                   <p className="text-[10px] text-text-secondary mt-0.5">Generate immutable proof files</p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-primary transition-colors" />
@@ -427,7 +427,7 @@ export function ComplianceOverview({
           </div>
 
           <div className="mt-5 p-3.5 bg-primary/5 border border-primary/10 rounded-lg text-xs space-y-1.5">
-            <h4 className="font-bold text-white flex items-center">
+            <h4 className="font-bold text-text-primary flex items-center">
               <ShieldCheck className="w-4 h-4 text-primary mr-1" /> Active Baselines
             </h4>
             <p className="text-[11px] text-text-secondary leading-relaxed">

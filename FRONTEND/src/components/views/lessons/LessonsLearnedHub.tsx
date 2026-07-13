@@ -278,7 +278,7 @@ export function LessonsLearnedHub() {
         <div className="space-y-6">
           <button 
             onClick={() => { window.location.hash = '#lessons-learned'; }}
-            className="flex items-center space-x-2 text-xs font-mono text-text-secondary hover:text-white cursor-pointer group"
+            className="flex items-center space-x-2 text-xs font-mono text-text-secondary hover:text-text-primary cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>BACK TO PATTERNS INDEX</span>
@@ -302,12 +302,12 @@ export function LessonsLearnedHub() {
                   </span>
                   <ConfidenceBadge confidence={activeLesson.confidence} />
                 </div>
-                <h1 className="font-display text-xl md:text-2xl font-bold text-white tracking-tight">
+                <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary tracking-tight">
                   {activeLesson.title}
                 </h1>
                 <p className="text-xs text-text-secondary mt-1 flex items-center space-x-2">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
-                  <span>Area: <span className="text-white font-semibold font-mono">{activeLesson.area}</span></span>
+                  <span>Area: <span className="text-text-primary font-semibold font-mono">{activeLesson.area}</span></span>
                   <span>•</span>
                   <span>Downtime Leakage Cost: <span className="text-status-critical font-bold font-mono">{activeLesson.downtimeCost}</span></span>
                 </p>
@@ -319,7 +319,7 @@ export function LessonsLearnedHub() {
                   className={`p-2 rounded border cursor-pointer transition-all flex items-center space-x-2 text-xs font-mono ${
                     activeLesson.isSubscribed
                       ? 'bg-primary text-white border-primary shadow-sm shadow-primary/20'
-                      : 'border-border-custom text-text-secondary hover:text-white hover:bg-surface-muted'
+                      : 'border-border-custom text-text-secondary hover:text-text-primary hover:bg-surface-muted'
                   }`}
                   title="Subscribe to alerts on similar failure patterns"
                 >
@@ -343,7 +343,7 @@ export function LessonsLearnedHub() {
               {/* Left & Middle Column: Narrative & Preventive Action */}
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-background-custom/40 border border-border-custom rounded-lg p-5">
-                  <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-2.5 flex items-center space-x-1.5">
+                  <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider mb-2.5 flex items-center space-x-1.5">
                     <Compass className="w-4 h-4 text-primary" />
                     <span>Analytical Synthesis & Narrative</span>
                   </h3>
@@ -375,7 +375,7 @@ export function LessonsLearnedHub() {
                             <span className="text-[10px] font-mono font-bold text-primary">{inc.id}</span>
                             <span className="text-[10px] font-mono text-text-muted">{inc.date}</span>
                           </div>
-                          <span className="font-semibold text-xs text-white block truncate mb-1">{inc.name}</span>
+                          <span className="font-semibold text-xs text-text-primary block truncate mb-1">{inc.name}</span>
                           <p className="text-[10px] text-text-secondary truncate">{inc.plant}</p>
                         </div>
                         <a 
@@ -402,7 +402,7 @@ export function LessonsLearnedHub() {
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {activeLesson.equipment.map((tag) => (
-                      <div key={tag} className="flex items-center space-x-1.5 px-2 py-1 bg-surface-muted border border-border-custom rounded text-xs font-mono text-white">
+                      <div key={tag} className="flex items-center space-x-1.5 px-2 py-1 bg-surface-muted border border-border-custom rounded text-xs font-mono text-text-primary">
                         <Cpu className="w-3.5 h-3.5 text-accent" />
                         <span>{tag}</span>
                       </div>
@@ -431,7 +431,7 @@ export function LessonsLearnedHub() {
                     <div className="divide-y divide-border-custom/40">
                       {activeLesson.externalReferences.map((ref) => (
                         <div key={ref.title} className="py-2.5 first:pt-0 last:pb-0">
-                          <span className="block font-semibold text-xs text-white truncate leading-snug">{ref.title}</span>
+                          <span className="block font-semibold text-xs text-text-primary truncate leading-snug">{ref.title}</span>
                           <span className="block text-[10px] text-text-secondary font-mono mt-0.5">{ref.source}</span>
                           <a 
                             href={ref.link} 
@@ -475,7 +475,7 @@ export function LessonsLearnedHub() {
         <div className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border-custom pb-4 gap-4">
             <div>
-              <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+              <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
                 <Compass className="w-6.5 h-6.5 text-primary animate-pulse" />
                 <span>Lessons Learned Engine</span>
               </h1>
@@ -489,7 +489,7 @@ export function LessonsLearnedHub() {
               <button
                 onClick={() => setActiveTab('all')}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'all' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'all' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 All Patterns ({lessons.length})
@@ -497,7 +497,7 @@ export function LessonsLearnedHub() {
               <button
                 onClick={() => setActiveTab('published')}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'published' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'published' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Published ({lessons.filter(l => l.status === 'Published').length})
@@ -505,7 +505,7 @@ export function LessonsLearnedHub() {
               <button
                 onClick={() => setActiveTab('candidate')}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'candidate' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'candidate' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Candidates ({lessons.filter(l => l.status === 'Candidate').length})
@@ -555,7 +555,7 @@ export function LessonsLearnedHub() {
           {filteredLessons.length === 0 ? (
             <div className="bg-surface border border-border-custom rounded-xl p-12 text-center">
               <Compass className="w-10 h-10 text-text-muted mx-auto mb-3 animate-pulse" />
-              <p className="font-semibold text-white">No Failure Patterns Matched</p>
+              <p className="font-semibold text-text-primary">No Failure Patterns Matched</p>
               <p className="text-xs text-text-secondary mt-1 max-w-sm mx-auto">
                 No archived lessons found matching your active filter configuration.
               </p>
@@ -591,7 +591,7 @@ export function LessonsLearnedHub() {
                         </span>
                         <span>•</span>
                         <span className="text-[10px] text-text-muted font-mono">
-                          Evidence: <span className="font-bold text-white">{l.evidenceCount} Incident Records</span>
+                          Evidence: <span className="font-bold text-text-primary">{l.evidenceCount} Incident Records</span>
                         </span>
                         <span>•</span>
                         <span className="text-[10px] text-text-muted font-mono">
@@ -601,7 +601,7 @@ export function LessonsLearnedHub() {
 
                       <h3 
                         onClick={() => { window.location.hash = `#lessons-learned/${l.id}`; }}
-                        className="font-display font-bold text-white text-base hover:text-primary transition-colors cursor-pointer"
+                        className="font-display font-bold text-text-primary text-base hover:text-primary transition-colors cursor-pointer"
                       >
                         {l.title}
                       </h3>
@@ -673,11 +673,11 @@ export function LessonsLearnedHub() {
             <div className="p-4 border-b border-border-custom flex justify-between items-center bg-surface-muted">
               <div>
                 <span className="font-mono text-[10px] text-primary font-bold">CROSS-PLANT EVIDENCE GRAPH</span>
-                <h3 className="font-display font-semibold text-white text-sm">{activeGraphLesson.title}</h3>
+                <h3 className="font-display font-semibold text-text-primary text-sm">{activeGraphLesson.title}</h3>
               </div>
               <button 
                 onClick={() => setIsGraphOpen(false)} 
-                className="p-1 text-text-muted hover:text-white rounded hover:bg-background-custom cursor-pointer"
+                className="p-1 text-text-muted hover:text-text-primary rounded hover:bg-background-custom cursor-pointer"
               >
                 ✕
               </button>
@@ -710,14 +710,14 @@ export function LessonsLearnedHub() {
                 {/* Equipment tag 1 */}
                 <div className="absolute top-[15%] left-[10%] bg-surface border border-accent/40 p-2 rounded-lg text-center min-w-[90px] z-10">
                   <Cpu className="w-3.5 h-3.5 text-accent mx-auto mb-0.5" />
-                  <span className="block font-mono text-[10px] text-white font-bold">{activeGraphLesson.equipment[0] || 'P-101A'}</span>
+                  <span className="block font-mono text-[10px] text-text-primary font-bold">{activeGraphLesson.equipment[0] || 'P-101A'}</span>
                   <span className="block text-[8px] text-text-muted">Primary Unit</span>
                 </div>
 
                 {/* Equipment tag 2 */}
                 <div className="absolute top-[15%] right-[10%] bg-surface border border-accent/40 p-2 rounded-lg text-center min-w-[90px] z-10">
                   <Cpu className="w-3.5 h-3.5 text-accent mx-auto mb-0.5" />
-                  <span className="block font-mono text-[10px] text-white font-bold">{activeGraphLesson.equipment[1] || 'P-101B'}</span>
+                  <span className="block font-mono text-[10px] text-text-primary font-bold">{activeGraphLesson.equipment[1] || 'P-101B'}</span>
                   <span className="block text-[8px] text-text-muted">Backup Unit</span>
                 </div>
 
@@ -745,8 +745,8 @@ export function LessonsLearnedHub() {
               </div>
 
               <div className="mt-4 text-xs text-text-secondary leading-relaxed bg-surface border border-border-custom p-3.5 rounded-lg w-full">
-                <span className="block font-semibold text-white font-mono mb-1 text-[11px] uppercase tracking-wider">Pattern Proof of Concept</span>
-                AI Core crossed <span className="text-white font-bold">{activeGraphLesson.evidenceCount} historic incident documents</span> and correlated them semantically with active OEM shaft tolerance limits to isolate this failure vector.
+                <span className="block font-semibold text-text-primary font-mono mb-1 text-[11px] uppercase tracking-wider">Pattern Proof of Concept</span>
+                AI Core crossed <span className="text-text-primary font-bold">{activeGraphLesson.evidenceCount} historic incident documents</span> and correlated them semantically with active OEM shaft tolerance limits to isolate this failure vector.
               </div>
             </div>
 
@@ -772,11 +772,11 @@ export function LessonsLearnedHub() {
             <div className="p-4 border-b border-border-custom bg-surface-muted flex justify-between items-center">
               <div>
                 <span className="font-mono text-[10px] text-status-critical font-bold">CROSS-PLANT WARNING SYSTEM</span>
-                <h3 className="font-display font-semibold text-white text-sm">Push Warning Notice</h3>
+                <h3 className="font-display font-semibold text-text-primary text-sm">Push Warning Notice</h3>
               </div>
               <button 
                 onClick={() => setIsPushOpen(false)} 
-                className="p-1 text-text-muted hover:text-white rounded hover:bg-background-custom cursor-pointer"
+                className="p-1 text-text-muted hover:text-text-primary rounded hover:bg-background-custom cursor-pointer"
               >
                 ✕
               </button>
@@ -829,7 +829,7 @@ export function LessonsLearnedHub() {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setIsPushOpen(false)}
-                  className="px-3 py-1.5 border border-border-custom text-text-secondary rounded hover:text-white text-xs font-mono font-semibold cursor-pointer"
+                  className="px-3 py-1.5 border border-border-custom text-text-secondary rounded hover:text-text-primary text-xs font-mono font-semibold cursor-pointer"
                 >
                   CANCEL
                 </button>

@@ -271,7 +271,7 @@ export function WorkOrdersList({
       {/* ---------------- HEADER ---------------- */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border-custom pb-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
             <Wrench className="w-6 h-6 text-primary" />
             <span>Refinery Maintenance Hub</span>
           </h1>
@@ -301,21 +301,21 @@ export function WorkOrdersList({
             <div className="flex bg-surface-muted p-1 rounded border border-border-custom text-xs">
               <button
                 onClick={() => setActiveView('table')}
-                className={`p-1.5 rounded cursor-pointer transition-colors ${activeView === 'table' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'}`}
+                className={`p-1.5 rounded cursor-pointer transition-colors ${activeView === 'table' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'}`}
                 title="Table View"
               >
                 <List className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setActiveView('kanban')}
-                className={`p-1.5 rounded cursor-pointer transition-colors ${activeView === 'kanban' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'}`}
+                className={`p-1.5 rounded cursor-pointer transition-colors ${activeView === 'kanban' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'}`}
                 title="Kanban Board"
               >
                 <KanbanIcon className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setActiveView('calendar')}
-                className={`p-1.5 rounded cursor-pointer transition-colors ${activeView === 'calendar' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'}`}
+                className={`p-1.5 rounded cursor-pointer transition-colors ${activeView === 'calendar' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'}`}
                 title="Schedules Calendar"
               >
                 <CalendarIcon className="w-3.5 h-3.5" />
@@ -346,7 +346,7 @@ export function WorkOrdersList({
                 placeholder="Search by WO#, Title, Equipment tag or Name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-background-custom border border-border-custom rounded pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-primary text-white"
+                className="w-full bg-background-custom border border-border-custom rounded pl-10 pr-4 py-2 text-xs focus:outline-none focus:border-primary text-text-primary"
               />
             </div>
             
@@ -462,7 +462,7 @@ export function WorkOrdersList({
 
                 <button
                   onClick={() => setSelectedIds([])}
-                  className="text-text-muted hover:text-white font-mono px-1"
+                  className="text-text-muted hover:text-text-primary font-mono px-1"
                 >
                   Clear Selection
                 </button>
@@ -495,7 +495,7 @@ export function WorkOrdersList({
 
             <div className="p-4 border-b border-border-custom bg-surface-muted/50 flex justify-between items-center">
               <div>
-                <h3 className="font-display font-bold text-white text-sm">My Work Orders — Today</h3>
+                <h3 className="font-display font-bold text-text-primary text-sm">My Work Orders — Today</h3>
                 <p className="text-[10px] text-text-secondary">Assigned Lead: {user?.name || 'Arun Kumar'}</p>
               </div>
               <StatusChip label="Active Crew" type="ok" />
@@ -536,7 +536,7 @@ export function WorkOrdersList({
                           <div className={`absolute left-0 top-0 bottom-0 w-1 ${pStyles.bar}`} />
 
                           <div className="flex justify-between items-start mb-2 pl-2">
-                            <span className="font-mono text-[10px] font-bold text-white bg-surface-muted px-1.5 py-0.5 rounded border border-border-custom select-all">
+                            <span className="font-mono text-[10px] font-bold text-text-primary bg-surface-muted px-1.5 py-0.5 rounded border border-border-custom select-all">
                               {wo.id}
                             </span>
                             <div className="flex items-center space-x-1">
@@ -554,7 +554,7 @@ export function WorkOrdersList({
 
                           <h4 
                             onClick={() => onSelectWorkOrder(wo.id)}
-                            className="font-sans font-bold text-white text-xs pl-2 mb-2 line-clamp-2 hover:underline hover:text-primary"
+                            className="font-sans font-bold text-text-primary text-xs pl-2 mb-2 line-clamp-2 hover:underline hover:text-primary"
                           >
                             {wo.title}
                           </h4>
@@ -562,11 +562,11 @@ export function WorkOrdersList({
                           <div className="pl-2 space-y-1.5 text-[10px] text-text-secondary font-mono">
                             <div className="flex justify-between">
                               <span>TAG:</span>
-                              <span className="text-white bg-surface-muted px-1 rounded border border-border-custom">{wo.equipmentId}</span>
+                              <span className="text-text-primary bg-surface-muted px-1 rounded border border-border-custom">{wo.equipmentId}</span>
                             </div>
                             <div className="flex justify-between">
                               <span>TYPE:</span>
-                              <span className="text-white">{wo.type}</span>
+                              <span className="text-text-primary">{wo.type}</span>
                             </div>
                             <div className="flex justify-between">
                               <span>STATUS:</span>
@@ -679,7 +679,7 @@ export function WorkOrdersList({
                                   className="cursor-pointer"
                                 />
                               </td>
-                              <td className="p-3 font-mono text-white font-bold tracking-tight select-all">
+                              <td className="p-3 font-mono text-text-primary font-bold tracking-tight select-all">
                                 <button 
                                   onClick={() => onSelectWorkOrder(wo.id)}
                                   className="hover:underline text-primary text-left cursor-pointer font-bold"
@@ -687,7 +687,7 @@ export function WorkOrdersList({
                                   {wo.id}
                                 </button>
                               </td>
-                              <td className="p-3 font-semibold text-white max-w-xs md:max-w-md">
+                              <td className="p-3 font-semibold text-text-primary max-w-xs md:max-w-md">
                                 <button 
                                   onClick={() => onSelectWorkOrder(wo.id)}
                                   className="hover:underline text-left cursor-pointer hover:text-primary block truncate font-sans text-xs"
@@ -696,7 +696,7 @@ export function WorkOrdersList({
                                 </button>
                               </td>
                               <td className="p-3">
-                                <span className="font-mono text-[10px] font-bold text-white bg-surface-muted px-1.5 py-0.5 rounded border border-border-custom select-all">
+                                <span className="font-mono text-[10px] font-bold text-text-primary bg-surface-muted px-1.5 py-0.5 rounded border border-border-custom select-all">
                                   {wo.equipmentId}
                                 </span>
                               </td>
@@ -817,7 +817,7 @@ export function WorkOrdersList({
                                 </h4>
 
                                 <div className="pl-1.5 flex justify-between items-center mt-3 text-[10px] text-text-muted font-mono">
-                                  <span className="bg-surface-muted px-1.5 py-0.5 rounded text-[9px] font-bold text-white border border-border-custom">
+                                  <span className="bg-surface-muted px-1.5 py-0.5 rounded text-[9px] font-bold text-text-primary border border-border-custom">
                                     {wo.equipmentId}
                                   </span>
                                   <div className="flex items-center space-x-1" title={wo.assignee.name}>
@@ -842,7 +842,7 @@ export function WorkOrdersList({
             {activeView === 'calendar' && (
               <div className="bg-surface border border-border-custom rounded-lg p-4">
                 <div className="border-b border-border-custom pb-3 mb-4 flex justify-between items-center">
-                  <h3 className="text-xs font-mono font-bold text-white uppercase">REFINERY SCHEDULE MATRIX — JULY 2026</h3>
+                  <h3 className="text-xs font-mono font-bold text-text-primary uppercase">REFINERY SCHEDULE MATRIX — JULY 2026</h3>
                   <div className="flex space-x-3 text-[9px] font-mono text-text-secondary">
                     <span className="flex items-center space-x-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-status-critical" />
@@ -900,7 +900,7 @@ export function WorkOrdersList({
                             <button
                               key={wo.id}
                               onClick={() => onSelectWorkOrder(wo.id)}
-                              className="w-full text-[9px] font-sans font-semibold text-white px-1 py-0.5 rounded truncate text-left border border-border-custom/50 bg-surface-muted/80 hover:border-primary block"
+                              className="w-full text-[9px] font-sans font-semibold text-text-primary px-1 py-0.5 rounded truncate text-left border border-border-custom/50 bg-surface-muted/80 hover:border-primary block"
                               title={wo.title}
                             >
                               <span className={`w-1 h-1 inline-block rounded-full mr-1 ${

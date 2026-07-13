@@ -221,7 +221,7 @@ export function AnalyticsHub() {
           
           {/* Report Selector Gallery */}
           <div className="bg-surface border border-border-custom rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-2 pb-2.5 border-b border-border-custom">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2 pb-2.5 border-b border-border-custom">
               <BarChart3 className="w-4 h-4 text-primary" />
               <span>Diagnostic Report Gallery</span>
             </h3>
@@ -238,8 +238,8 @@ export function AnalyticsHub() {
                     }}
                     className={`w-full text-left p-3 rounded-lg border text-xs font-sans flex items-start justify-between cursor-pointer transition-all ${
                       isSelected 
-                        ? 'bg-primary/10 border-primary text-white font-bold' 
-                        : 'bg-background-custom/40 border-border-custom text-text-secondary hover:text-white'
+                        ? 'bg-primary/10 border-primary text-text-primary font-bold'
+                        : 'bg-background-custom/40 border-border-custom text-text-secondary hover:text-text-primary'
                     }`}
                   >
                     <div className="space-y-0.5">
@@ -255,7 +255,7 @@ export function AnalyticsHub() {
 
           {/* Dynamic Parameters Form */}
           <div className="bg-surface border border-border-custom rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-2 pb-2.5 border-b border-border-custom">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2 pb-2.5 border-b border-border-custom">
               <Sliders className="w-4 h-4 text-primary" />
               <span>Report Parameter Thresholds</span>
             </h3>
@@ -321,7 +321,7 @@ export function AnalyticsHub() {
           {isRunningDiagnostic ? (
             <div className="bg-surface border border-border-custom rounded-xl p-24 text-center">
               <RefreshCw className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-              <p className="font-mono text-sm text-white font-bold uppercase tracking-wider">Processing Dynamic Data Query</p>
+              <p className="font-mono text-sm text-text-primary font-bold uppercase tracking-wider">Processing Dynamic Data Query</p>
               <p className="text-xs text-text-secondary mt-1">Traversing historical incident maps, telemetry aggregates, and compliance registries.</p>
             </div>
           ) : showResults && activeReport ? (
@@ -333,13 +333,13 @@ export function AnalyticsHub() {
                 <div className="flex items-center justify-between border-b border-border-custom/50 pb-2">
                   <div>
                     <span className="text-[10px] font-mono font-bold text-primary tracking-wider uppercase">Active Visual Output</span>
-                    <h2 className="font-display font-bold text-white text-base leading-snug">{activeReport.name}</h2>
+                    <h2 className="font-display font-bold text-text-primary text-base leading-snug">{activeReport.name}</h2>
                   </div>
 
                   <div className="flex space-x-2">
                     <button
                       onClick={() => setIsScheduleOpen(true)}
-                      className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-white hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
+                      className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-text-primary hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
                     >
                       <Mail className="w-3.5 h-3.5 text-primary" />
                       <span>SCHEDULE EMAIL</span>
@@ -347,7 +347,7 @@ export function AnalyticsHub() {
 
                     <button
                       onClick={() => handleExport('PDF')}
-                      className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-white hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
+                      className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-text-primary hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5 text-accent" />
                       <span>EXPORT PDF</span>
@@ -355,7 +355,7 @@ export function AnalyticsHub() {
 
                     <button
                       onClick={() => handleExport('CSV')}
-                      className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-white hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
+                      className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-text-primary hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
                     >
                       <Download className="w-3.5 h-3.5 text-status-ok" />
                       <span>EXPORT CSV</span>
@@ -450,7 +450,7 @@ export function AnalyticsHub() {
           ) : (
             <div className="bg-surface border border-border-custom rounded-xl p-24 text-center">
               <BarChart3 className="w-12 h-12 text-text-muted mx-auto mb-2 animate-pulse" />
-              <p className="font-semibold text-white">Diagnostics Awaiting Trigger</p>
+              <p className="font-semibold text-text-primary">Diagnostics Awaiting Trigger</p>
               <p className="text-xs text-text-secondary mt-1">Select report schema parameters on the left and compile diagnostic results.</p>
             </div>
           )}
@@ -468,11 +468,11 @@ export function AnalyticsHub() {
             <div className="p-4 border-b border-border-custom bg-surface-muted flex justify-between items-center">
               <div>
                 <span className="font-mono text-[10px] text-primary font-bold">DIGEST SCHEDULING INTERACTION</span>
-                <h3 className="font-display font-semibold text-white text-sm">Schedule Report Email</h3>
+                <h3 className="font-display font-semibold text-text-primary text-sm">Schedule Report Email</h3>
               </div>
               <button 
                 onClick={() => setIsScheduleOpen(false)} 
-                className="p-1 text-text-muted hover:text-white rounded hover:bg-background-custom cursor-pointer"
+                className="p-1 text-text-muted hover:text-text-primary rounded hover:bg-background-custom cursor-pointer"
               >
                 ✕
               </button>
@@ -495,7 +495,7 @@ export function AnalyticsHub() {
                     value={scheduleEmail}
                     onChange={(e) => setScheduleEmail(e.target.value)}
                     required
-                    className="w-full bg-background-custom border border-border-custom rounded p-2 text-xs text-white focus:outline-none focus:border-primary placeholder-text-muted font-sans"
+                    className="w-full bg-background-custom border border-border-custom rounded p-2 text-xs text-text-primary focus:outline-none focus:border-primary placeholder-text-muted font-sans"
                   />
                 </div>
 
@@ -520,7 +520,7 @@ export function AnalyticsHub() {
                 <button
                   type="button"
                   onClick={() => setIsScheduleOpen(false)}
-                  className="px-3 py-1.5 border border-border-custom text-text-secondary rounded hover:text-white text-xs font-mono font-semibold cursor-pointer"
+                  className="px-3 py-1.5 border border-border-custom text-text-secondary rounded hover:text-text-primary text-xs font-mono font-semibold cursor-pointer"
                 >
                   CANCEL
                 </button>

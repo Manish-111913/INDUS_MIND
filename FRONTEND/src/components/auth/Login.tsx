@@ -85,12 +85,12 @@ export function Login() {
               <Bot className="w-8 h-8" />
             </div>
             <div>
-              <span className="font-display text-2xl font-bold tracking-tight text-white">IndusMind</span>
+              <span className="font-display text-2xl font-bold tracking-tight text-text-primary">IndusMind</span>
               <span className="block font-mono text-[10px] text-primary tracking-widest uppercase">Knowledge Intelligence</span>
             </div>
           </div>
 
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-white mb-4 leading-tight">
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-text-primary mb-4 leading-tight">
             The operations brain for asset-intensive industry
           </h1>
           

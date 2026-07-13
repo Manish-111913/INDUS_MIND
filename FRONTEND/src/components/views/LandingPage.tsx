@@ -44,7 +44,7 @@ function CountUp({ target, suffix, duration = 1500 }: { target: number; suffix: 
   }, [hasStarted, target, duration]);
 
   return (
-    <span ref={elementRef} className="font-mono text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white">
+    <span ref={elementRef} className="font-mono text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-text-primary">
       {count}
       {suffix}
     </span>
@@ -526,7 +526,7 @@ export function LandingPage() {
             <span className="font-mono text-[10px] font-bold text-ai tracking-widest uppercase bg-ai/10 px-3 py-1 rounded-full border border-ai/20">
               IMPLEMENTATION BLUEPRINT
             </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
               {landingCopy.howItWorks.title}
             </h2>
             <p className="text-sm text-text-secondary max-w-2xl mx-auto leading-relaxed">
@@ -566,7 +566,7 @@ export function LandingPage() {
                   </div>
 
                   <h3 className={`font-display text-sm font-bold tracking-tight transition-colors duration-300 ${
-                    isActive ? 'text-white' : 'text-text-secondary'
+                    isActive ? 'text-text-primary' : 'text-text-secondary'
                   }`}>
                     {step.title}
                   </h3>
@@ -697,7 +697,7 @@ export function LandingPage() {
               <span className="font-mono text-[10px] font-bold text-ai tracking-widest uppercase bg-ai/10 px-3 py-1 rounded-full border border-ai/20">
                 PROVEN ON-SITE VALUE
               </span>
-              <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-white">
+              <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-text-primary">
                 {landingCopy.impact.title}
               </h2>
               <p className="text-xs text-text-secondary leading-relaxed">
@@ -709,11 +709,11 @@ export function LandingPage() {
               </blockquote>
 
               <div className="flex items-center space-x-3 pt-2">
-                <div className="w-8 h-8 rounded-full bg-surface border border-border-custom flex items-center justify-center font-mono text-xs font-bold text-white uppercase">
+                <div className="w-8 h-8 rounded-full bg-surface border border-border-custom flex items-center justify-center font-mono text-xs font-bold text-text-primary uppercase">
                   AM
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-white">{landingCopy.impact.testimonial.author}</p>
+                  <p className="text-xs font-bold text-text-primary">{landingCopy.impact.testimonial.author}</p>
                   <p className="text-[10px] text-text-muted">{landingCopy.impact.testimonial.role}</p>
                 </div>
               </div>
@@ -743,7 +743,7 @@ export function LandingPage() {
                       <div className="flex items-center space-x-2">
                         <span className="font-mono text-xs text-text-muted line-through">{metric.oldVal}</span>
                         <span className="text-primary font-bold">→</span>
-                        <span className="font-mono text-lg font-bold text-white">{metric.newVal}</span>
+                        <span className="font-mono text-lg font-bold text-text-primary">{metric.newVal}</span>
                       </div>
                     </div>
                   </div>
@@ -844,7 +844,7 @@ export function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 text-left">
             {landingCopy.footer.cols.map((col, colIdx) => (
               <div key={colIdx} className="space-y-4">
-                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+                <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">
                   {col.title}
                 </h3>
                 <ul className="space-y-2.5">
@@ -868,7 +868,7 @@ export function LandingPage() {
               <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
                 <Bot className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-display font-bold text-white text-sm">
+              <span className="font-display font-bold text-text-primary text-sm">
                 {landingCopy.navbar.logo}
               </span>
             </div>

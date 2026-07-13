@@ -129,7 +129,14 @@ function DocumentsLibraryTableAndGrid() {
       const response = await api.get<any>(`/documents?${queryParams.toString()}`);
       
       // Real pagination envelope
-      setDocuments(Array.isArray(response) ? response : (response?.data || []));
+      const rawDocs = Array.isArray(response) ? response : (response?.data || []);
+      // Normalize each doc so optional collection fields are always arrays (older/uploaded
+      // records in localStorage may be missing `tags`, which would crash the table render).
+      const normalizedDocs = (rawDocs as DocumentFile[]).map((d) => ({
+        ...d,
+        tags: Array.isArray(d?.tags) ? d.tags : [],
+      }));
+      setDocuments(normalizedDocs);
       // In simulateNetworkCall we wrap in response, let's verify if response has a meta or if we need to get total from local DB length
       const fullDocs = getStoredDocuments();
       
@@ -142,7 +149,7 @@ function DocumentsLibraryTableAndGrid() {
         }
         if (selectedType) f = f.filter(d => d.type === selectedType);
         if (selectedStatus) f = f.filter(d => d.status === selectedStatus);
-        if (selectedTag) f = f.filter(d => d.tags.includes(selectedTag));
+        if (selectedTag) f = f.filter(d => (d.tags || []).includes(selectedTag));
         if (selectedPlant) f = f.filter(d => d.plant === selectedPlant);
         if (selectedArea) f = f.filter(d => d.area === selectedArea);
         filteredCount = f.length;
@@ -289,7 +296,7 @@ function DocumentsLibraryTableAndGrid() {
       {/* 1. Header with primary trigger */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border-custom pb-4 gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
             <span>Enterprise Knowledge Repository</span>
           </h1>
           <p className="text-xs text-text-secondary mt-1">
@@ -317,7 +324,7 @@ function DocumentsLibraryTableAndGrid() {
           </span>
           <button 
             onClick={clearFilters}
-            className="text-[10px] font-mono text-text-muted hover:text-white uppercase transition-colors"
+            className="text-[10px] font-mono text-text-muted hover:text-text-primary uppercase transition-colors"
           >
             Reset Filters
           </button>
@@ -420,7 +427,7 @@ function DocumentsLibraryTableAndGrid() {
       {/* 3. Actions & View Mode Toggle */}
       <div className="flex items-center justify-between bg-surface-muted/30 border border-border-custom p-3 rounded-lg text-xs">
         <span className="text-[10px] font-mono text-text-muted uppercase font-bold">
-          TOTAL MATCHES IN REPOSITORY: <span className="text-white">{totalCount} FILES</span>
+          TOTAL MATCHES IN REPOSITORY: <span className="text-text-primary">{totalCount} FILES</span>
         </span>
 
         <div className="flex items-center space-x-2">
@@ -495,7 +502,7 @@ function DocumentsLibraryTableAndGrid() {
                 </p>
 
                 <div className="flex flex-wrap gap-1 pt-1">
-                  {doc.tags.map(t => (
+                  {(doc.tags || []).map(t => (
                     <span key={t} className="tag-mono bg-[#0E7C86]/10 text-[#0E7C86] border border-[#0E7C86]/20 text-[9px]">
                       {t}
                     </span>
@@ -524,25 +531,25 @@ function DocumentsLibraryTableAndGrid() {
               <thead>
                 <tr className="bg-surface-muted/50 border-b border-border-custom text-[10px] font-mono text-text-muted uppercase tracking-wider select-none">
                   <th className="p-3 w-8">
-                    <button onClick={toggleSelectAll} className="cursor-pointer text-text-secondary hover:text-white">
+                    <button onClick={toggleSelectAll} className="cursor-pointer text-text-secondary hover:text-text-primary">
                       {selectedIds.length === documents.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                     </button>
                   </th>
-                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort('name')}>
+                  <th className="p-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('name')}>
                     File Name {sortBy === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                   </th>
-                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort('type')}>
+                  <th className="p-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('type')}>
                     Doc Type {sortBy === 'type' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                   </th>
                   <th className="p-3">Equipment Tags</th>
-                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort('plant')}>
+                  <th className="p-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('plant')}>
                     Plant Node / Area {sortBy === 'plant' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                   </th>
-                  <th className="p-3 cursor-pointer hover:text-white" onClick={() => handleSort('date')}>
+                  <th className="p-3 cursor-pointer hover:text-text-primary" onClick={() => handleSort('date')}>
                     Ingested Date {sortBy === 'date' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                   </th>
                   <th className="p-3">Status</th>
-                  <th className="p-3 cursor-pointer hover:text-white text-right" onClick={() => handleSort('confidence')}>
+                  <th className="p-3 cursor-pointer hover:text-text-primary text-right" onClick={() => handleSort('confidence')}>
                     AI Confidence {sortBy === 'confidence' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
                   </th>
                 </tr>
@@ -566,7 +573,7 @@ function DocumentsLibraryTableAndGrid() {
                         {getDocTypeIcon(doc.type)}
                         <button 
                           onClick={() => window.location.hash = `#documents/${doc.id}`}
-                          className="truncate hover:text-primary hover:underline font-display text-left font-semibold text-white"
+                          className="truncate hover:text-primary hover:underline font-display text-left font-semibold text-text-primary"
                         >
                           {doc.name}
                         </button>
@@ -579,7 +586,7 @@ function DocumentsLibraryTableAndGrid() {
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-1 max-w-[180px]">
-                        {doc.tags.map(tag => (
+                        {(doc.tags || []).map(tag => (
                           <span key={tag} className="tag-mono bg-[#0E7C86]/10 text-[#0E7C86] border border-[#0E7C86]/20 text-[9px]">
                             {tag}
                           </span>
@@ -614,7 +621,7 @@ function DocumentsLibraryTableAndGrid() {
                       {getDocTypeIcon(doc.type)}
                       <button 
                         onClick={() => window.location.hash = `#documents/${doc.id}`}
-                        className="truncate font-display font-bold text-xs text-white hover:text-primary text-left"
+                        className="truncate font-display font-bold text-xs text-text-primary hover:text-primary text-left"
                       >
                         {doc.name}
                       </button>
@@ -630,15 +637,15 @@ function DocumentsLibraryTableAndGrid() {
                   <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-text-secondary uppercase">
                     <div>
                       <span className="text-text-muted block">Doc Type</span>
-                      <span className="text-white font-sans">{doc.type}</span>
+                      <span className="text-text-primary font-sans">{doc.type}</span>
                     </div>
                     <div>
                       <span className="text-text-muted block">Area Location</span>
-                      <span className="text-white font-sans">{doc.area}</span>
+                      <span className="text-text-primary font-sans">{doc.area}</span>
                     </div>
                     <div>
                       <span className="text-text-muted block">Uploaded Date</span>
-                      <span className="text-white">{formatDate(doc.date)}</span>
+                      <span className="text-text-primary">{formatDate(doc.date)}</span>
                     </div>
                     <div>
                       <span className="text-text-muted block">AI Confidence</span>
@@ -648,7 +655,7 @@ function DocumentsLibraryTableAndGrid() {
 
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex flex-wrap gap-1">
-                      {doc.tags.map(t => (
+                      {(doc.tags || []).map(t => (
                         <span key={t} className="tag-mono bg-[#0E7C86]/10 text-[#0E7C86] border border-[#0E7C86]/20 text-[8px]">
                           {t}
                         </span>
@@ -690,7 +697,7 @@ function DocumentsLibraryTableAndGrid() {
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="font-mono text-[11px]">
-            PAGE <span className="text-white font-bold">{page}</span> OF <span className="text-white font-bold">{totalPages}</span>
+            PAGE <span className="text-text-primary font-bold">{page}</span> OF <span className="text-text-primary font-bold">{totalPages}</span>
           </span>
           <button
             disabled={page === totalPages}
@@ -742,7 +749,7 @@ function DocumentsLibraryTableAndGrid() {
                     placeholder="e.g. C-302B"
                     value={bulkTagInput}
                     onChange={(e) => setBulkTagInput(e.target.value.toUpperCase())}
-                    className="bg-background-custom border border-border-custom p-1 rounded text-white text-xs w-full uppercase focus:outline-none focus:border-primary font-mono"
+                    className="bg-background-custom border border-border-custom p-1 rounded text-text-primary text-xs w-full uppercase focus:outline-none focus:border-primary font-mono"
                     onKeyDown={(e) => { if (e.key === 'Enter') handleBulkAddTags(); }}
                   />
                   <button 
@@ -795,7 +802,7 @@ function DocumentsLibraryTableAndGrid() {
             </div>
             
             <p className="text-xs text-text-secondary leading-relaxed">
-              You are about to permanently delete <strong className="text-white">{selectedIds.length} file block(s)</strong> from the industrial knowledge vault. This operation is highly destructive and cannot be undone.
+              You are about to permanently delete <strong className="text-text-primary">{selectedIds.length} file block(s)</strong> from the industrial knowledge vault. This operation is highly destructive and cannot be undone.
             </p>
 
             <div className="flex justify-end space-x-2 pt-2 text-xs font-mono font-bold">
@@ -1060,7 +1067,7 @@ function DocumentsUploadWorkspace() {
       <div className="flex items-center space-x-2">
         <button
           onClick={() => window.location.hash = '#documents'}
-          className="p-1 rounded hover:bg-surface-muted text-text-secondary hover:text-white cursor-pointer transition-colors"
+          className="p-1 rounded hover:bg-surface-muted text-text-secondary hover:text-text-primary cursor-pointer transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -1070,7 +1077,7 @@ function DocumentsUploadWorkspace() {
       </div>
 
       <div className="border-b border-border-custom pb-3">
-        <h1 className="font-display text-2xl font-bold text-white tracking-tight">
+        <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight">
           AI Ingestion & Pipeline Workspace
         </h1>
         <p className="text-xs text-text-secondary mt-1">
@@ -1129,7 +1136,7 @@ function DocumentsUploadWorkspace() {
                       <div className="flex items-center space-x-2 truncate max-w-[80%]">
                         <FileText className={`w-4 h-4 flex-shrink-0 ${isAct ? 'text-primary' : 'text-text-muted'}`} />
                         <div className="truncate text-left">
-                          <span className="block text-[11px] font-semibold text-white truncate">{t.file.name}</span>
+                          <span className="block text-[11px] font-semibold text-text-primary truncate">{t.file.name}</span>
                           <span className="block text-[9px] font-mono text-text-muted uppercase">{(t.file.size / 1024).toFixed(0)} KB</span>
                         </div>
                       </div>
@@ -1139,7 +1146,7 @@ function DocumentsUploadWorkspace() {
                         {t.status !== 'pending' && t.status !== 'completed' && <RefreshCw className="w-3.5 h-3.5 text-status-warn animate-spin" />}
                         <button 
                           onClick={(e) => { e.stopPropagation(); removeTask(t.id); }}
-                          className="text-text-muted hover:text-white"
+                          className="text-text-muted hover:text-text-primary"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1162,7 +1169,7 @@ function DocumentsUploadWorkspace() {
                   <span className="font-mono text-[9px] font-bold text-primary uppercase bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
                     ACTIVE COGNITIVE TASK
                   </span>
-                  <h3 className="font-display font-bold text-white text-base truncate pt-1">{activeTask.file.name}</h3>
+                  <h3 className="font-display font-bold text-text-primary text-base truncate pt-1">{activeTask.file.name}</h3>
                 </div>
 
                 <div className="text-right text-xs font-mono font-bold text-text-muted">
@@ -1222,7 +1229,7 @@ function DocumentsUploadWorkspace() {
                       value={activeTask.tagsInput}
                       disabled={activeTask.status !== 'pending'}
                       onChange={(e) => updateTaskMetadata(activeTask.id, 'tagsInput', e.target.value)}
-                      className="w-full bg-surface text-xs px-2.5 py-1.5 border border-border-custom focus:outline-none focus:border-primary rounded text-white uppercase font-mono"
+                      className="w-full bg-surface text-xs px-2.5 py-1.5 border border-border-custom focus:outline-none focus:border-primary rounded text-text-primary uppercase font-mono"
                     />
                   </div>
                 </div>
@@ -1344,7 +1351,7 @@ function DocumentsUploadWorkspace() {
                               type="text"
                               value={ent.key}
                               onChange={(e) => handleEntityChange(idx, 'key', e.target.value)}
-                              className="w-full bg-surface border border-border-custom p-1 rounded font-mono text-white text-[11px] focus:outline-none focus:border-primary"
+                              className="w-full bg-surface border border-border-custom p-1 rounded font-mono text-text-primary text-[11px] focus:outline-none focus:border-primary"
                             />
                           </div>
 
@@ -1399,7 +1406,7 @@ function DocumentsUploadWorkspace() {
           ) : (
             <div className="bg-surface border border-border-custom rounded-lg p-12 text-center h-full flex flex-col items-center justify-center">
               <HelpCircle className="w-12 h-12 text-text-muted mb-3 animate-bounce" />
-              <h4 className="font-display text-sm font-bold text-white uppercase tracking-wider mb-1">No Ingestion Task Focused</h4>
+              <h4 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider mb-1">No Ingestion Task Focused</h4>
               <p className="text-xs text-text-secondary max-w-sm leading-relaxed">
                 Select a queued file from the left rail or drop new enterprise documents to load metadata and initiate OCR pipelines.
               </p>
@@ -1803,7 +1810,7 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
         <div className="flex items-center space-x-3 max-w-[70%]">
           <button
             onClick={() => window.location.hash = '#documents'}
-            className="p-1.5 rounded hover:bg-surface-muted text-text-secondary hover:text-white cursor-pointer transition-colors"
+            className="p-1.5 rounded hover:bg-surface-muted text-text-secondary hover:text-text-primary cursor-pointer transition-colors"
             title="Return to Vault Library"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -1814,11 +1821,11 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
               <span className="font-mono text-[8px] font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded uppercase select-all">
                 ID: {doc.id}
               </span>
-              <span className="font-mono text-[8px] font-bold text-white bg-surface-muted border border-border-custom px-1.5 py-0.5 rounded uppercase">
+              <span className="font-mono text-[8px] font-bold text-text-primary bg-surface-muted border border-border-custom px-1.5 py-0.5 rounded uppercase">
                 {doc.version}
               </span>
             </div>
-            <h2 className="font-display font-bold text-white text-base truncate">{doc.name}</h2>
+            <h2 className="font-display font-bold text-text-primary text-base truncate">{doc.name}</h2>
           </div>
         </div>
 
@@ -1889,17 +1896,17 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="p-1 rounded hover:bg-background-custom disabled:opacity-30 disabled:hover:bg-transparent text-white cursor-pointer transition-colors"
+                  className="p-1 rounded hover:bg-background-custom disabled:opacity-30 disabled:hover:bg-transparent text-text-primary cursor-pointer transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <span className="font-bold text-white">
+                <span className="font-bold text-text-primary">
                   Page {currentPage} of 3
                 </span>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, 3))}
                   disabled={currentPage === 3}
-                  className="p-1 rounded hover:bg-background-custom disabled:opacity-30 disabled:hover:bg-transparent text-white cursor-pointer transition-colors"
+                  className="p-1 rounded hover:bg-background-custom disabled:opacity-30 disabled:hover:bg-transparent text-text-primary cursor-pointer transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -1913,7 +1920,7 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
                   placeholder="SEARCH SPEC..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-background-custom text-[9px] px-2.5 py-1.5 pl-8 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-white placeholder-text-muted font-bold uppercase tracking-wider"
+                  className="w-full bg-background-custom text-[9px] px-2.5 py-1.5 pl-8 border border-border-custom focus:outline-none focus:border-primary rounded font-sans text-text-primary placeholder-text-muted font-bold uppercase tracking-wider"
                 />
               </div>
 
@@ -1921,21 +1928,21 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={zoomOut}
-                  className="p-1 rounded hover:bg-background-custom text-white cursor-pointer transition-colors"
+                  className="p-1 rounded hover:bg-background-custom text-text-primary cursor-pointer transition-colors"
                   title="Zoom Out"
                 >
                   <ZoomOut className="w-4 h-4" />
                 </button>
                 <button
                   onClick={resetZoom}
-                  className="px-1.5 py-0.5 rounded hover:bg-background-custom text-white font-bold text-[9px] cursor-pointer"
+                  className="px-1.5 py-0.5 rounded hover:bg-background-custom text-text-primary font-bold text-[9px] cursor-pointer"
                   title="Reset Zoom"
                 >
                   {Math.round(zoomScale * 100)}%
                 </button>
                 <button
                   onClick={zoomIn}
-                  className="p-1 rounded hover:bg-background-custom text-white cursor-pointer transition-colors"
+                  className="p-1 rounded hover:bg-background-custom text-text-primary cursor-pointer transition-colors"
                   title="Zoom In"
                 >
                   <ZoomIn className="w-4 h-4" />
@@ -1943,14 +1950,14 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
                 <div className="h-4 w-px bg-border-custom mx-1" />
                 <button
                   onClick={rotateCcw}
-                  className="p-1 rounded hover:bg-background-custom text-white cursor-pointer transition-colors"
+                  className="p-1 rounded hover:bg-background-custom text-text-primary cursor-pointer transition-colors"
                   title="Rotate Counter-Clockwise"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
                 <button
                   onClick={rotateCw}
-                  className="p-1 rounded hover:bg-background-custom text-white cursor-pointer transition-colors"
+                  className="p-1 rounded hover:bg-background-custom text-text-primary cursor-pointer transition-colors"
                   title="Rotate Clockwise"
                 >
                   <RotateCw className="w-4 h-4" />
@@ -2097,7 +2104,7 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
               {/* Overlay display toggler */}
               <button
                 onClick={() => setShowOverlay(prev => !prev)}
-                className={`px-3 py-1.5 rounded border font-mono font-bold text-[9px] cursor-pointer transition-colors flex items-center space-x-1 ${showOverlay ? 'bg-[#0E7C86]/10 text-primary border-[#0E7C86]/30 hover:bg-[#0E7C86]/20' : 'bg-surface text-text-muted border-border-custom hover:text-white'}`}
+                className={`px-3 py-1.5 rounded border font-mono font-bold text-[9px] cursor-pointer transition-colors flex items-center space-x-1 ${showOverlay ? 'bg-[#0E7C86]/10 text-primary border-[#0E7C86]/30 hover:bg-[#0E7C86]/20' : 'bg-surface text-text-muted border-border-custom hover:text-text-primary'}`}
               >
                 {showOverlay ? <Eye className="w-3 h-3 mr-1" /> : <EyeOff className="w-3 h-3 mr-1" />}
                 <span>{showOverlay ? 'HIDE HIGHLIGHT OVERLAY' : 'SHOW HIGHLIGHT OVERLAY'}</span>
@@ -2156,7 +2163,7 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
             <div className="w-12 h-1.5 bg-border-custom rounded-full mx-auto my-3" />
             
             <div className="flex justify-between items-center px-4 pb-2 border-b border-border-custom/50">
-              <span className="font-mono text-xs font-bold text-white">DOCUMENT ANALYSIS</span>
+              <span className="font-mono text-xs font-bold text-text-primary">DOCUMENT ANALYSIS</span>
               <button
                 onClick={() => setIsBottomSheetOpen(false)}
                 className="w-10 h-10 flex items-center justify-center text-text-muted hover:text-white bg-[#0B0F12] rounded-full border border-border-custom/50"
@@ -2215,31 +2222,31 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
               <div className="grid grid-cols-2 gap-4 text-[10px] font-mono leading-relaxed">
                 <div>
                   <span className="text-text-muted block uppercase">Document ID</span>
-                  <span className="text-white font-sans font-bold select-all">{doc.id}</span>
+                  <span className="text-text-primary font-sans font-bold select-all">{doc.id}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">Uploader identity</span>
-                  <span className="text-white font-sans font-bold">{doc.uploader}</span>
+                  <span className="text-text-primary font-sans font-bold">{doc.uploader}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">Doc Type Class</span>
-                  <span className="text-white font-sans font-bold">{doc.type}</span>
+                  <span className="text-text-primary font-sans font-bold">{doc.type}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">Plant sector</span>
-                  <span className="text-white font-sans font-bold">{doc.plant}</span>
+                  <span className="text-text-primary font-sans font-bold">{doc.plant}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">Refinery Area</span>
-                  <span className="text-white font-sans font-bold">{doc.area}</span>
+                  <span className="text-text-primary font-sans font-bold">{doc.area}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">File Payload Size</span>
-                  <span className="text-white font-sans font-bold">{doc.fileSize}</span>
+                  <span className="text-text-primary font-sans font-bold">{doc.fileSize}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">Ingested Date</span>
-                  <span className="text-white font-sans font-bold">{doc.date}</span>
+                  <span className="text-text-primary font-sans font-bold">{doc.date}</span>
                 </div>
                 <div>
                   <span className="text-text-muted block uppercase">Ingestion Confidence</span>
@@ -2263,7 +2270,7 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
                       
                       <div className="flex justify-between items-start gap-2">
                         <div>
-                          <p className="font-bold text-white leading-tight">{item.stage}</p>
+                          <p className="font-bold text-text-primary leading-tight">{item.stage}</p>
                           <p className="text-text-muted text-[8px] mt-0.5">OPERATOR: {item.operator.toUpperCase()}</p>
                         </div>
                         <span className="text-text-muted text-[8px] flex-shrink-0">{item.timestamp}</span>
@@ -2328,7 +2335,7 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
                                 type="text" 
                                 value={editValueInput}
                                 onChange={e => setEditValueInput(e.target.value)}
-                                className="bg-surface text-[10px] px-1 py-0.5 border border-primary rounded text-white focus:outline-none w-24"
+                                className="bg-surface text-[10px] px-1 py-0.5 border border-primary rounded text-text-primary focus:outline-none w-24"
                               />
                               <button 
                                 onClick={() => saveEntityCorrection(ent.id)}
@@ -2380,21 +2387,21 @@ function DocumentDetailsExplorer({ docId }: { docId: string }) {
                               <>
                                 <button
                                   onClick={() => handleEntityStatusChange(ent.id, 'confirmed')}
-                                  className="p-1 bg-surface hover:bg-status-ok/20 border border-border-custom hover:border-status-ok text-text-secondary hover:text-white rounded transition-colors"
+                                  className="p-1 bg-surface hover:bg-status-ok/20 border border-border-custom hover:border-status-ok text-text-secondary hover:text-text-primary rounded transition-colors"
                                   title="Confirm value is correct"
                                 >
                                   <Check className="w-3 h-3 text-status-ok" />
                                 </button>
                                 <button
                                   onClick={() => startEditingEntity(ent)}
-                                  className="p-1 bg-surface hover:bg-status-warn/20 border border-border-custom hover:border-status-warn text-text-secondary hover:text-white rounded transition-colors"
+                                  className="p-1 bg-surface hover:bg-status-warn/20 border border-border-custom hover:border-status-warn text-text-secondary hover:text-text-primary rounded transition-colors"
                                   title="Correct Value"
                                 >
                                   <FileType className="w-3 h-3 text-status-warn" />
                                 </button>
                                 <button
                                   onClick={() => handleEntityStatusChange(ent.id, 'rejected')}
-                                  className="p-1 bg-surface hover:bg-status-critical/20 border border-border-custom hover:border-status-critical text-text-secondary hover:text-white rounded transition-colors"
+                                  className="p-1 bg-surface hover:bg-status-critical/20 border border-border-custom hover:border-status-critical text-text-secondary hover:text-text-primary rounded transition-colors"
                                   title="Reject and drop from Graph"
                                 >
                                   <X className="w-3 h-3 text-status-critical" />

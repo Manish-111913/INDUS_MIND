@@ -108,7 +108,7 @@ function OnboardingChecklist() {
       
       <button 
         onClick={handleDismiss} 
-        className="absolute top-4 right-4 text-text-muted hover:text-white cursor-pointer transition-colors p-1 rounded hover:bg-surface-muted"
+        className="absolute top-4 right-4 text-text-muted hover:text-text-primary cursor-pointer transition-colors p-1 rounded hover:bg-surface-muted"
         title="Dismiss Onboarding Checklist"
       >
         <X className="w-4 h-4" />
@@ -118,7 +118,7 @@ function OnboardingChecklist() {
         <div className="space-y-3 flex-1 text-left">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-5 h-5 text-primary animate-pulse" />
-            <h3 className="font-display font-bold text-sm text-white uppercase tracking-wider text-left">
+            <h3 className="font-display font-bold text-sm text-text-primary uppercase tracking-wider text-left">
               Operator Ingestion & System Readiness Checklist
             </h3>
             <span className="text-[9px] font-mono font-bold bg-primary/15 text-primary border border-primary/20 px-2 py-0.5 rounded uppercase">

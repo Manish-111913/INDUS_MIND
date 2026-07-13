@@ -183,7 +183,7 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
       {/* FILTER PANEL */}
       <div className="bg-surface border border-border-custom rounded-lg p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="space-y-1">
-          <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+          <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider flex items-center space-x-1.5">
             <SlidersHorizontal className="w-4 h-4 text-primary" />
             <span>AI Model Risk Classifiers</span>
           </h3>
@@ -277,7 +277,7 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
-                    <span className="font-mono text-[10px] font-bold text-white bg-background-custom border border-border-custom px-1.5 py-0.2 rounded uppercase">
+                    <span className="font-mono text-[10px] font-bold text-text-primary bg-background-custom border border-border-custom px-1.5 py-0.2 rounded uppercase">
                       {pred.id}
                     </span>
                     <span className="font-mono text-[10px] text-text-muted">
@@ -285,11 +285,11 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
                     </span>
                   </div>
                   
-                  <h3 className="font-display text-sm font-bold text-white mt-2">
+                  <h3 className="font-display text-sm font-bold text-text-primary mt-2">
                     {pred.equipmentName}
                   </h3>
                   <p className="font-mono text-[11px] text-text-secondary">
-                    TAG ID: <span className="text-white font-bold select-all">{pred.equipmentId}</span>
+                    TAG ID: <span className="text-text-primary font-bold select-all">{pred.equipmentId}</span>
                   </p>
                 </div>
 
@@ -321,7 +321,7 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
                   </svg>
                   {/* Inside Text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
-                    <span className={`text-[15px] font-bold text-white`}>{pred.riskScore}%</span>
+                    <span className={`text-[15px] font-bold text-text-primary`}>{pred.riskScore}%</span>
                     <span className="text-[7px] text-text-muted font-bold tracking-widest uppercase">RISK</span>
                   </div>
                 </div>
@@ -331,7 +331,7 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-text-muted">PREDICTED FAILURE MODE:</span>
-                  <span className="text-white font-bold">{pred.predictedFailureMode}</span>
+                  <span className="text-text-primary font-bold">{pred.predictedFailureMode}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-text-muted">PROBABLE FAILURE WINDOW:</span>
@@ -369,7 +369,7 @@ export function RiskPredictions({ predictions, onUpdatePredictions, onAddWorkOrd
 
               {/* Recommended actions */}
               <div className="p-3 bg-surface-muted/40 border-l-2 border-primary rounded-r text-xs">
-                <strong className="text-white block font-mono text-[9px] uppercase text-text-muted">RECOMMENDED MITIGATION</strong>
+                <strong className="text-text-primary block font-mono text-[9px] uppercase text-text-muted">RECOMMENDED MITIGATION</strong>
                 <p className="text-text-secondary mt-1 font-sans text-[11px] leading-normal">
                   {pred.recommendedAction}
                 </p>

@@ -150,7 +150,7 @@ export function TranslationsModule() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border-custom pb-4 gap-4">
         <div>
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
             <Globe className="w-5 h-5 text-primary" />
             <span>Internationalization Engine (i18n)</span>
           </h2>

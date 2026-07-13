@@ -43,13 +43,13 @@ const queryClient = new QueryClient({
 
 function MainAppContent() {
   const { isAuthenticated, isLoading, checkSession, user } = useAuthStore();
-  const [currentHash, setCurrentHash] = useState(() => window.location.hash || '#login');
+  const [currentHash, setCurrentHash] = useState(() => window.location.hash || '#landing');
   const [initialChecking, setInitialChecking] = useState(true);
 
   // 1. Listen to URL Hash changes
   useEffect(() => {
     const handleHashChange = () => {
-      const newHash = window.location.hash || '#login';
+      const newHash = window.location.hash || '#landing';
       setCurrentHash(newHash);
     };
     window.addEventListener('hashchange', handleHashChange);

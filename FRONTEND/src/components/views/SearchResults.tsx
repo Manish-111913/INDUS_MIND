@@ -376,7 +376,7 @@ export function SearchResults() {
                   className={`py-2 px-4 font-display font-bold text-xs tracking-wide uppercase cursor-pointer border-b-2 transition-all flex items-center space-x-2 whitespace-nowrap ${
                     isActive 
                       ? 'border-primary text-primary font-bold' 
-                      : 'border-transparent text-text-secondary hover:text-white'
+                      : 'border-transparent text-text-secondary hover:text-text-primary'
                   }`}
                 >
                   {tab === 'Graph' && <Network className="w-3.5 h-3.5 text-[#A855F7]" />}
@@ -480,7 +480,7 @@ export function SearchResults() {
               {filteredResults.length === 0 ? (
                 <div className="py-20 text-center bg-surface border border-border-custom rounded-xl">
                   <Search className="w-12 h-12 text-text-muted mx-auto mb-3" />
-                  <h3 className="font-display text-base font-bold text-white">No search matches found</h3>
+                  <h3 className="font-display text-base font-bold text-text-primary">No search matches found</h3>
                   <p className="text-xs text-text-secondary mt-1 max-w-md mx-auto">
                     We couldn't locate any refinery records matching your current combination of query parameters and facets. Try clearing some filters.
                   </p>
@@ -560,7 +560,7 @@ export function SearchResults() {
                               style={{ width: `${item.relevance}%` }}
                             />
                           </div>
-                          <span className="text-[10px] font-mono font-bold text-white">{item.relevance}%</span>
+                          <span className="text-[10px] font-mono font-bold text-text-primary">{item.relevance}%</span>
                         </div>
 
                         {/* Location / Date info */}

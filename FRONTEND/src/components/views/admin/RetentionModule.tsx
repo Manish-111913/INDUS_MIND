@@ -86,7 +86,7 @@ export function RetentionModule() {
   return (
     <div className="space-y-6 animate-fade-in text-xs">
       <div className="border-b border-border-custom pb-4">
-        <h2 className="font-display text-lg font-bold text-white tracking-tight flex items-center space-x-2">
+        <h2 className="font-display text-lg font-bold text-text-primary tracking-tight flex items-center space-x-2">
           <Icons.ShieldAlert className="w-5 h-5 text-primary" />
           <span>System Data Retention & Deletion Policies</span>
         </h2>
@@ -116,7 +116,7 @@ export function RetentionModule() {
                   <div key={policy.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:bg-background-custom/10 transition-colors">
                     <div className="space-y-1.5 max-w-xl">
                       <div className="flex items-center space-x-2">
-                        <span className="font-sans font-bold text-white text-sm">{policy.name}</span>
+                        <span className="font-sans font-bold text-text-primary text-sm">{policy.name}</span>
                         <span className="bg-surface-muted border border-border-custom text-text-secondary text-[10px] px-2 py-0.5 rounded font-mono font-semibold">
                           SKU: {policy.id.toUpperCase()}
                         </span>
@@ -126,11 +126,11 @@ export function RetentionModule() {
                       <div className="flex flex-wrap items-center gap-4 text-[10px] text-text-muted font-mono pt-1">
                         <div className="flex items-center space-x-1">
                           <Icons.Database className="w-3.5 h-3.5" />
-                          <span>STALE RECORD COUNT: <strong className="text-white">{policy.affected_rows} rows</strong></span>
+                          <span>STALE RECORD COUNT: <strong className="text-text-primary">{policy.affected_rows} rows</strong></span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Icons.Calendar className="w-3.5 h-3.5" />
-                          <span>LAST SCRUB DATE: <strong className="text-white">{policy.last_run || 'Never run'}</strong></span>
+                          <span>LAST SCRUB DATE: <strong className="text-text-primary">{policy.last_run || 'Never run'}</strong></span>
                         </div>
                       </div>
                     </div>

@@ -64,7 +64,7 @@ export function NotificationDigest({
   return (
     <div className="bg-surface border border-border-custom p-4 rounded-lg flex flex-col justify-between h-full shadow overflow-hidden">
       <div>
-        <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider mb-1">
+        <h4 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
           {title}
         </h4>
         {description && (

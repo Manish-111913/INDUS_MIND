@@ -71,7 +71,7 @@ export function NotificationsHub() {
       {/* Page Header */}
       <div className="border-b border-border-custom pb-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
             <Bell className="w-6.5 h-6.5 text-primary" />
             <span>Operational Notification Command</span>
           </h1>
@@ -110,7 +110,7 @@ export function NotificationsHub() {
                       key={filter}
                       onClick={() => setActiveFilter(filter)}
                       className={`px-3 py-1 rounded-md text-[10px] font-mono cursor-pointer transition-colors ${
-                        isActive ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                        isActive ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                       }`}
                     >
                       {label.toUpperCase()}
@@ -122,7 +122,7 @@ export function NotificationsHub() {
               <div className="flex space-x-2 self-start md:self-auto">
                 <button
                   onClick={markAllAsRead}
-                  className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-white hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
+                  className="px-3 py-1.5 border border-border-custom text-xs text-text-secondary hover:text-text-primary hover:bg-surface-muted rounded font-mono font-semibold flex items-center space-x-1.5 cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5 text-status-ok" />
                   <span>MARK ALL READ</span>
@@ -152,7 +152,7 @@ export function NotificationsHub() {
             {filteredNotifs.length === 0 ? (
               <div className="py-12 text-center text-text-secondary border border-dashed border-border-custom rounded-xl bg-background-custom/20">
                 <Bell className="w-10 h-10 text-text-muted mx-auto mb-2 animate-pulse" />
-                <p className="font-semibold text-white">Active Queue Cleared</p>
+                <p className="font-semibold text-text-primary">Active Queue Cleared</p>
                 <p className="text-[11px] text-text-secondary mt-1">
                   All logged alerts have been resolved, dismissed, or filtered.
                 </p>
@@ -242,7 +242,7 @@ export function NotificationsHub() {
         <div className="space-y-4">
           
           <div className="bg-surface border border-border-custom rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-2 pb-2.5 border-b border-border-custom">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2 pb-2.5 border-b border-border-custom">
               <Settings className="w-4 h-4 text-primary" />
               <span>Channel Dispatch Preferences</span>
             </h3>
@@ -254,7 +254,7 @@ export function NotificationsHub() {
             <div className="space-y-4 pt-2">
               {categoriesList.map((category) => (
                 <div key={category} className="space-y-2 p-3 bg-background-custom/40 border border-border-custom rounded-lg">
-                  <span className="block font-semibold text-xs text-white font-mono uppercase tracking-wide">
+                  <span className="block font-semibold text-xs text-text-primary font-mono uppercase tracking-wide">
                     {category}
                   </span>
                   
@@ -268,7 +268,7 @@ export function NotificationsHub() {
                           onClick={() => handleTogglePreference(category, channel.key)}
                           className={`flex items-center justify-between p-2 rounded border text-[10px] font-sans font-semibold cursor-pointer transition-all ${
                             isEnabled 
-                              ? 'bg-primary/10 border-primary text-white' 
+                              ? 'bg-primary/10 border-primary text-text-primary'
                               : 'bg-surface-muted/30 border-border-custom/50 text-text-muted hover:border-text-secondary'
                           }`}
                         >

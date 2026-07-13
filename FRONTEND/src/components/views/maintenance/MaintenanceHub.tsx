@@ -235,7 +235,7 @@ export function MaintenanceHub() {
       {!activeWorkOrderId && !activeFailureId && (
         <div className="border-b border-border-custom pb-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+            <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
               <Wrench className="w-6 h-6 text-primary" />
               <span>Operations & Maintenance Command Centre</span>
             </h1>
@@ -270,7 +270,7 @@ export function MaintenanceHub() {
                   window.location.hash = '#maintenance';
                 }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'wos' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'wos' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Work Orders
@@ -282,7 +282,7 @@ export function MaintenanceHub() {
                   window.location.hash = '#maintenance/failures';
                 }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'failures' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'failures' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Failures & RCA
@@ -294,7 +294,7 @@ export function MaintenanceHub() {
                   window.location.hash = '#maintenance/predictions';
                 }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'predictions' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'predictions' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Risk Predictions
@@ -306,7 +306,7 @@ export function MaintenanceHub() {
                   window.location.hash = '#maintenance/schedule';
                 }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'schedule' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'schedule' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 PM Scheduling
@@ -318,7 +318,7 @@ export function MaintenanceHub() {
                   window.location.hash = '#maintenance/parts';
                 }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'parts' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'parts' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Spare Parts
@@ -330,7 +330,7 @@ export function MaintenanceHub() {
                   window.location.hash = '#maintenance/shift_logs';
                 }}
                 className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                  activeTab === 'shift_logs' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeTab === 'shift_logs' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 Shift Logbook

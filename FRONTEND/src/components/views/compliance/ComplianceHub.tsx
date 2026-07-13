@@ -190,7 +190,7 @@ export default function ComplianceHub() {
       {!selectedGapId && !selectedRegId && (
         <div className="border-b border-border-custom pb-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
-            <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+            <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
               <ShieldCheck className="w-6.5 h-6.5 text-primary animate-pulse" />
               <span>Federal Compliance & Verification Command</span>
             </h1>
@@ -208,7 +208,7 @@ export default function ComplianceHub() {
                 window.location.hash = '#compliance';
               }}
               className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                activeTab === 'overview' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                activeTab === 'overview' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Overview
@@ -220,7 +220,7 @@ export default function ComplianceHub() {
                 window.location.hash = '#compliance/regulations';
               }}
               className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                activeTab === 'regulations' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                activeTab === 'regulations' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Regulations
@@ -232,7 +232,7 @@ export default function ComplianceHub() {
                 window.location.hash = '#compliance/gaps';
               }}
               className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                activeTab === 'gaps' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                activeTab === 'gaps' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Gaps & compare ({gaps.length})
@@ -244,7 +244,7 @@ export default function ComplianceHub() {
                 window.location.hash = '#compliance/audits';
               }}
               className={`px-3 py-1.5 font-mono text-[10px] rounded cursor-pointer transition-colors uppercase ${
-                activeTab === 'audits' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                activeTab === 'audits' ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
               }`}
             >
               Audits & Evidence

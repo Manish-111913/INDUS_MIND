@@ -397,7 +397,7 @@ export function Equipment360() {
             <div className="flex items-start space-x-3 text-xs">
               <CheckCircle2 className="w-5 h-5 text-status-ok flex-shrink-0" />
               <div>
-                <span className="font-mono font-bold text-white uppercase tracking-wider block mb-0.5">BACKLOG DISPATCH SUCCESS</span>
+                <span className="font-mono font-bold text-text-primary uppercase tracking-wider block mb-0.5">BACKLOG DISPATCH SUCCESS</span>
                 <p className="text-text-secondary leading-relaxed">{woSuccessToast}</p>
               </div>
             </div>
@@ -409,7 +409,7 @@ export function Equipment360() {
             <div className="flex items-start space-x-3 text-xs">
               <Info className="w-5 h-5 text-status-info flex-shrink-0" />
               <div>
-                <span className="font-mono font-bold text-white uppercase tracking-wider block mb-0.5">SAFETY SIGNAL REPORTED</span>
+                <span className="font-mono font-bold text-text-primary uppercase tracking-wider block mb-0.5">SAFETY SIGNAL REPORTED</span>
                 <p className="text-text-secondary leading-relaxed">{issueSuccessToast}</p>
               </div>
             </div>
@@ -447,7 +447,7 @@ export function Equipment360() {
               {/* Tag, Name, Location */}
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-white bg-background-custom border border-border-custom px-2.5 py-0.5 rounded select-all shadow-sm">
+                  <span className="font-mono text-sm font-bold text-text-primary bg-background-custom border border-border-custom px-2.5 py-0.5 rounded select-all shadow-sm">
                     {activeAsset.tag}
                   </span>
                   <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
@@ -508,7 +508,7 @@ export function Equipment360() {
                 
                 {/* Numeric label in center */}
                 <div className="absolute flex flex-col items-center">
-                  <span className="text-sm font-mono font-bold text-white leading-none">
+                  <span className="text-sm font-mono font-bold text-text-primary leading-none">
                     {activeAsset.health}%
                   </span>
                   <span className="text-[7px] font-mono text-text-muted mt-0.5 uppercase tracking-tighter">
@@ -536,9 +536,9 @@ export function Equipment360() {
           <div className="mt-5 pt-4 border-t border-border-custom/50 flex flex-wrap gap-2.5 items-center justify-between relative z-10">
             
             <div className="flex items-center space-x-2 text-[10px] font-mono text-text-muted">
-              <span>WO PENDING: <strong className="text-white">{totalWosCount}</strong></span>
+              <span>WO PENDING: <strong className="text-text-primary">{totalWosCount}</strong></span>
               <span>•</span>
-              <span>ISSUES DISPATCHED: <strong className="text-white">{issueCount}</strong></span>
+              <span>ISSUES DISPATCHED: <strong className="text-text-primary">{issueCount}</strong></span>
             </div>
 
             <div className="flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
@@ -606,7 +606,7 @@ export function Equipment360() {
                   className={`px-4 py-2.5 text-xs font-mono font-medium border-b-2 whitespace-nowrap cursor-pointer transition-all ${
                     isTabActive 
                       ? 'border-primary text-primary font-bold bg-primary/5' 
-                      : 'border-transparent text-text-secondary hover:text-white hover:border-border-custom/50'
+                      : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border-custom/50'
                   }`}
                 >
                   {tab.label.toUpperCase()}
@@ -663,7 +663,7 @@ export function Equipment360() {
                   <div className="p-3 bg-background-custom border border-border-custom/50 rounded-md flex flex-col justify-between h-28">
                     <div>
                       <span className="text-[9px] font-mono text-text-muted block uppercase">Mean Time Between Failure</span>
-                      <p className="text-xl font-bold text-white mt-1 font-mono">{activeAsset.metrics.mtbf}</p>
+                      <p className="text-xl font-bold text-text-primary mt-1 font-mono">{activeAsset.metrics.mtbf}</p>
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-[9px] font-mono text-status-ok">▲ NOMINAL</span>
@@ -675,7 +675,7 @@ export function Equipment360() {
                   <div className="p-3 bg-background-custom border border-border-custom/50 rounded-md flex flex-col justify-between h-28">
                     <div>
                       <span className="text-[9px] font-mono text-text-muted block uppercase">Mean Time To Repair</span>
-                      <p className="text-xl font-bold text-white mt-1 font-mono">{activeAsset.metrics.mttr}</p>
+                      <p className="text-xl font-bold text-text-primary mt-1 font-mono">{activeAsset.metrics.mttr}</p>
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-[9px] font-mono text-status-ok">▼ DECREASING</span>
@@ -687,7 +687,7 @@ export function Equipment360() {
                   <div className="p-3 bg-background-custom border border-border-custom/50 rounded-md flex flex-col justify-between h-28">
                     <div>
                       <span className="text-[9px] font-mono text-text-muted block uppercase">Availability Rate</span>
-                      <p className="text-xl font-bold text-white mt-1 font-mono">{activeAsset.metrics.availability}</p>
+                      <p className="text-xl font-bold text-text-primary mt-1 font-mono">{activeAsset.metrics.availability}</p>
                     </div>
                     <div className="flex justify-between items-end">
                       <span className="text-[9px] font-mono text-status-ok">▲ 99.5% TARGET</span>
@@ -778,8 +778,8 @@ export function Equipment360() {
                     onClick={() => setTimelineFilter(f.id as any)}
                     className={`px-2.5 py-1 rounded font-mono uppercase cursor-pointer transition-colors ${
                       timelineFilter === f.id 
-                        ? 'bg-primary text-white font-bold' 
-                        : 'text-text-secondary hover:text-white'
+                        ? 'bg-primary text-white font-bold'
+                        : 'text-text-secondary hover:text-text-primary'
                     }`}
                   >
                     {f.label}
@@ -915,7 +915,7 @@ export function Equipment360() {
 
                     <div className="p-2 bg-surface-muted/40 rounded border border-border-custom/50 text-[10px] font-mono text-text-secondary">
                       <span className="text-text-muted block uppercase text-[8px] tracking-widest">Auto-Link Reason:</span>
-                      <span className="text-white font-semibold capitalize">{doc.reason}</span>
+                      <span className="text-text-primary font-semibold capitalize">{doc.reason}</span>
                     </div>
 
                   </div>
@@ -970,7 +970,7 @@ export function Equipment360() {
                     <tbody className="divide-y divide-border-custom/30 text-text-secondary">
                       {getAssetScheduledWos(activeAsset).map((wo) => (
                         <tr key={wo.id} className="hover:bg-background-custom/30 transition-colors">
-                          <td className="p-2.5 font-mono text-white font-semibold">
+                          <td className="p-2.5 font-mono text-text-primary font-semibold">
                             {wo.id}
                           </td>
                           <td className="p-2.5 font-sans text-text-primary font-medium">
@@ -1049,7 +1049,7 @@ export function Equipment360() {
                         className="absolute left-0 top-0 bottom-0 bg-[#0E7C86]/30 border-r border-[#0E7C86]" 
                         style={{ width: `${Math.min(100, (parseInt(activeAsset.metrics.mtbf) / 300) * 100)}%` }}
                       />
-                      <span className="relative font-mono font-bold text-white z-10">
+                      <span className="relative font-mono font-bold text-text-primary z-10">
                         Asset MTBF: {activeAsset.metrics.mtbf}
                       </span>
                     </div>
@@ -1071,7 +1071,7 @@ export function Equipment360() {
                         className="absolute left-0 top-0 bottom-0 bg-status-warn/10 border-r border-status-warn" 
                         style={{ width: `${Math.min(100, (parseFloat(activeAsset.metrics.mttr) / 3.0) * 100)}%` }}
                       />
-                      <span className="relative font-mono font-bold text-white z-10">
+                      <span className="relative font-mono font-bold text-text-primary z-10">
                         Asset MTTR: {activeAsset.metrics.mttr}
                       </span>
                     </div>
@@ -1115,7 +1115,7 @@ export function Equipment360() {
                   'bg-surface-muted/20 border-border-custom'
                 }`}>
                   <div className="space-y-1">
-                    <span className="font-mono text-xs font-bold text-white block uppercase tracking-wide">
+                    <span className="font-mono text-xs font-bold text-text-primary block uppercase tracking-wide">
                       {clause.code}
                     </span>
                     <p className="text-xs text-text-secondary leading-relaxed font-sans max-w-2xl">
@@ -1197,7 +1197,7 @@ export function Equipment360() {
               <div className="relative w-full max-w-lg h-56 flex items-center justify-center z-10 mt-4">
                 
                 {/* Center Node: Ego Equipment */}
-                <div className="absolute w-28 h-20 bg-primary/20 border-2 border-primary text-white p-2 rounded-lg text-center flex flex-col justify-center items-center shadow-lg shadow-primary/10 z-20 scale-105">
+                <div className="absolute w-28 h-20 bg-primary/20 border-2 border-primary text-text-primary p-2 rounded-lg text-center flex flex-col justify-center items-center shadow-lg shadow-primary/10 z-20 scale-105">
                   <span className="text-[8px] font-mono text-primary font-bold uppercase tracking-wider">CENTER ASSET</span>
                   <span className="font-mono text-xs font-extrabold">{activeAsset.tag}</span>
                   <span className="text-[9px] font-sans text-text-secondary truncate w-full">{activeAsset.name.split(' ')[0]}</span>
@@ -1317,7 +1317,7 @@ export function Equipment360() {
 
                     <div className="space-y-1 sm:text-right">
                       <span className="text-[10px] font-mono text-text-muted uppercase">Predicted Impairment Mode</span>
-                      <span className="block text-xs font-bold text-white font-mono uppercase bg-surface-muted px-2.5 py-1 rounded border border-border-custom">
+                      <span className="block text-xs font-bold text-text-primary font-mono uppercase bg-surface-muted px-2.5 py-1 rounded border border-border-custom">
                         {activeAsset.predictions.predictedMode}
                       </span>
                     </div>
@@ -1345,7 +1345,7 @@ export function Equipment360() {
                     </div>
 
                     <div className="space-y-1 text-xs">
-                      <strong className="text-white block">
+                      <strong className="text-text-primary block">
                         {activeAsset.predictions.recommendedAction.title}
                       </strong>
                       <p className="text-text-secondary leading-relaxed">
@@ -1408,7 +1408,7 @@ export function Equipment360() {
                           <span>{rca.date}</span>
                           <span className="text-primary font-bold uppercase">RCA SUMMARY</span>
                         </div>
-                        <h4 className="font-bold text-white leading-tight">
+                        <h4 className="font-bold text-text-primary leading-tight">
                           {rca.title}
                         </h4>
                         <div className="space-y-1 leading-normal font-sans text-text-secondary">
@@ -1472,7 +1472,7 @@ export function Equipment360() {
               <form onSubmit={handleCreateWoSubmit} className="p-5 space-y-4 text-xs">
                 
                 <div className="p-3 bg-primary/5 rounded border border-primary/20 font-mono text-[10px] text-text-secondary">
-                  TARGET ASSET: <strong className="text-white">{activeAsset.tag}</strong> ({activeAsset.name})
+                  TARGET ASSET: <strong className="text-text-primary">{activeAsset.tag}</strong> ({activeAsset.name})
                 </div>
 
                 <div className="space-y-1.5">
@@ -1580,7 +1580,7 @@ export function Equipment360() {
               <form onSubmit={handleReportIssueSubmit} className="p-5 space-y-4 text-xs">
                 
                 <div className="p-3 bg-status-critical/5 rounded border border-status-critical/20 font-mono text-[10px] text-text-secondary">
-                  TARGET EQUIPMENT: <strong className="text-white">{activeAsset.tag}</strong>
+                  TARGET EQUIPMENT: <strong className="text-text-primary">{activeAsset.tag}</strong>
                 </div>
 
                 <div className="space-y-1.5">
@@ -1657,7 +1657,7 @@ export function Equipment360() {
       {/* Page header title & description */}
       <div className="border-b border-border-custom pb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2.5">
+          <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2.5">
             <Cpu className="w-6 h-6 text-primary" />
             <span>Industrial Equipment Registry & 360° Portal</span>
           </h1>
@@ -1696,7 +1696,7 @@ export function Equipment360() {
         <div className="lg:col-span-1 bg-surface border border-border-custom rounded-lg p-4 font-mono text-xs">
           
           <div className="border-b border-border-custom pb-3 mb-4 flex items-center justify-between">
-            <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+            <span className="font-bold text-text-primary uppercase tracking-wider text-[11px]">
               Plant Hierarchy Tree
             </span>
             <span className="text-[9px] text-text-muted">LAZY LOADED</span>
@@ -1961,7 +1961,7 @@ export function Equipment360() {
                         className="hover:bg-background-custom/40 transition-colors cursor-pointer group"
                       >
                         {/* Prominent Tag */}
-                        <td className="p-3 font-mono font-black text-white group-hover:text-primary transition-colors select-all">
+                        <td className="p-3 font-mono font-black text-text-primary group-hover:text-primary transition-colors select-all">
                           {asset.tag}
                         </td>
 
@@ -2008,7 +2008,7 @@ export function Equipment360() {
                               />
                             </svg>
 
-                            <span className="font-mono font-bold text-white text-[11px]">
+                            <span className="font-mono font-bold text-text-primary text-[11px]">
                               {healthPct}%
                             </span>
                           </div>
@@ -2061,7 +2061,7 @@ export function Equipment360() {
           ) : (
             <div className="p-16 text-center text-text-muted bg-background-custom/20 border border-dashed border-border-custom rounded-lg">
               <HelpCircle className="w-10 h-10 mx-auto mb-2 opacity-50 animate-bounce" />
-              <p className="font-mono text-xs uppercase text-white font-bold">No assets found</p>
+              <p className="font-mono text-xs uppercase text-text-primary font-bold">No assets found</p>
               <p className="text-[11px] text-text-secondary mt-1">
                 Try widening your drop-down filter metrics or clear the tag query search.
               </p>
@@ -2148,7 +2148,7 @@ export function Equipment360() {
                   onClick={() => handleQrSelectScanMock(asset.id)}
                   className="p-2.5 rounded bg-background-custom border border-border-custom text-left hover:border-primary cursor-pointer transition-colors disabled:opacity-40"
                 >
-                  <strong className="font-mono text-[11px] text-white block">
+                  <strong className="font-mono text-[11px] text-text-primary block">
                     {asset.tag}
                   </strong>
                   <span className="text-[9px] text-text-muted truncate block">
@@ -2304,7 +2304,7 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
                   className={`px-3 py-1.5 rounded-lg border font-mono text-xs font-semibold cursor-pointer transition-all ${
                     isActive 
                       ? 'bg-primary/10 border-primary text-primary' 
-                      : 'bg-background-custom border-border-custom text-text-secondary hover:text-white hover:border-border-custom/80'
+                      : 'bg-background-custom border-border-custom text-text-secondary hover:text-text-primary hover:border-border-custom/80'
                   }`}
                 >
                   {m.label} ({m.unit})
@@ -2324,8 +2324,8 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
                 onClick={() => setTimeRange(range)}
                 className={`px-2.5 py-1 text-[11px] font-mono rounded font-semibold transition-colors cursor-pointer ${
                   timeRange === range 
-                    ? 'bg-surface-muted text-white' 
-                    : 'text-text-muted hover:text-white'
+                    ? 'bg-surface-muted text-text-primary'
+                    : 'text-text-muted hover:text-text-primary'
                 }`}
               >
                 {range.toUpperCase()}
@@ -2373,7 +2373,7 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
             {selectedMeter && (
               <div className="flex items-center space-x-4 text-[10px] font-mono">
                 <span className="text-text-muted">
-                  NORMAL RANGE: <strong className="text-white">{selectedMeter.normal_min} - {selectedMeter.normal_max} {selectedMeter.unit}</strong>
+                  NORMAL RANGE: <strong className="text-text-primary">{selectedMeter.normal_min} - {selectedMeter.normal_max} {selectedMeter.unit}</strong>
                 </span>
                 {isTrendingUp && (
                   <span className="text-status-critical font-bold uppercase animate-pulse flex items-center space-x-1">
@@ -2483,11 +2483,11 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
               <div className="space-y-3.5 text-xs">
                 <div className="flex justify-between items-center py-1.5 border-b border-border-custom/30 font-mono font-semibold">
                   <span className="text-text-muted uppercase">Sensor Code</span>
-                  <span className="text-white font-bold">{selectedMeter.id}</span>
+                  <span className="text-text-primary font-bold">{selectedMeter.id}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-border-custom/30 font-mono font-semibold">
                   <span className="text-text-muted uppercase">Engineering Unit</span>
-                  <span className="text-white font-bold">{selectedMeter.unit}</span>
+                  <span className="text-text-primary font-bold">{selectedMeter.unit}</span>
                 </div>
                 <div className="flex justify-between items-center py-1.5 border-b border-border-custom/30 font-mono font-semibold">
                   <span className="text-text-muted uppercase">Normal Lower Limit</span>
@@ -2528,12 +2528,12 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
             <p className="text-xs text-text-secondary leading-relaxed">
               {isTrendingUp ? (
                 <>
-                  <strong className="text-white block mb-1">ALERT: Persistent Upward Escalation</strong>
+                  <strong className="text-text-primary block mb-1">ALERT: Persistent Upward Escalation</strong>
                   The calibration telemetry exhibits a steady 90-day upward drift that has now crossed the normal operating band. This is a classic indication of bearing fatigue, friction build-up, or misalignment. Schedule secondary verification.
                 </>
               ) : (
                 <>
-                  <strong className="text-white block mb-1">Nominal Telemetry Sequence</strong>
+                  <strong className="text-text-primary block mb-1">Nominal Telemetry Sequence</strong>
                   The telemetry is operating within normal, steady limits. No immediate secondary actions are required.
                 </>
               )}
@@ -2564,7 +2564,7 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
 
               <form onSubmit={handleSubmitReading} className="p-5 space-y-4 text-xs">
                 <div className="p-3 bg-primary/5 rounded border border-primary/20 font-mono text-[10px] text-text-secondary">
-                  TARGET ASSET ID: <strong className="text-white">{equipmentId}</strong>
+                  TARGET ASSET ID: <strong className="text-text-primary">{equipmentId}</strong>
                 </div>
 
                 {/* Meter Sensor Select */}
@@ -2589,7 +2589,7 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
                       value={newValue}
                       onChange={(e) => setNewValue(e.target.value)}
                       placeholder="Enter measured value"
-                      className="w-full pl-3 pr-16 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary"
+                      className="w-full pl-3 pr-16 py-2 bg-background-custom border border-border-custom rounded font-mono text-text-primary focus:outline-none focus:border-primary"
                     />
                     <span className="absolute right-3 top-2 font-mono text-text-muted font-bold">
                       {meters.find(m => m.id === newMeterId)?.unit}
@@ -2605,7 +2605,7 @@ function EquipmentConditionTab({ equipmentId }: { equipmentId: string }) {
                     required
                     value={newTimestamp}
                     onChange={(e) => setNewTimestamp(e.target.value)}
-                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-white focus:outline-none focus:border-primary"
+                    className="w-full px-3 py-2 bg-background-custom border border-border-custom rounded font-mono text-text-primary focus:outline-none focus:border-primary"
                   />
                 </div>
 

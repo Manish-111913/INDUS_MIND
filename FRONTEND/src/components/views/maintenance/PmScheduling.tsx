@@ -223,7 +223,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
           <button
             onClick={() => setViewMode('calendar')}
             className={`px-3 py-1.5 rounded transition-all flex items-center space-x-1.5 cursor-pointer ${
-              viewMode === 'calendar' ? 'bg-primary text-white font-bold shadow' : 'text-text-secondary hover:text-white'
+              viewMode === 'calendar' ? 'bg-primary text-white font-bold shadow' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             <CalendarIcon className="w-3.5 h-3.5" />
@@ -233,7 +233,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
           <button
             onClick={() => setViewMode('gantt')}
             className={`px-3 py-1.5 rounded transition-all flex items-center space-x-1.5 cursor-pointer ${
-              viewMode === 'gantt' ? 'bg-primary text-white font-bold shadow' : 'text-text-secondary hover:text-white'
+              viewMode === 'gantt' ? 'bg-primary text-white font-bold shadow' : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -263,14 +263,14 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
             
             {/* Month Header Nav */}
             <div className="flex items-center justify-between">
-              <h2 className="font-display font-bold text-white text-base">
+              <h2 className="font-display font-bold text-text-primary text-base">
                 {currentMonth}
               </h2>
               <div className="flex items-center space-x-1">
-                <button className="p-1 border border-border-custom bg-surface-muted hover:bg-surface rounded text-text-secondary hover:text-white cursor-pointer">
+                <button className="p-1 border border-border-custom bg-surface-muted hover:bg-surface rounded text-text-secondary hover:text-text-primary cursor-pointer">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <button className="p-1 border border-border-custom bg-surface-muted hover:bg-surface rounded text-text-secondary hover:text-white cursor-pointer">
+                <button className="p-1 border border-border-custom bg-surface-muted hover:bg-surface rounded text-text-secondary hover:text-text-primary cursor-pointer">
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
@@ -312,7 +312,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
                         <div
                           key={event.id}
                           onClick={() => setSelectedEvent(event)}
-                          className="px-1.5 py-0.5 rounded bg-surface border border-border-custom text-[9px] font-mono font-medium text-white hover:border-primary/50 cursor-pointer truncate max-w-full"
+                          className="px-1.5 py-0.5 rounded bg-surface border border-border-custom text-[9px] font-mono font-medium text-text-primary hover:border-primary/50 cursor-pointer truncate max-w-full"
                           title={event.title}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full inline-block mr-1 ${
@@ -335,30 +335,30 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
             {selectedEvent ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b border-border-custom pb-3">
-                  <span className="font-mono text-xs font-bold text-white bg-background-custom border border-border-custom px-2 py-0.5 rounded">
+                  <span className="font-mono text-xs font-bold text-text-primary bg-background-custom border border-border-custom px-2 py-0.5 rounded">
                     {selectedEvent.id}
                   </span>
                   <button 
                     onClick={() => setSelectedEvent(null)}
-                    className="text-text-muted hover:text-white p-0.5"
+                    className="text-text-muted hover:text-text-primary p-0.5"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="font-display font-bold text-white text-sm">{selectedEvent.title}</h3>
+                  <h3 className="font-display font-bold text-text-primary text-sm">{selectedEvent.title}</h3>
                   <p className="text-[11px] text-text-muted font-mono">{selectedEvent.equipmentId} ({selectedEvent.equipmentName})</p>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono border-b border-border-custom/30 py-1">
                     <span className="text-text-muted">CREW LANE:</span>
-                    <span className="text-white font-bold">{selectedEvent.crew}</span>
+                    <span className="text-text-primary font-bold">{selectedEvent.crew}</span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-mono border-b border-border-custom/30 py-1">
                     <span className="text-text-muted">EST TIME:</span>
-                    <span className="text-white font-bold">{selectedEvent.estimatedHours} Hours</span>
+                    <span className="text-text-primary font-bold">{selectedEvent.estimatedHours} Hours</span>
                   </div>
                   <div className="flex items-center justify-between text-xs font-mono border-b border-border-custom/30 py-1">
                     <span className="text-text-muted">SLA STATUS:</span>
@@ -381,7 +381,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
                       type="date"
                       value={rescheduleDate || selectedEvent.date}
                       onChange={(e) => setRescheduleDate(e.target.value)}
-                      className="w-full bg-surface border border-border-custom rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-primary font-mono"
+                      className="w-full bg-surface border border-border-custom rounded px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-primary font-mono"
                     />
                     
                     <button
@@ -402,8 +402,8 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
             )}
 
             <div className="p-3 bg-surface-muted/40 border border-border-custom rounded text-[10px] leading-relaxed text-text-secondary">
-              <span className="text-white font-bold block mb-0.5 font-mono uppercase text-[9px]">💡 Current Role context</span>
-              Planner permissions: <strong className="text-white">{userRole}</strong>.
+              <span className="text-text-primary font-bold block mb-0.5 font-mono uppercase text-[9px]">💡 Current Role context</span>
+              Planner permissions: <strong className="text-text-primary">{userRole}</strong>.
               (Technicians are blocked from re-routing operational milestones).
             </div>
           </div>
@@ -415,7 +415,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
         /* GANTT LANE VIEW */
         <div className="bg-surface border border-border-custom rounded-lg p-5 space-y-6">
           <div className="flex items-center justify-between border-b border-border-custom pb-3">
-            <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider">
               Operational Crew Load Allocations (Gantt lanes)
             </h3>
             <span className="text-[10px] font-mono text-text-muted">JULY 12 - JULY 20, 2026</span>
@@ -427,7 +427,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
                 
                 {/* Lane Header */}
                 <div className="md:col-span-1">
-                  <span className="font-mono text-xs font-bold text-white block">
+                  <span className="font-mono text-xs font-bold text-text-primary block">
                     {crewName}
                   </span>
                   <span className="text-[10px] text-text-muted font-mono mt-0.5 block">
@@ -444,7 +444,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
                       className="flex-shrink-0 p-2.5 bg-surface border border-border-custom rounded-lg w-52 hover:border-primary transition-all cursor-pointer space-y-1 relative"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-[9px] font-bold text-white uppercase">{pm.id}</span>
+                        <span className="font-mono text-[9px] font-bold text-text-primary uppercase">{pm.id}</span>
                         <span className={`px-1 rounded text-[8px] font-mono font-bold ${getPriorityStyle(pm.priority)}`}>
                           {pm.priority}
                         </span>
@@ -484,7 +484,7 @@ export function PmScheduling({ schedule, onUpdateSchedule, userRole }: PmSchedul
               </div>
               <button 
                 onClick={() => setOptimizationOpen(false)}
-                className="text-text-muted hover:text-white p-0.5"
+                className="text-text-muted hover:text-text-primary p-0.5"
               >
                 <X className="w-4 h-4" />
               </button>

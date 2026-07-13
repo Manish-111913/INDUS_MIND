@@ -310,7 +310,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
       <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="p-6 max-w-md bg-surface border border-border-custom rounded-xl shadow-2xl space-y-4">
           <ShieldAlert className="w-12 h-12 text-status-critical mx-auto animate-pulse" />
-          <h2 className="font-display text-base font-extrabold text-white uppercase tracking-wider">
+          <h2 className="font-display text-base font-extrabold text-text-primary uppercase tracking-wider">
             Restricted Compliance Clearance
           </h2>
           <p className="text-xs text-text-secondary leading-relaxed">
@@ -318,7 +318,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
           </p>
           <button 
             onClick={() => window.location.hash = '#dashboard'}
-            className="w-full py-2 bg-background-custom hover:bg-surface-muted text-xs font-mono font-bold border border-border-custom rounded transition-colors text-white cursor-pointer"
+            className="w-full py-2 bg-background-custom hover:bg-surface-muted text-xs font-mono font-bold border border-border-custom rounded transition-colors text-text-primary cursor-pointer"
           >
             RETURN TO DASHBOARD
           </button>
@@ -336,7 +336,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
             <Database className="w-3.5 h-3.5" />
             <span>INTEGRATED DATA INGEST CORE</span>
           </div>
-          <h1 className="font-display text-lg font-black tracking-tight text-white uppercase mt-1">
+          <h1 className="font-display text-lg font-black tracking-tight text-text-primary uppercase mt-1">
             Bulk Entity Import Wizard
           </h1>
         </div>
@@ -363,7 +363,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
           
           {/* Left Panel: Entity & Settings */}
           <div className="md:col-span-1 bg-surface border border-border-custom p-5 rounded-lg space-y-5 h-fit">
-            <div className="border-b border-border-custom pb-3 flex items-center space-x-2 text-white">
+            <div className="border-b border-border-custom pb-3 flex items-center space-x-2 text-text-primary">
               <Settings className="w-4 h-4 text-primary" />
               <h3 className="font-display text-xs font-bold uppercase tracking-wider">Source Parameters</h3>
             </div>
@@ -407,7 +407,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
           {/* Right Panel: Drag & Drop CSV */}
           <div className="md:col-span-2 bg-surface border border-border-custom p-6 rounded-lg flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="border-b border-border-custom pb-3 flex items-center space-x-2 text-white">
+              <div className="border-b border-border-custom pb-3 flex items-center space-x-2 text-text-primary">
                 <FileSpreadsheet className="w-4 h-4 text-primary" />
                 <h3 className="font-display text-xs font-bold uppercase tracking-wider">Source Document Upload</h3>
               </div>
@@ -448,14 +448,14 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
                 <div className="space-y-1">
                   {fileName ? (
                     <>
-                      <p className="font-mono text-xs font-bold text-white uppercase">{fileName}</p>
+                      <p className="font-mono text-xs font-bold text-text-primary uppercase">{fileName}</p>
                       <p className="text-[10px] text-text-muted font-mono uppercase">
                         {csvRowsCount} Records Detected • HEADER LEN: {fileHeaders.length}
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-xs text-white font-bold font-display">
+                      <p className="text-xs text-text-primary font-bold font-display">
                         Drag and drop your regulatory CSV file here, or click to browse
                       </p>
                       <p className="text-[10px] text-text-muted font-mono uppercase">
@@ -504,20 +504,20 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border-custom pb-3 gap-2">
               <div className="flex items-center space-x-1.5">
                 <Settings className="w-4 h-4 text-primary" />
-                <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+                <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">
                   File Columns to Database Fields Alignment
                 </h3>
               </div>
               <button
                 onClick={handleForceAutoGuess}
-                className="px-2.5 py-1 text-[10px] bg-background-custom hover:bg-surface-muted border border-border-custom rounded text-text-secondary hover:text-white font-mono transition-colors cursor-pointer"
+                className="px-2.5 py-1 text-[10px] bg-background-custom hover:bg-surface-muted border border-border-custom rounded text-text-secondary hover:text-text-primary font-mono transition-colors cursor-pointer"
               >
                 FORCE RE-GUESS COLUMNS
               </button>
             </div>
 
             <p className="text-xs text-text-secondary leading-relaxed">
-              Verify target field alignments. Elements mapped as <strong className="text-white">Ignore Column</strong> will not be parsed into the ledger node database.
+              Verify target field alignments. Elements mapped as <strong className="text-text-primary">Ignore Column</strong> will not be parsed into the ledger node database.
             </p>
 
             {/* Mapping Table */}
@@ -540,7 +540,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
                     return (
                       <tr key={header} className="hover:bg-surface-muted/30">
                         {/* File Column Header */}
-                        <td className="px-4 py-3.5 font-mono font-bold text-white">
+                        <td className="px-4 py-3.5 font-mono font-bold text-text-primary">
                           {header}
                         </td>
                         
@@ -594,7 +594,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
             <div className="flex justify-between items-center pt-4 border-t border-border-custom">
               <button
                 onClick={() => setStep(1)}
-                className="px-4 py-2 bg-background-custom hover:bg-surface-muted border border-border-custom text-white font-mono text-xs font-bold rounded-lg cursor-pointer transition-colors"
+                className="px-4 py-2 bg-background-custom hover:bg-surface-muted border border-border-custom text-text-primary font-mono text-xs font-bold rounded-lg cursor-pointer transition-colors"
               >
                 ← BACK TO UPLOAD
               </button>
@@ -616,7 +616,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
           
           {/* Left panel: Processing statistics */}
           <div className="md:col-span-1 bg-surface border border-border-custom p-5 rounded-lg space-y-5 h-fit">
-            <div className="border-b border-border-custom pb-3 flex items-center space-x-2 text-white">
+            <div className="border-b border-border-custom pb-3 flex items-center space-x-2 text-text-primary">
               <Database className="w-4 h-4 text-primary" />
               <h3 className="font-display text-xs font-bold uppercase tracking-wider">Process Registry</h3>
             </div>
@@ -625,15 +625,15 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-border-custom/30 font-mono text-xs">
                 <span className="text-text-muted uppercase">JOB IDENTIFIER</span>
-                <span className="text-white font-bold">{jobDetails?.id || 'Allocating...'}</span>
+                <span className="text-text-primary font-bold">{jobDetails?.id || 'Allocating...'}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-border-custom/30 font-mono text-xs">
                 <span className="text-text-muted uppercase">TARGET ENTITY</span>
-                <span className="text-white font-bold capitalize">{selectedEntity}</span>
+                <span className="text-text-primary font-bold capitalize">{selectedEntity}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-border-custom/30 font-mono text-xs">
                 <span className="text-text-muted uppercase">LEDGER STATUS</span>
-                <span className="font-black flex items-center space-x-1 uppercase text-white">
+                <span className="font-black flex items-center space-x-1 uppercase text-text-primary">
                   {isPolling && <RefreshCw className="w-3 h-3 text-primary animate-spin mr-1" />}
                   <span className={`${
                     jobDetails?.status === 'done' ? 'text-status-ok' : 'text-primary'
@@ -648,7 +648,7 @@ export function ImportWizard({ currentHash }: { currentHash: string }) {
                 <div className="p-3 bg-background-custom/60 border border-border-custom/50 rounded-lg space-y-2.5 pt-3 animate-in fade-in duration-400">
                   <div className="flex justify-between items-center font-mono text-xs">
                     <span className="text-text-muted uppercase">Total Rows Scanned</span>
-                    <span className="text-white font-bold">{jobDetails.totalCount}</span>
+                    <span className="text-text-primary font-bold">{jobDetails.totalCount}</span>
                   </div>
                   <div className="flex justify-between items-center font-mono text-xs">
                     <span className="text-status-ok font-bold uppercase">Success Ingests</span>

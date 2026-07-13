@@ -398,7 +398,7 @@ function KnowledgeGraphContent() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden font-sans bg-background-custom text-white">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden font-sans bg-background-custom text-text-primary">
       
       {/* ----------------------------------------------------------------------
           LEFT CONTROL PANEL
@@ -407,7 +407,7 @@ function KnowledgeGraphContent() {
         
         {/* Header Stats Strip */}
         <div className="p-4 border-b border-border-custom bg-surface-muted/30">
-          <h2 className="font-display text-lg font-bold text-white tracking-tight flex items-center space-x-1.5">
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight flex items-center space-x-1.5">
             <Layers className="w-5 h-5 text-primary" />
             <span>Knowledge Graph</span>
           </h2>
@@ -419,15 +419,15 @@ function KnowledgeGraphContent() {
           <div className="mt-3 grid grid-cols-3 gap-2 py-2 px-3 bg-background-custom/80 border border-border-custom rounded font-mono text-[10px]">
             <div>
               <span className="text-text-muted block uppercase">Nodes</span>
-              <span className="text-white font-bold text-xs">{formatNumber(mockGraphStats.totalNodes)}</span>
+              <span className="text-text-primary font-bold text-xs">{formatNumber(mockGraphStats.totalNodes)}</span>
             </div>
             <div className="border-l border-border-custom/60 pl-2">
               <span className="text-text-muted block uppercase">Edges</span>
-              <span className="text-white font-bold text-xs">{formatNumber(mockGraphStats.totalEdges)}</span>
+              <span className="text-text-primary font-bold text-xs">{formatNumber(mockGraphStats.totalEdges)}</span>
             </div>
             <div className="border-l border-border-custom/60 pl-2">
               <span className="text-text-muted block uppercase">Types</span>
-              <span className="text-white font-bold text-xs">{mockGraphStats.typesCount}</span>
+              <span className="text-text-primary font-bold text-xs">{mockGraphStats.typesCount}</span>
             </div>
           </div>
         </div>
@@ -693,14 +693,14 @@ function KnowledgeGraphContent() {
                 <span className="font-mono text-[9px] font-bold text-text-muted uppercase tracking-wider block">
                   {selectedNode.type} Entity
                 </span>
-                <h3 className="font-display font-bold text-white text-sm truncate max-w-[200px]" title={selectedNode.label}>
+                <h3 className="font-display font-bold text-text-primary text-sm truncate max-w-[200px]" title={selectedNode.label}>
                   {selectedNode.label}
                 </h3>
               </div>
             </div>
             <button 
               onClick={() => setSelectedNode(null)}
-              className="p-1 rounded-full border border-border-custom/80 hover:bg-surface-muted text-text-secondary hover:text-white transition-colors cursor-pointer"
+              className="p-1 rounded-full border border-border-custom/80 hover:bg-surface-muted text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -712,7 +712,7 @@ function KnowledgeGraphContent() {
             {/* Meta ID Table */}
             <div className="bg-background-custom/80 border border-border-custom rounded p-2.5">
               <span className="block text-[9px] font-mono text-text-muted uppercase mb-1">Global Knowledge Identifier</span>
-              <span className="font-mono text-[10px] text-white bg-surface-muted px-2 py-1 rounded border border-border-custom/50 block select-all">
+              <span className="font-mono text-[10px] text-text-primary bg-surface-muted px-2 py-1 rounded border border-border-custom/50 block select-all">
                 indus:ent:{selectedNode.id.toLowerCase()}
               </span>
             </div>
@@ -813,7 +813,7 @@ function KnowledgeGraphContent() {
           <div className="p-4 rounded-full bg-surface-muted/40 mb-3 border border-border-custom">
             <HelpCircle className="w-8 h-8 text-text-muted animate-pulse" />
           </div>
-          <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider mb-1">Select a Node</h4>
+          <h4 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider mb-1">Select a Node</h4>
           <p className="text-xs text-text-secondary leading-relaxed">
             Click any entity node inside the active canvas control room to load metadata profiles, linked documents, and compliance records.
           </p>

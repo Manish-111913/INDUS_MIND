@@ -248,7 +248,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
         <div className="flex items-center space-x-3">
           <button 
             onClick={onBack}
-            className="p-1.5 rounded border border-border-custom bg-surface-muted hover:bg-surface text-text-secondary hover:text-white transition-all cursor-pointer"
+            className="p-1.5 rounded border border-border-custom bg-surface-muted hover:bg-surface text-text-secondary hover:text-text-primary transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -260,7 +260,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
               <span>/</span>
               <span>RCA Workspace</span>
             </div>
-            <h1 className="font-display text-xl font-bold text-white tracking-tight mt-1">
+            <h1 className="font-display text-xl font-bold text-text-primary tracking-tight mt-1">
               AI-Augmented Root Cause Workspace
             </h1>
           </div>
@@ -312,7 +312,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
         {/* Incident Summary Card */}
         <div className="lg:col-span-2 bg-surface border border-border-custom rounded-lg p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-border-custom pb-3">
-            <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider">
               Incident Context Summary
             </h3>
             <span className="text-[10px] font-mono text-text-muted">
@@ -323,11 +323,11 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-background-custom/40 border border-border-custom/40 p-3 rounded">
               <span className="text-[10px] font-mono text-text-muted block uppercase">Asset Tag</span>
-              <span className="text-xs font-bold text-white mt-1 block">{failure.equipmentId}</span>
+              <span className="text-xs font-bold text-text-primary mt-1 block">{failure.equipmentId}</span>
             </div>
             <div className="bg-background-custom/40 border border-border-custom/40 p-3 rounded">
               <span className="text-[10px] font-mono text-text-muted block uppercase">Asset Class</span>
-              <span className="text-xs font-bold text-white mt-1 block truncate">{failure.equipmentName}</span>
+              <span className="text-xs font-bold text-text-primary mt-1 block truncate">{failure.equipmentName}</span>
             </div>
             <div className="bg-background-custom/40 border border-border-custom/40 p-3 rounded">
               <span className="text-[10px] font-mono text-text-muted block uppercase">Downtime Outage</span>
@@ -335,7 +335,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
             </div>
             <div className="bg-background-custom/40 border border-border-custom/40 p-3 rounded">
               <span className="text-[10px] font-mono text-text-muted block uppercase">Outage Severity</span>
-              <span className="text-xs font-bold text-white mt-1 block">{failure.severity}</span>
+              <span className="text-xs font-bold text-text-primary mt-1 block">{failure.severity}</span>
             </div>
           </div>
 
@@ -349,7 +349,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
 
         {/* Vertical Event Timeline */}
         <div className="bg-surface border border-border-custom rounded-lg p-5 flex flex-col">
-          <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider border-b border-border-custom pb-3 mb-4">
+          <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-3 mb-4">
             Incident Event Timeline
           </h3>
           
@@ -365,7 +365,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
 
                 <div className="space-y-0.5">
                   <div className="flex items-center space-x-2">
-                    <span className="font-mono text-[10px] font-bold text-white bg-background-custom/80 px-1.5 py-0.2 border border-border-custom rounded">
+                    <span className="font-mono text-[10px] font-bold text-text-primary bg-background-custom/80 px-1.5 py-0.2 border border-border-custom rounded">
                       {event.time}
                     </span>
                     <span className={`text-[9px] font-mono font-bold uppercase ${
@@ -395,7 +395,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
             <div className="flex items-center justify-between border-b border-border-custom pb-3">
               <div className="flex items-center space-x-2">
                 <Sparkles className="w-4 h-4 text-primary" />
-                <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+                <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider">
                   AI Probable Causes (Neural Graph)
                 </h3>
               </div>
@@ -419,8 +419,8 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
                     >
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center space-x-2">
-                          <span className="font-mono text-[10px] font-bold text-white">RANK {idx + 1}</span>
-                          <span className="font-sans font-bold text-white text-xs">{item.cause}</span>
+                          <span className="font-mono text-[10px] font-bold text-text-primary">RANK {idx + 1}</span>
+                          <span className="font-sans font-bold text-text-primary text-xs">{item.cause}</span>
                         </div>
                         {/* Confidence indicator line */}
                         <div className="flex items-center space-x-2 pt-1">
@@ -479,7 +479,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
           </div>
 
           <div className="p-3 bg-surface-muted/30 border border-border-custom rounded text-[11px] leading-relaxed text-text-secondary mt-4">
-            <span className="text-white font-bold block mb-0.5">ℹ Corpus Connection Info</span>
+            <span className="text-text-primary font-bold block mb-0.5">ℹ Corpus Connection Info</span>
             Corpus citations deep-link to indexed plant manuals and regulatory files (SOP-REF-112). Verification logs are mapped securely inside the Knowledge Graph.
           </div>
         </div>
@@ -487,7 +487,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
         {/* RIGHT COMPONENT: EDITABLE 5-WHY LADDER */}
         <div className="bg-surface border border-border-custom rounded-lg p-5 flex flex-col">
           <div className="border-b border-border-custom pb-3 mb-4 flex items-center justify-between">
-            <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider">
               AI 5-Why Causality Ladder (Editable)
             </h3>
             <span className="text-[10px] font-mono text-primary font-bold">CLICK TO EDIT ANY RUNG</span>
@@ -507,7 +507,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                   </div>
                   
-                  <div className="font-bold text-white py-0.5">
+                  <div className="font-bold text-text-primary py-0.5">
                     {question}?
                   </div>
 
@@ -535,7 +535,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
       <div className="bg-surface border border-border-custom rounded-lg p-5 space-y-6">
         <div className="border-b border-border-custom pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+            <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider">
               Interactive Fishbone (Ishikawa) Diagram
             </h3>
             <p className="text-xs text-text-secondary mt-1">
@@ -549,7 +549,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
                 key={cat}
                 onClick={() => setActiveFishboneCat(cat)}
                 className={`px-2 py-1 rounded transition-colors cursor-pointer capitalize ${
-                  activeFishboneCat === cat ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-white'
+                  activeFishboneCat === cat ? 'bg-primary text-white font-bold' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 {cat}
@@ -564,14 +564,14 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
           <div className="bg-background-custom/40 border border-border-custom rounded-lg p-4 flex flex-col justify-between space-y-4">
             <div>
               <div className="flex items-center justify-between pb-2 mb-3 border-b border-border-custom/60 font-mono text-xs">
-                <span className="font-bold text-white uppercase tracking-wider">Editing: {activeFishboneCat}</span>
+                <span className="font-bold text-text-primary uppercase tracking-wider">Editing: {activeFishboneCat}</span>
                 <span className="text-[10px] text-text-muted">{fishboneData[activeFishboneCat].length} items</span>
               </div>
 
               {/* Items List */}
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {fishboneData[activeFishboneCat].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-2 rounded bg-surface border border-border-custom/50 text-xs text-text-secondary hover:text-white group">
+                  <div key={idx} className="flex items-center justify-between p-2 rounded bg-surface border border-border-custom/50 text-xs text-text-secondary hover:text-text-primary group">
                     <span className="truncate pr-2 font-sans">{item}</span>
                     <button 
                       onClick={() => handleRemoveFishboneItem(idx)}
@@ -598,7 +598,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
                   value={newFishboneItem}
                   onChange={(e) => setNewFishboneItem(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddFishboneItem()}
-                  className="flex-1 bg-surface border border-border-custom rounded px-3 py-1.5 text-xs focus:outline-none focus:border-primary placeholder-text-muted text-white font-sans"
+                  className="flex-1 bg-surface border border-border-custom rounded px-3 py-1.5 text-xs focus:outline-none focus:border-primary placeholder-text-muted text-text-primary font-sans"
                 />
                 <button
                   onClick={handleAddFishboneItem}
@@ -763,7 +763,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
 
       {/* BOTTOM CORRECTIVE ACTIONS LIST */}
       <div className="bg-surface border border-border-custom rounded-lg p-5 space-y-4">
-        <h3 className="font-mono text-xs font-bold text-white uppercase tracking-wider border-b border-border-custom pb-3 mb-2">
+        <h3 className="font-mono text-xs font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-3 mb-2">
           Required Corrective Mitigation Actions
         </h3>
         
@@ -776,7 +776,7 @@ export function RcaWorkspace({ failure, onBack, onUpdateFailure, onAddWorkOrder 
             <div key={item.id} className="py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
-                  <span className="font-mono text-[9px] font-bold text-white bg-surface-muted border border-border-custom px-1.5 py-0.2 rounded">
+                  <span className="font-mono text-[9px] font-bold text-text-primary bg-surface-muted border border-border-custom px-1.5 py-0.2 rounded">
                     ACTION #{idx + 1}
                   </span>
                   <span className="font-mono text-[10px] text-text-muted">ASSIGNED: {item.assignee}</span>

@@ -253,7 +253,7 @@ function renderFormattedText(text: string, onCitationClick: (index: number) => v
         {subParts.map((subPart, sIdx) => {
           if (subPart.startsWith('**') && subPart.endsWith('**')) {
             return (
-              <strong key={sIdx} className="font-semibold text-white">
+              <strong key={sIdx} className="font-semibold text-text-primary">
                 {subPart.slice(2, -2)}
               </strong>
             );
@@ -287,7 +287,7 @@ function MessageTextRenderer({ text, onCitationClick }: { text: string; onCitati
           <thead>
             <tr className="bg-surface-muted border-b border-border-custom">
               {headers.map((h, i) => (
-                <th key={i} className="p-2 font-mono font-bold text-white uppercase tracking-wider text-[10px]">
+                <th key={i} className="p-2 font-mono font-bold text-text-primary uppercase tracking-wider text-[10px]">
                   {h.trim()}
                 </th>
               ))}
@@ -328,7 +328,7 @@ function MessageTextRenderer({ text, onCitationClick }: { text: string; onCitati
     
     if (line.trim().startsWith('###')) {
       elements.push(
-        <h4 key={i} className="font-display text-sm font-bold text-white mt-4 mb-2 uppercase tracking-wide">
+        <h4 key={i} className="font-display text-sm font-bold text-text-primary mt-4 mb-2 uppercase tracking-wide">
           {renderFormattedText(line.replace('###', '').trim(), onCitationClick)}
         </h4>
       );
@@ -1359,7 +1359,7 @@ export function ExpertCopilot() {
                                   </span>
                                   <span className="text-[9px] font-mono text-text-muted">Page {cite.page}</span>
                                 </div>
-                                <h5 className="font-semibold text-white truncate text-xs">{cite.title}</h5>
+                                <h5 className="font-semibold text-text-primary truncate text-xs">{cite.title}</h5>
                                 <p className="text-[10px] text-text-secondary line-clamp-2 leading-relaxed">
                                   "{getCitationSnippet(cite.title)}"
                                 </p>
@@ -1403,7 +1403,7 @@ export function ExpertCopilot() {
                         <div className="flex space-x-2 font-mono text-text-muted">
                           <button 
                             onClick={() => copyAnswerToClipboard(msg.text)}
-                            className="hover:text-white flex items-center space-x-1 cursor-pointer"
+                            className="hover:text-text-primary flex items-center space-x-1 cursor-pointer"
                           >
                             <Copy className="w-3 h-3" />
                             <span>[COPY]</span>
@@ -1411,7 +1411,7 @@ export function ExpertCopilot() {
                           <span className="text-border-custom">|</span>
                           <button 
                             onClick={() => triggerToast("Answer cloned into unified system Knowledge Base successfully.")}
-                            className="hover:text-white flex items-center space-x-1 cursor-pointer"
+                            className="hover:text-text-primary flex items-center space-x-1 cursor-pointer"
                           >
                             <Bookmark className="w-3 h-3" />
                             <span>[SAVE TO KB]</span>

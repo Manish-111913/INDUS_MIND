@@ -105,7 +105,7 @@ export function AuditLogs() {
   return (
     <div className="space-y-6">
       <div className="border-b border-border-custom pb-4">
-        <h1 className="font-display text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+        <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
           <span>Immutable Operational Audit Ledger</span>
         </h1>
         <p className="text-xs text-text-secondary mt-1">
@@ -132,7 +132,7 @@ export function AuditLogs() {
             <tbody className="divide-y divide-border-custom/50 text-text-secondary">
               {records.map((r) => (
                 <tr key={r.id} className="hover:bg-background-custom/30 transition-colors">
-                  <td className="p-3 text-white select-all">{r.time}</td>
+                  <td className="p-3 text-text-primary select-all">{r.time}</td>
                   <td className="p-3 font-sans text-text-primary font-semibold">{r.actor}</td>
                   <td className="p-3"><span className="text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 text-[10px]">{r.action}</span></td>
                   <td className="p-3 text-accent">{r.node}</td>

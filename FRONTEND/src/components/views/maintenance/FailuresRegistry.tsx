@@ -117,7 +117,7 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
               <TrendingUp className="w-5 h-5" />
               <span className="font-mono text-xs font-bold uppercase tracking-wider">Refinery Pareto Axiom</span>
             </div>
-            <h3 className="font-display text-lg font-bold text-white leading-snug">
+            <h3 className="font-display text-lg font-bold text-text-primary leading-snug">
               80% of Downtime Traces back to 20% of Failure Modes
             </h3>
             <p className="text-xs text-text-secondary leading-relaxed">
@@ -127,7 +127,7 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
           </div>
           
           <div className="p-3 bg-surface-muted/50 border border-border-custom/50 rounded text-[11px] font-mono text-text-secondary">
-            <span className="text-white font-bold block mb-1">💡 Recommendations</span>
+            <span className="text-text-primary font-bold block mb-1">💡 Recommendations</span>
             Tuning suction manifold valves (V-230 series) is identified as the highest ROI preventive action.
           </div>
         </div>
@@ -201,7 +201,7 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
             placeholder="Search failures by ID, asset, or failure mode..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-background-custom border border-border-custom pl-9 pr-4 py-2 text-xs rounded-md focus:outline-none focus:border-primary placeholder-text-muted text-white"
+            className="w-full bg-background-custom border border-border-custom pl-9 pr-4 py-2 text-xs rounded-md focus:outline-none focus:border-primary placeholder-text-muted text-text-primary"
           />
         </div>
 
@@ -278,14 +278,14 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
                 filteredRecords.map((record) => (
                   <tr key={record.id} className="hover:bg-surface-muted/30 transition-all">
                     {/* ID */}
-                    <td className="py-3 px-4 font-mono font-bold text-white">
+                    <td className="py-3 px-4 font-mono font-bold text-text-primary">
                       {record.id}
                     </td>
 
                     {/* Asset */}
                     <td className="py-3 px-4">
                       <div>
-                        <span className="font-semibold text-white block leading-tight">{record.equipmentName}</span>
+                        <span className="font-semibold text-text-primary block leading-tight">{record.equipmentName}</span>
                         <span className="font-mono text-[10px] text-text-muted mt-0.5 block">{record.equipmentId}</span>
                       </div>
                     </td>
@@ -311,7 +311,7 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
                     </td>
 
                     {/* Downtime */}
-                    <td className="py-3 px-4 text-right font-mono text-white font-semibold">
+                    <td className="py-3 px-4 text-right font-mono text-text-primary font-semibold">
                       <div className="flex items-center justify-end space-x-1">
                         <Clock className="w-3.5 h-3.5 text-text-muted" />
                         <span>{record.downtimeMinutes}m</span>

@@ -206,7 +206,7 @@ export function ComplianceAudits({
               </div>
 
               <div className="p-3.5 bg-background-custom border border-border-custom rounded-lg font-mono text-[11px] text-[#F5A524] inline-block">
-                LIVE COMPILING COUNTER: <strong className="text-white text-xs">{liveCounter}</strong> CITED DOCUMENTS COLLECTED
+                LIVE COMPILING COUNTER: <strong className="text-text-primary text-xs">{liveCounter}</strong> CITED DOCUMENTS COLLECTED
               </div>
             </div>
           )}
@@ -231,7 +231,7 @@ export function ComplianceAudits({
                 </div>
                 <div className="border-r border-border-custom/50">
                   <span className="block text-text-muted text-[10px] uppercase">ITEMS CITATED</span>
-                  <span className="block font-bold text-white text-sm mt-0.5">{latestPackage.itemCount} Logs</span>
+                  <span className="block font-bold text-text-primary text-sm mt-0.5">{latestPackage.itemCount} Logs</span>
                 </div>
                 <div>
                   <span className="block text-text-muted text-[10px] uppercase">SECURITY HASH</span>
@@ -276,7 +276,7 @@ export function ComplianceAudits({
         /* ----------------- STANDALONE ACTION BANNER ----------------- */
         <div className="p-5 bg-surface border border-primary/20 bg-gradient-to-r from-surface to-primary/5 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider flex items-center">
+            <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider flex items-center">
               <Shield className="w-4.5 h-4.5 text-primary mr-1.5" /> Immutable Evidence Compiler
             </h3>
             <p className="text-xs text-text-secondary">Consolidate work orders, maintenance checklists, and active plant procedures to satisfy upcoming audits.</p>
@@ -297,7 +297,7 @@ export function ComplianceAudits({
         
         {/* Left: Audits Calendar List - 7 Cols */}
         <div className="xl:col-span-7 bg-surface border border-border-custom rounded-xl p-5 space-y-4">
-          <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider border-b border-border-custom/50 pb-2 flex items-center">
+          <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider border-b border-border-custom/50 pb-2 flex items-center">
             <Calendar className="w-4 h-4 text-primary mr-1.5" /> Scheduled HSE Audits & Sweeps
           </h3>
 
@@ -317,7 +317,7 @@ export function ComplianceAudits({
                     </span>
                   </div>
 
-                  <h4 className="text-xs font-bold text-white leading-snug">{audit.title}</h4>
+                  <h4 className="text-xs font-bold text-text-primary leading-snug">{audit.title}</h4>
                   
                   <div className="grid grid-cols-2 gap-4 text-[10px] text-text-secondary font-mono">
                     <div>
@@ -349,7 +349,7 @@ export function ComplianceAudits({
 
         {/* Right: Evidence Packages Generated History - 5 Cols */}
         <div className="xl:col-span-5 bg-surface border border-border-custom rounded-xl p-5 space-y-4">
-          <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider border-b border-border-custom/50 pb-2 flex items-center">
+          <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider border-b border-border-custom/50 pb-2 flex items-center">
             <Clock className="w-4 h-4 text-primary mr-1.5" /> Package Build History
           </h3>
 
@@ -358,7 +358,7 @@ export function ComplianceAudits({
               <div key={pkg.id} className="p-3 bg-background-custom/40 border border-border-custom/60 rounded-lg space-y-2 text-xs">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-white">{pkg.name}</h4>
+                    <h4 className="font-bold text-text-primary">{pkg.name}</h4>
                     <span className="font-mono text-[9px] text-text-muted">BUILT: {pkg.generatedAt}</span>
                   </div>
                   <span className="font-mono text-[10px] text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
@@ -391,7 +391,7 @@ export function ComplianceAudits({
 
                   <button
                     onClick={() => alert(`Copied secure URL: ${pkg.shareLink}`)}
-                    className="text-[10px] font-mono text-text-muted hover:text-white flex items-center"
+                    className="text-[10px] font-mono text-text-muted hover:text-text-primary flex items-center"
                   >
                     <ExternalLink className="w-3 h-3 mr-1" /> Share link
                   </button>

@@ -110,7 +110,7 @@ export function SparePartsModule() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border-custom pb-4 gap-4">
         <div>
-          <h2 className="font-display text-xl font-bold text-white tracking-tight flex items-center space-x-2">
+          <h2 className="font-display text-xl font-bold text-text-primary tracking-tight flex items-center space-x-2">
             <Icons.Layers className="w-5 h-5 text-primary" />
             <span>Plant Spare Parts & Inventory Catalog</span>
           </h2>
@@ -252,7 +252,7 @@ export function SparePartsModule() {
           className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all min-h-[44px] ${
             filterLowStock 
               ? 'bg-status-critical/10 border-status-critical/30 text-status-critical' 
-              : 'bg-background-custom border-border-custom text-text-secondary hover:text-white'
+              : 'bg-background-custom border-border-custom text-text-secondary hover:text-text-primary'
           }`}
         >
           <Icons.AlertTriangle className="w-4 h-4" />
@@ -298,7 +298,7 @@ export function SparePartsModule() {
 
                   return (
                     <tr key={part.id} className="hover:bg-background-custom/30 transition-colors">
-                      <td className="p-3 font-mono font-bold text-white select-all">{part.code}</td>
+                      <td className="p-3 font-mono font-bold text-text-primary select-all">{part.code}</td>
                       <td className="p-3 text-text-primary font-medium">{part.name}</td>
                       <td className="p-3 text-text-secondary">{part.category}</td>
                       <td className="p-3 text-text-secondary font-mono text-[11px]">{part.location}</td>
@@ -311,14 +311,14 @@ export function SparePartsModule() {
                           {isLow ? `REORDER (MIN: ${part.min_stock})` : `ADEQUATE (MIN: ${part.min_stock})`}
                         </span>
                       </td>
-                      <td className="p-3 text-right font-mono font-bold text-white text-sm">
+                      <td className="p-3 text-right font-mono font-bold text-text-primary text-sm">
                         {isEditing ? (
                           <input
                             type="number"
                             min="0"
                             value={editingOnHand}
                             onChange={(e) => setEditingOnHand(parseInt(e.target.value) || 0)}
-                            className="bg-background-custom border border-primary/50 rounded px-2 py-1 text-xs w-20 text-right focus:outline-none focus:border-primary text-white"
+                            className="bg-background-custom border border-primary/50 rounded px-2 py-1 text-xs w-20 text-right focus:outline-none focus:border-primary text-text-primary"
                           />
                         ) : (
                           <span className={isLow ? 'text-status-critical' : 'text-text-primary'}>
@@ -350,7 +350,7 @@ export function SparePartsModule() {
                               setEditingPartId(part.id);
                               setEditingOnHand(part.on_hand);
                             }}
-                            className="inline-flex items-center space-x-1 px-2.5 py-1 text-[11px] font-mono border border-border-custom hover:border-primary/50 text-text-secondary hover:text-white rounded cursor-pointer transition-all"
+                            className="inline-flex items-center space-x-1 px-2.5 py-1 text-[11px] font-mono border border-border-custom hover:border-primary/50 text-text-secondary hover:text-text-primary rounded cursor-pointer transition-all"
                           >
                             <Icons.Edit3 className="w-3.5 h-3.5 text-primary" />
                             <span>Edit Stock</span>

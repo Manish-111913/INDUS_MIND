@@ -195,8 +195,8 @@ export function ComplianceRegulations({
           style={{ paddingLeft: `${depth * 14 + 8}px` }}
           className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
             isSelected 
-              ? 'bg-primary/15 text-white border-l-2 border-primary' 
-              : 'hover:bg-surface-muted text-text-secondary hover:text-white'
+              ? 'bg-primary/15 text-text-primary border-l-2 border-primary'
+              : 'hover:bg-surface-muted text-text-secondary hover:text-text-primary'
           }`}
         >
           <div className="flex items-center space-x-1.5 min-w-0">
@@ -245,13 +245,13 @@ export function ComplianceRegulations({
                   onSelectReg(null);
                   setSelectedClause(null);
                 }}
-                className="p-1.5 bg-surface hover:bg-surface-muted text-text-secondary hover:text-white rounded border border-border-custom cursor-pointer transition-colors"
+                className="p-1.5 bg-surface hover:bg-surface-muted text-text-secondary hover:text-text-primary rounded border border-border-custom cursor-pointer transition-colors"
                 title="Back to Registry"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            <h2 className="font-display text-lg font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+            <h2 className="font-display text-lg font-bold text-text-primary uppercase tracking-wider flex items-center space-x-2">
               <FileText className="w-5 h-5 text-primary" />
               <span>{selectedRegId ? 'Regulation Clause Mapping Explorer' : 'Federal Regulations Registry'}</span>
             </h2>
@@ -361,7 +361,7 @@ export function ComplianceRegulations({
               <tbody className="divide-y divide-border-custom/50 text-text-secondary">
                 {regulations.map((reg) => (
                   <tr key={reg.id} className="hover:bg-background-custom/30 transition-colors">
-                    <td className="p-4 font-mono font-bold text-white">{reg.code}</td>
+                    <td className="p-4 font-mono font-bold text-text-primary">{reg.code}</td>
                     <td className="p-4">
                       <div className="font-bold text-text-primary">{reg.title}</div>
                       <div className="text-[10px] text-text-muted mt-0.5">System synchronized baseline structure</div>
@@ -434,7 +434,7 @@ export function ComplianceRegulations({
                 <div className="border-b border-border-custom/50 pb-3 flex flex-wrap gap-2 justify-between items-center">
                   <div>
                     <span className="font-mono text-xs font-bold text-primary">{selectedClause.code}</span>
-                    <h3 className="font-display text-sm font-bold text-white mt-0.5">{selectedClause.title}</h3>
+                    <h3 className="font-display text-sm font-bold text-text-primary mt-0.5">{selectedClause.title}</h3>
                   </div>
                   {selectedClause.gapsCount > 0 && (
                     <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase flex items-center animate-pulse">
@@ -477,7 +477,7 @@ export function ComplianceRegulations({
                               <span className="text-[9px] font-mono font-bold bg-background-custom border border-border-custom px-1.5 py-0.2 rounded text-text-secondary uppercase">
                                 {item.type}
                               </span>
-                              <span className="text-xs font-bold text-white">{item.name}</span>
+                              <span className="text-xs font-bold text-text-primary">{item.name}</span>
                             </div>
                             
                             <div className="flex items-center space-x-2 text-[10px] text-text-secondary font-mono">
@@ -509,7 +509,7 @@ export function ComplianceRegulations({
                             ) : (
                               <button
                                 onClick={() => handleUpdateMappingStatus(item.id, 'Proposed')}
-                                className="px-2 py-0.5 bg-surface hover:bg-surface-muted text-text-secondary hover:text-white rounded border border-border-custom font-mono text-[9px] cursor-pointer"
+                                className="px-2 py-0.5 bg-surface hover:bg-surface-muted text-text-secondary hover:text-text-primary rounded border border-border-custom font-mono text-[9px] cursor-pointer"
                               >
                                 Undo {item.status}
                               </button>
@@ -523,7 +523,7 @@ export function ComplianceRegulations({
                     <div className="p-4 bg-amber-500/5 border border-amber-500/35 rounded-lg flex items-start space-x-3 text-xs">
                       <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
                       <div className="space-y-1 text-text-secondary">
-                        <h4 className="font-bold text-white">Unmapped Baseline Warning</h4>
+                        <h4 className="font-bold text-text-primary">Unmapped Baseline Warning</h4>
                         <p>No active procedures, equipments, or ledger logs are currently confirmed in mapping directory for this clause.</p>
                         <div className="pt-2 text-primary font-mono text-[10px] flex items-center space-x-1 cursor-pointer hover:underline">
                           <Sparkles className="w-3.5 h-3.5" />

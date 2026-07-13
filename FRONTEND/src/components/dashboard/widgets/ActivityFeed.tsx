@@ -47,7 +47,7 @@ export function ActivityFeed({
     <div className="bg-surface border border-border-custom p-4 rounded-lg flex flex-col justify-between h-full shadow overflow-hidden">
       <div>
         <div className="flex justify-between items-center border-b border-border-custom/50 pb-2 mb-3">
-          <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+          <h4 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider">
             {title}
           </h4>
           <StatusChip label="Live Stream" type="ok" className="scale-75 origin-right" />
@@ -75,7 +75,7 @@ export function ActivityFeed({
                     {getIcon(item.iconType)}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-mono font-bold text-white text-[11px] truncate leading-tight" title={item.title}>
+                    <p className="font-mono font-bold text-text-primary text-[11px] truncate leading-tight" title={item.title}>
                       {item.title}
                     </p>
                     {item.subtitle && (

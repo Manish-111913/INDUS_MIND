@@ -393,7 +393,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
             <div className="p-1.5 rounded bg-primary/10 text-primary border border-primary/20">
               <Icons.Bot className="w-5 h-5" />
             </div>
-            <span className="font-display font-bold tracking-tight text-white hidden sm:inline-block">IndusMind</span>
+            <span className="font-display font-bold tracking-tight text-text-primary hidden sm:inline-block">IndusMind</span>
           </div>
 
           <div className="h-4 w-[1px] bg-border-custom hidden md:block" />
@@ -863,8 +863,8 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
             <div className="flex justify-between items-center gap-2">
               <span className="font-mono text-[10px] font-bold uppercase tracking-wider truncate">{activeToast.title}</span>
               <button 
-                onClick={dismissToast} 
-                className="text-text-muted hover:text-white p-0.5 rounded cursor-pointer bg-transparent border-0"
+                onClick={dismissToast}
+                className="text-text-muted hover:text-text-primary p-0.5 rounded cursor-pointer bg-transparent border-0"
               >
                 ✕
               </button>
@@ -1090,7 +1090,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
               {commandSearch && flattened.length === 0 && !isSuggestLoading && (
                 <div className="p-8 text-center text-text-secondary">
                   <Icons.Search className="w-8 h-8 text-text-muted mx-auto mb-2 animate-pulse" />
-                  <p className="font-semibold text-white">No explicit matches found</p>
+                  <p className="font-semibold text-text-primary">No explicit matches found</p>
                   <p className="text-[11px] text-text-secondary mt-1">
                     Press <kbd className="px-1 py-0.5 bg-surface-muted border border-border-custom rounded font-mono">Enter</kbd> to execute a dynamic refinery corpus search.
                   </p>
@@ -1183,13 +1183,13 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
             <div className="p-4 border-b border-border-custom bg-surface-muted flex justify-between items-center">
               <div className="flex items-center space-x-2">
                 <Icons.Keyboard className="w-5 h-5 text-primary" />
-                <h3 className="font-display font-bold text-sm text-white uppercase tracking-wider">
+                <h3 className="font-display font-bold text-sm text-text-primary uppercase tracking-wider">
                   Command Desk Keyboard Shortcuts
                 </h3>
               </div>
               <button 
                 onClick={() => setIsShortcutsOpen(false)}
-                className="text-text-muted hover:text-white cursor-pointer transition-colors border-0 bg-transparent"
+                className="text-text-muted hover:text-text-primary cursor-pointer transition-colors border-0 bg-transparent"
               >
                 <Icons.X className="w-4 h-4" />
               </button>
@@ -1268,13 +1268,13 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
             <div className="p-4 border-b border-border-custom bg-surface-muted flex justify-between items-center text-left">
               <div className="flex items-center space-x-2">
                 <Icons.Sparkles className="w-5 h-5 text-primary" />
-                <h3 className="font-display font-bold text-sm text-white uppercase tracking-wider">
+                <h3 className="font-display font-bold text-sm text-text-primary uppercase tracking-wider">
                   IndusMind System Updates
                 </h3>
               </div>
               <button 
                 onClick={() => setIsChangelogOpen(false)}
-                className="p-1 rounded hover:bg-surface-muted text-text-muted hover:text-white cursor-pointer transition-colors border-0 bg-transparent"
+                className="p-1 rounded hover:bg-surface-muted text-text-muted hover:text-text-primary cursor-pointer transition-colors border-0 bg-transparent"
               >
                 <Icons.X className="w-4 h-4" />
               </button>
@@ -1309,7 +1309,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
                             {log.date}
                           </span>
                         </div>
-                        <h4 className="text-xs font-bold text-white tracking-tight">
+                        <h4 className="text-xs font-bold text-text-primary tracking-tight">
                           {log.title}
                         </h4>
                         <p className="text-xs text-text-secondary leading-relaxed">
@@ -1436,20 +1436,20 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
         return (
           <div 
             style={style}
-            className="bg-surface border border-primary/45 rounded-xl shadow-2xl p-5 z-[100] font-sans text-left space-y-4 animate-fade-in text-white"
+            className="bg-surface border border-primary/45 rounded-xl shadow-2xl p-5 z-[100] font-sans text-left space-y-4 animate-fade-in text-text-primary"
           >
             <div className="flex justify-between items-start">
               <div className="space-y-1">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
                   SYSTEM TOUR · STEP {currentTourStepIdx + 1} OF {tourSteps.length}
                 </span>
-                <h4 className="font-display font-bold text-xs text-white">
+                <h4 className="font-display font-bold text-xs text-text-primary">
                   {activeStep.title}
                 </h4>
               </div>
               <button 
                 onClick={() => setTourActive(false)}
-                className="text-text-muted hover:text-white cursor-pointer transition-colors border-0 bg-transparent p-1 rounded hover:bg-surface-muted"
+                className="text-text-muted hover:text-text-primary cursor-pointer transition-colors border-0 bg-transparent p-1 rounded hover:bg-surface-muted"
                 title="Skip Tour"
               >
                 <Icons.X className="w-4 h-4" />
@@ -1463,7 +1463,7 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
             <div className="flex justify-between items-center pt-2 border-t border-border-custom/30">
               <button
                 onClick={() => setTourActive(false)}
-                className="text-[10px] font-mono font-bold text-text-muted hover:text-white transition-colors cursor-pointer uppercase border-0 bg-transparent"
+                className="text-[10px] font-mono font-bold text-text-muted hover:text-text-primary transition-colors cursor-pointer uppercase border-0 bg-transparent"
               >
                 Skip Tour
               </button>
@@ -1558,7 +1558,7 @@ export function PageHeader({ title, description, actionSlot }: PageHeaderProps) 
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-border-custom pb-4 mb-6">
       <div>
-        <h1 className="font-display text-2xl font-bold text-white tracking-tight">
+        <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight">
           {title}
         </h1>
         {description && (

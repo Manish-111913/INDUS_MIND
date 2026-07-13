@@ -167,7 +167,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
       {/* Header and navigation */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-border-custom pb-4 gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-white tracking-tight">Operator Profile & Settings</h1>
+          <h1 className="font-display text-2xl font-bold text-text-primary tracking-tight">Operator Profile & Settings</h1>
           <p className="text-xs text-text-secondary mt-0.5">
             Configure your secure node login profile, customize theme interfaces, and review active terminal authorization keys.
           </p>
@@ -179,7 +179,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
             className={`px-3 py-1.5 rounded text-xs font-medium cursor-pointer transition-all ${
               activeTab === 'profile'
                 ? 'bg-primary text-white font-bold'
-                : 'text-text-secondary hover:text-white'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Terminal Profile
@@ -189,7 +189,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
             className={`px-3 py-1.5 rounded text-xs font-medium cursor-pointer transition-all ${
               activeTab === 'settings'
                 ? 'bg-primary text-white font-bold'
-                : 'text-text-secondary hover:text-white'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Console Preferences
@@ -199,7 +199,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
             className={`px-3 py-1.5 rounded text-xs font-medium cursor-pointer transition-all ${
               activeTab === 'notifications'
                 ? 'bg-primary text-white font-bold'
-                : 'text-text-secondary hover:text-white'
+                : 'text-text-secondary hover:text-text-primary'
             }`}
           >
             Notification Channels
@@ -361,7 +361,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                 <div className="flex justify-end pt-2 border-t border-border-custom/50">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-surface border border-border-custom hover:border-primary/50 text-text-secondary hover:text-white rounded-lg font-bold flex items-center space-x-1.5 transition-all cursor-pointer min-h-[44px]"
+                    className="px-5 py-2.5 bg-surface border border-border-custom hover:border-primary/50 text-text-secondary hover:text-text-primary rounded-lg font-bold flex items-center space-x-1.5 transition-all cursor-pointer min-h-[44px]"
                   >
                     <Icons.Lock className="w-4 h-4" />
                     <span>Replace Secure Password</span>
@@ -388,7 +388,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
               <div className="space-y-3.5">
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="block font-sans font-semibold text-white">TOTP Authenticator Gate</span>
+                    <span className="block font-sans font-semibold text-text-primary">TOTP Authenticator Gate</span>
                     <span className="block text-[11px] text-text-muted mt-0.5">Protect logins with hardware keys.</span>
                   </div>
                   <button
@@ -450,7 +450,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
           {/* Profile Card Banner */}
           <div className="bg-gradient-to-r from-[#0E7C86]/10 via-surface to-surface border border-border-custom rounded-xl p-6 flex flex-col sm:flex-row items-center gap-5 relative overflow-hidden">
             <div className="absolute right-0 top-0 opacity-[0.02] transform translate-x-12 translate-y-12">
-              <Icons.Shield className="w-64 h-64 text-white" />
+              <Icons.Shield className="w-64 h-64 text-text-primary" />
             </div>
             <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center relative flex-shrink-0 shadow-lg shadow-primary/10">
               <Icons.User className="w-8 h-8 text-primary" />
@@ -460,7 +460,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
             </div>
             <div className="text-center sm:text-left space-y-1 z-10">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <h2 className="text-base font-bold text-white font-display">{user?.name || 'Aditya Vardhan'}</h2>
+                <h2 className="text-base font-bold text-text-primary font-display">{user?.name || 'Aditya Vardhan'}</h2>
                 <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-[9px] font-mono uppercase font-bold">{user?.role || 'Admin'}</span>
               </div>
               <p className="text-[11px] text-text-secondary font-mono">{user?.email || 'admin@indusmind.io'}</p>
@@ -510,7 +510,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Primary Language */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pt-2">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Primary Language Translation</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Primary Language Translation</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Translate console terminology into local dialects.</span>
                     </div>
                     <div>
@@ -540,7 +540,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Currency Selector */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Preferred Currency representation</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Preferred Currency representation</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Currency symbol used in financials and downtime audits.</span>
                     </div>
                     <div>
@@ -560,7 +560,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Date Format Selector */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center border-t border-border-custom/30 pt-3.5">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Standardized Date Format</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Standardized Date Format</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Preferred calendar representation for logs.</span>
                     </div>
                     <div>
@@ -580,7 +580,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Timezone Selector */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center border-t border-border-custom/30 pt-3.5">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Console Reference Timezone</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Console Reference Timezone</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Target timezone for live scheduler triggers.</span>
                     </div>
                     <div>
@@ -610,7 +610,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Unit System */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Primary Unit System</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Primary Unit System</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Target baseline system of physical metrics.</span>
                     </div>
                     <div>
@@ -629,7 +629,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Pressure Unit */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center border-t border-border-custom/30 pt-3.5">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Pressure Measurement Scale</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Pressure Measurement Scale</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Conversion unit used on pressure booster displays.</span>
                     </div>
                     <div>
@@ -649,7 +649,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
                   {/* Temperature Unit */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center border-t border-border-custom/30 pt-3.5">
                     <div>
-                      <span className="block font-sans font-semibold text-white text-xs">Thermodynamic Scale</span>
+                      <span className="block font-sans font-semibold text-text-primary text-xs">Thermodynamic Scale</span>
                       <span className="block text-[11px] text-text-muted mt-0.5">Calibration metrics used on reactor thermowells.</span>
                     </div>
                     <div>
@@ -684,7 +684,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
               {saveSuccess && (
                 <div className="bg-status-ok/10 text-status-ok border border-status-ok/25 p-4 rounded-xl flex items-center space-x-2.5 animate-fade-in shadow-md">
                   <Icons.ShieldCheck className="w-5 h-5 text-status-ok" />
-                  <span className="font-semibold text-white">Console preferences committed successfully. Client modules re-calibrated.</span>
+                  <span className="font-semibold text-text-primary">Console preferences committed successfully. Client modules re-calibrated.</span>
                 </div>
               )}
 
@@ -866,7 +866,7 @@ function NotificationsMatrixModule() {
               const isSaving = savingRows[evt];
               return (
                 <tr key={evt} className="hover:bg-background-custom/30 transition-colors">
-                  <td className="p-3 font-mono text-white select-all">
+                  <td className="p-3 font-mono text-text-primary select-all">
                     {evt}
                   </td>
                   <td className="p-3 text-center">
@@ -934,7 +934,7 @@ function NotificationsMatrixModule() {
       <div className="bg-background-custom p-4 rounded-lg border border-border-custom text-[11px] text-text-secondary leading-relaxed flex items-start space-x-2.5">
         <Icons.Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold text-white block mb-0.5">Automated Event Pipeline Rules</span>
+          <span className="font-semibold text-text-primary block mb-0.5">Automated Event Pipeline Rules</span>
           <span>Saving any preference triggers an optimistic write-back to standard user databases, updating the underlying dispatch relays. Digest bundles are consolidated at 06:00 IST daily.</span>
         </div>
       </div>

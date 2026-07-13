@@ -52,7 +52,7 @@ export function ShortcutGrid({
   return (
     <div className="bg-surface border border-border-custom p-4 rounded-lg flex flex-col justify-between h-full shadow overflow-hidden">
       <div>
-        <h4 className="font-display text-xs font-bold text-white uppercase tracking-wider mb-1">
+        <h4 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider mb-1">
           {title}
         </h4>
         {description && (
@@ -77,7 +77,7 @@ export function ShortcutGrid({
                 <IconComponent className="w-4 h-4" />
               </div>
               <div className="w-full">
-                <span className="block font-sans text-xs font-bold text-white truncate leading-tight group-hover:text-primary transition-colors">
+                <span className="block font-sans text-xs font-bold text-text-primary truncate leading-tight group-hover:text-primary transition-colors">
                   {sc.label}
                 </span>
                 {sc.sublabel && (

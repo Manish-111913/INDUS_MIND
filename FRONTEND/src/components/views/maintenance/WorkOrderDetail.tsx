@@ -223,7 +223,7 @@ export function WorkOrderDetail({
       <div className="flex items-center justify-between border-b border-border-custom pb-4">
         <button 
           onClick={onBackToList}
-          className="flex items-center space-x-2 text-xs font-mono font-bold text-text-secondary hover:text-white transition-colors cursor-pointer"
+          className="flex items-center space-x-2 text-xs font-mono font-bold text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4 text-primary" />
           <span>BACK TO WORK ORDERS MATRIX</span>
@@ -244,7 +244,7 @@ export function WorkOrderDetail({
         <div className="flex flex-col md:flex-row md:items-start md:justify-between border-b border-border-custom pb-4 gap-4">
           <div>
             <div className="flex items-center space-x-2.5">
-              <span className="font-mono text-xs font-bold text-white bg-surface-muted border border-border-custom px-2 py-0.5 rounded select-all">
+              <span className="font-mono text-xs font-bold text-text-primary bg-surface-muted border border-border-custom px-2 py-0.5 rounded select-all">
                 {workOrder.id}
               </span>
               <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
@@ -261,7 +261,7 @@ export function WorkOrderDetail({
                 ● {workOrder.slaDetails}
               </span>
             </div>
-            <h2 className="font-display text-base md:text-lg font-bold text-white mt-2 leading-tight">
+            <h2 className="font-display text-base md:text-lg font-bold text-text-primary mt-2 leading-tight">
               {workOrder.title}
             </h2>
           </div>
@@ -273,7 +273,7 @@ export function WorkOrderDetail({
                 {workOrder.assignee.avatar}
               </span>
               <div className="text-right">
-                <span className="block text-xs font-bold text-white font-sans">{workOrder.assignee.name}</span>
+                <span className="block text-xs font-bold text-text-primary font-sans">{workOrder.assignee.name}</span>
                 <span className="block text-[10px] font-mono text-text-muted leading-tight">{workOrder.assignee.role}</span>
               </div>
             </div>
@@ -333,7 +333,7 @@ export function WorkOrderDetail({
           
           {/* Section 1: Summary + Equipment Card */}
           <div className="bg-surface border border-border-custom p-5 rounded-lg space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider border-b border-border-custom pb-2">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-2">
               Work Scope Summary & Equipment Link
             </h3>
             
@@ -369,7 +369,7 @@ export function WorkOrderDetail({
           {/* Section 2: Safety & Permits Checklist */}
           <div className="bg-surface border border-border-custom p-5 rounded-lg space-y-4">
             <div className="flex justify-between items-center border-b border-border-custom pb-2">
-              <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+              <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4 text-status-ok" />
                 <span>Mandatory LOTO & Safety Controls</span>
               </h3>
@@ -430,7 +430,7 @@ export function WorkOrderDetail({
 
           {/* Section 3: Interactive Procedure Stepper */}
           <div className="bg-surface border border-border-custom p-5 rounded-lg space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider border-b border-border-custom pb-2">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-2">
               Procedural Step-by-Step Tasklist
             </h3>
 
@@ -455,7 +455,7 @@ export function WorkOrderDetail({
                           disabled={workOrder.status !== 'In Progress'}
                         />
                         <div>
-                          <strong className="text-white text-xs block">
+                          <strong className="text-text-primary text-xs block">
                             Step {idx + 1}: {step.title}
                           </strong>
                           <span className="text-text-secondary text-[11px] leading-normal block mt-0.5">
@@ -477,7 +477,7 @@ export function WorkOrderDetail({
                           <button
                             onClick={() => handleAttachMockPhoto(step.id)}
                             disabled={workOrder.status !== 'In Progress'}
-                            className="p-2 bg-surface-muted hover:bg-surface border border-border-custom text-text-muted hover:text-white rounded transition-colors cursor-pointer disabled:opacity-40"
+                            className="p-2 bg-surface-muted hover:bg-surface border border-border-custom text-text-muted hover:text-text-primary rounded transition-colors cursor-pointer disabled:opacity-40"
                             title="Attach Photo Diagnostics"
                           >
                             <Camera className="w-4 h-4" />
@@ -494,7 +494,7 @@ export function WorkOrderDetail({
                         placeholder="Write note or reading parameters..."
                         value={step.note}
                         onChange={(e) => handleStepNoteChange(step.id, e.target.value)}
-                        className="bg-transparent border-none text-[10px] text-white focus:outline-none flex-1 placeholder-text-muted"
+                        className="bg-transparent border-none text-[10px] text-text-primary focus:outline-none flex-1 placeholder-text-muted"
                         disabled={workOrder.status !== 'In Progress'}
                       />
                     </div>
@@ -519,7 +519,7 @@ export function WorkOrderDetail({
 
           {/* Section 4: Parts & Labor Tables */}
           <div className="bg-surface border border-border-custom p-5 rounded-lg space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider border-b border-border-custom pb-2">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-2">
               Replacement Parts & Labor Records
             </h3>
 
@@ -545,10 +545,10 @@ export function WorkOrderDetail({
                     ) : (
                       workOrder.parts.map(part => (
                         <tr key={part.partNo}>
-                          <td className="p-2 font-mono text-white select-all">{part.partNo}</td>
+                          <td className="p-2 font-mono text-text-primary select-all">{part.partNo}</td>
                           <td className="p-2 text-text-secondary">{part.name}</td>
                           <td className="p-2 text-text-secondary">{part.qty}</td>
-                          <td className="p-2 text-right font-mono text-white">${(part.cost * part.qty).toFixed(2)}</td>
+                          <td className="p-2 text-right font-mono text-text-primary">${(part.cost * part.qty).toFixed(2)}</td>
                           <td className="p-2 text-center">
                             {workOrder.status !== 'Closed' && (
                               <button 
@@ -574,7 +574,7 @@ export function WorkOrderDetail({
                     placeholder="Part#" 
                     value={newPartNo} 
                     onChange={e => setNewPartNo(e.target.value)} 
-                    className="bg-background-custom border border-border-custom rounded px-2 py-1 focus:outline-none font-mono text-white text-[11px]"
+                    className="bg-background-custom border border-border-custom rounded px-2 py-1 focus:outline-none font-mono text-text-primary text-[11px]"
                     required
                   />
                   <input 
@@ -582,7 +582,7 @@ export function WorkOrderDetail({
                     placeholder="Name" 
                     value={newPartName} 
                     onChange={e => setNewPartName(e.target.value)} 
-                    className="bg-background-custom border border-border-custom rounded px-2 py-1 focus:outline-none text-white text-[11px]"
+                    className="bg-background-custom border border-border-custom rounded px-2 py-1 focus:outline-none text-text-primary text-[11px]"
                     required
                   />
                   <input 
@@ -590,7 +590,7 @@ export function WorkOrderDetail({
                     placeholder="Qty" 
                     value={newPartQty} 
                     onChange={e => setNewPartQty(parseInt(e.target.value, 10) || 1)} 
-                    className="bg-background-custom border border-border-custom rounded px-2 py-1 focus:outline-none text-white text-[11px]"
+                    className="bg-background-custom border border-border-custom rounded px-2 py-1 focus:outline-none text-text-primary text-[11px]"
                     required
                   />
                   <button 
@@ -619,8 +619,8 @@ export function WorkOrderDetail({
             <div className="flex items-center justify-between border-b border-border-custom pb-2">
               <div className="flex items-center space-x-1.5">
                 <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  AI Context Panel
+                <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider">
+  AI Context Panel
                 </h3>
               </div>
               <span className="text-[9px] font-mono text-primary font-bold bg-[#0E7C86]/10 border border-[#0E7C86]/20 px-1.5 py-0.2 rounded">
@@ -698,7 +698,7 @@ export function WorkOrderDetail({
                   ) : (
                     aiContext.sopSteps.map((sop, sIdx) => (
                       <div key={sIdx} className="space-y-1">
-                        <span className="font-mono text-white block font-bold">{sop.title}</span>
+                        <span className="font-mono text-text-primary block font-bold">{sop.title}</span>
                         <p className="text-text-secondary leading-normal bg-black/40 p-2 rounded border border-border-custom font-mono text-[10px]">
                           {sop.excerpt}
                         </p>
@@ -745,10 +745,10 @@ export function WorkOrderDetail({
                       <div key={fIdx} className="space-y-1">
                         <div className="flex justify-between font-mono">
                           <span className="text-status-critical font-bold">{fm.mode}</span>
-                          <span className="text-white font-bold">{fm.frequency}</span>
+                          <span className="text-text-primary font-bold">{fm.frequency}</span>
                         </div>
                         <p className="text-text-secondary leading-normal bg-surface-muted/30 p-2 rounded border border-border-custom text-[10px]">
-                          💡 <strong className="text-white">Recommendation:</strong> {fm.recommendation}
+                          💡 <strong className="text-text-primary">Recommendation:</strong> {fm.recommendation}
                         </p>
                       </div>
                     ))
@@ -763,8 +763,8 @@ export function WorkOrderDetail({
             <div className="bg-[#152B1E]/10 border border-status-ok/30 p-5 rounded-lg space-y-4 shadow">
               <div className="border-b border-status-ok/20 pb-2 flex items-center space-x-1.5">
                 <FileCheck className="w-4 h-4 text-status-ok" />
-                <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                  Supervisor sign-off & Closure
+                <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider">
+  Supervisor sign-off & Closure
                 </h3>
               </div>
 
@@ -798,7 +798,7 @@ export function WorkOrderDetail({
                     step="0.1"
                     value={actualHours}
                     onChange={(e) => setActualHours(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-status-ok font-mono"
+                    className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-text-primary focus:outline-none focus:border-status-ok font-mono"
                   />
                 </div>
 
@@ -809,7 +809,7 @@ export function WorkOrderDetail({
                     placeholder="Provide details on maintenance actions executed and system performance check..."
                     value={closureNotes}
                     onChange={(e) => setClosureNotes(e.target.value)}
-                    className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-white focus:outline-none focus:border-status-ok text-xs"
+                    className="w-full bg-background-custom border border-border-custom rounded px-2.5 py-1.5 text-text-primary focus:outline-none focus:border-status-ok text-xs"
                   />
                 </div>
 
@@ -842,7 +842,7 @@ export function WorkOrderDetail({
 
           {/* ======================= RECENT ACTIVITY TIMELINE ======================= */}
           <div className="bg-surface border border-border-custom p-5 rounded-lg space-y-4">
-            <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider border-b border-border-custom pb-2">
+            <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider border-b border-border-custom pb-2">
               Recent Activity Timeline
             </h3>
 
@@ -854,7 +854,7 @@ export function WorkOrderDetail({
                   
                   <span className="block font-mono text-[10px] text-text-muted">{log.date}</span>
                   <p className="text-text-primary mt-0.5 leading-normal">
-                    <strong className="text-white">{log.user}:</strong> {log.action}
+                    <strong className="text-text-primary">{log.user}:</strong> {log.action}
                   </p>
                 </div>
               ))}
@@ -864,7 +864,7 @@ export function WorkOrderDetail({
           {/* ======================= ATTACHMENTS GRID ======================= */}
           <div className="bg-surface border border-border-custom p-5 rounded-lg space-y-4">
             <div className="flex justify-between items-center border-b border-border-custom pb-2">
-              <h3 className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+              <h3 className="text-xs font-mono font-bold text-text-primary uppercase tracking-wider flex items-center space-x-1.5">
                 <Paperclip className="w-4 h-4 text-primary" />
                 <span>Permits & Attachments</span>
               </h3>
@@ -880,7 +880,7 @@ export function WorkOrderDetail({
                     <div className="flex items-center space-x-2.5 min-w-0">
                       <Eye className="w-4 h-4 text-primary flex-shrink-0" />
                       <div className="truncate">
-                        <span className="block font-medium text-xs text-white truncate">{file.name}</span>
+                        <span className="block font-medium text-xs text-text-primary truncate">{file.name}</span>
                         <span className="block text-[9px] text-text-muted font-mono">{file.size} • Uploaded {file.date}</span>
                       </div>
                     </div>

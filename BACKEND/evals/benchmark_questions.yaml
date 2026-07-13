@@ -1,0 +1,5 @@
+# AI eval benchmark (docs/02 §15, §54) — 25 domain Q&A with expected sources.
+# Scored on answer-contains-facts + citation-correctness + latency. Populated
+# with the demo corpus (§55 M6). Scaffold ships the file so evals/run_eval.py
+# and the eval APIs have a stable target.
+questions: []

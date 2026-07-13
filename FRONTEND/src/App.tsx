@@ -1,0 +1,183 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAuthStore } from './stores/authStore';
+import { Login } from './components/auth/Login';
+import { ForgotPassword } from './components/auth/ForgotPassword';
+import { ResetPassword } from './components/auth/ResetPassword';
+import { AppShell } from './components/layout/AppShell';
+import { RoleDashboard } from './components/dashboard/RoleDashboard';
+import { ExpertCopilot } from './components/copilot/ExpertCopilot';
+import { DocumentsLibrary } from './components/views/documents/DocumentsLibrary';
+import { SearchResults } from './components/views/SearchResults';
+import { 
+  KnowledgeGraphExplorer, 
+  Equipment360, 
+  MaintenanceHub, 
+  ComplianceHub, 
+  AuditLogs,
+  LessonsLearnedHub,
+  QualityHub,
+  NotificationsHub,
+  AnalyticsHub
+} from './components/views/FeatureViews';
+import { AdminSuite } from './components/views/admin/AdminSuite';
+import { ProfileSettings } from './components/views/profile/ProfileSettings';
+import { ImportWizard } from './components/views/data/ImportWizard';
+import { LandingPage } from './components/views/LandingPage';
+import { RefreshCw, Bot } from 'lucide-react';
+import { I18nProvider } from './lib/i18n';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+function MainAppContent() {
+  const { isAuthenticated, isLoading, checkSession, user } = useAuthStore();
+  const [currentHash, setCurrentHash] = useState(() => window.location.hash || '#login');
+  const [initialChecking, setInitialChecking] = useState(true);
+
+  // 1. Listen to URL Hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const newHash = window.location.hash || '#login';
+      setCurrentHash(newHash);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // 2. Perform Startup Session Verification
+  useEffect(() => {
+    checkSession().finally(() => {
+      setInitialChecking(false);
+    });
+  }, [checkSession]);
+
+  // 3. Simple Hash Navigation Trigger
+  const handleRouteChange = (newHash: string) => {
+    window.location.hash = newHash;
+  };
+
+  // 4. Global Auth Guards based on Session State
+  useEffect(() => {
+    if (initialChecking) return;
+
+    const authExemptRoutes = ['#login', '#forgot-password', '#reset-password', '#landing', '', '#'];
+    
+    if (!isAuthenticated && !authExemptRoutes.includes(currentHash)) {
+      // Force non-authenticated users to login
+      window.location.hash = '#login';
+    } else if (isAuthenticated && (currentHash === '#login' || currentHash === '' || currentHash === '#' || currentHash === '#landing')) {
+      // Direct authenticated users to home dashboard
+      window.location.hash = '#dashboard';
+    }
+  }, [isAuthenticated, currentHash, initialChecking]);
+
+  // Loading Screen for Bootstrap
+  if (initialChecking || (isLoading && !isAuthenticated)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text-primary font-sans">
+        <div className="p-4 rounded-xl bg-gradient-to-br from-primary/20 to-surface border border-primary/30 flex flex-col items-center space-y-4 shadow-2xl relative">
+          <div 
+            className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+            style={{
+              backgroundImage: `linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)`,
+              backgroundSize: '16px 16px'
+            }}
+          />
+          <div className="relative">
+            <Bot className="w-10 h-10 text-primary animate-pulse" />
+            <RefreshCw className="w-10 h-10 text-ai absolute inset-0 animate-spin opacity-40" style={{ animationDuration: '4s' }} />
+          </div>
+          <div className="text-center">
+            <span className="block font-display text-lg font-bold tracking-tight text-text-primary">IndusMind</span>
+            <span className="block font-mono text-[9px] text-primary tracking-widest uppercase mt-0.5">Establishing Secure Node Connection</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. Route Mapping Table
+  const renderActiveRoute = () => {
+    const route = currentHash.split('?')[0].split('/')[0]; // Simple match first-level hash (e.g. #admin/audit-log)
+
+    switch (route) {
+      case '':
+      case '#':
+      case '#landing':
+        return <LandingPage />;
+      case '#login':
+        return <Login />;
+      case '#forgot-password':
+        return <ForgotPassword />;
+      case '#reset-password':
+        return <ResetPassword />;
+      case '#dashboard':
+        return <RoleDashboard />;
+      case '#copilot':
+        return <ExpertCopilot />;
+      case '#search':
+        return <SearchResults />;
+      case '#documents':
+        return <DocumentsLibrary />;
+      case '#knowledge-graph':
+        return <KnowledgeGraphExplorer />;
+      case '#equipment':
+        return <Equipment360 />;
+      case '#maintenance':
+        return <MaintenanceHub />;
+      case '#compliance':
+        return <ComplianceHub />;
+      case '#lessons-learned':
+        return <LessonsLearnedHub />;
+      case '#quality':
+        return <QualityHub />;
+      case '#notifications':
+        return <NotificationsHub />;
+      case '#analytics':
+        return <AnalyticsHub />;
+      case '#data':
+        return <ImportWizard currentHash={currentHash} />;
+      case '#admin':
+        return <AdminSuite currentHash={currentHash} onRouteChange={handleRouteChange} />;
+      case '#profile':
+      case '#settings':
+        return <ProfileSettings currentHash={currentHash} onRouteChange={handleRouteChange} />;
+      default:
+        return isAuthenticated ? <RoleDashboard /> : <LandingPage />;
+    }
+  };
+
+  const isOutsideShell = ['#login', '#forgot-password', '#reset-password', '#landing', '', '#'].includes(currentHash);
+
+  if (isOutsideShell) {
+    return <div className="font-sans min-h-screen bg-background-custom">{renderActiveRoute()}</div>;
+  }
+
+  return (
+    <AppShell currentRoute={currentHash} onRouteChange={handleRouteChange}>
+      {renderActiveRoute()}
+    </AppShell>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider>
+        <MainAppContent />
+      </I18nProvider>
+    </QueryClientProvider>
+  );
+}

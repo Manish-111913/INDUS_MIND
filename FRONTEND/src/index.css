@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-on-primary: var(--on-primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-border: var(--primary-soft-border);
+  --color-focus-ring: var(--focus-ring);
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border-custom: var(--border);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-text-disabled: var(--text-disabled);
+
+  --color-background-custom: var(--bg);
+  --color-surface-muted: var(--surface-2);
+  --color-text-primary: var(--text);
+  --color-text-secondary: var(--text-2);
+  --color-text-muted: var(--text-3);
+
+  --color-ai: var(--ai);
+  --color-ai-fill: var(--ai-fill);
+  --color-ai-soft: var(--ai-soft);
+  --color-ai-soft-border: var(--ai-soft-border);
+
+  --color-status-ok: var(--success);
+  --color-status-warn: var(--warning);
+  --color-status-critical: var(--danger);
+  --color-status-info: var(--info);
+
+  --color-success: var(--success);
+  --color-success-fill: var(--success-fill);
+  --color-success-soft: var(--success-soft);
+  --color-success-border: var(--success-border);
+
+  --color-warning: var(--warning);
+  --color-warning-fill: var(--warning-fill);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-border: var(--warning-border);
+
+  --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-border: var(--danger-border);
+
+  --color-info: var(--info);
+  --color-info-fill: var(--info-fill);
+  --color-info-soft: var(--info-soft);
+  --color-info-border: var(--info-border);
+
+  --color-risk-high: var(--risk-high);
+  --color-wo-hold: var(--wo-hold);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+}
+
+:root {
+  --bg:#F5F7F8; --surface:#FFFFFF; --surface-2:#EFF3F4; --surface-3:#E7EDEF;
+  --border:#DDE5E8; --border-strong:#B9C7CC;
+  --text:#111D23; --text-2:#42545C; --text-3:#71828A; --text-disabled:#A5B3B9;
+  --primary:#0E7C86; --primary-hover:#0B6570; --primary-active:#094F58;
+  --on-primary:#FFFFFF; --primary-soft:#E4F1F2; --primary-soft-border:#BEDCDF;
+  --focus-ring:rgb(14 124 134 / .45);
+  --ai:#B45309; --ai-fill:#F59E0B; --ai-soft:#FDF3E3; --ai-soft-border:#F2DCB0;
+  --success:#157347; --success-fill:#1B9E63; --success-soft:#E5F5EC; --success-border:#BEE5D0;
+  --warning:#B45309; --warning-fill:#F59E0B; --warning-soft:#FDF3E3; --warning-border:#F2DCB0;
+  --danger:#BB2124; --danger-fill:#DC3538; --danger-soft:#FCEBEB; --danger-border:#F3C4C5;
+  --info:#1D5FD6; --info-fill:#3B82F6; --info-soft:#EAF1FD; --info-border:#C4D8F7;
+  --risk-high:#EA580C; --wo-hold:#7C3AED;
+  --chart-1:#0E7C86; --chart-2:#F59E0B; --chart-3:#6366F1; --chart-4:#10B981;
+  --chart-5:#E11D48; --chart-6:#8B5CF6; --chart-7:#0891B2; --chart-8:#64748B;
+  --shadow-card:0 1px 2px rgb(15 23 42 / .06); --shadow-pop:0 8px 24px rgb(15 23 42 / .12);
+}
+
+.dark {
+  --bg:#0B1113; --surface:#121A1D; --surface-2:#192327; --surface-3:#203035;
+  --border:#243138; --border-strong:#33454E;
+  --text:#E9EEF0; --text-2:#A6B4BA; --text-3:#71838B; --text-disabled:#4C5D65;
+  --primary:#3FA9B3; --primary-hover:#57BAC3; --primary-active:#2F929C;
+  --on-primary:#04191C; --primary-soft:#12343A; --primary-soft-border:#1E4A52;
+  --focus-ring:rgb(63 169 179 / .55);
+  --ai:#F5A524; --ai-fill:#F5A524; --ai-soft:#33260E; --ai-soft-border:#4D3A15;
+  --success:#4ADE93; --success-fill:#34D399; --success-soft:#0E2B1E; --success-border:#1B4A32;
+  --warning:#F5A524; --warning-fill:#F5A524; --warning-soft:#33260E; --warning-border:#4D3A15;
+  --danger:#F0716F; --danger-fill:#F0716F; --danger-soft:#331113; --danger-border:#57201F;
+  --info:#77A9F7; --info-fill:#77A9F7; --info-soft:#122036; --info-border:#1E3A5F;
+  --risk-high:#FB8A4C; --wo-hold:#A78BFA;
+  --chart-1:#3FA9B3; --chart-2:#F5A524; --chart-3:#818CF8; --chart-4:#34D399;
+  --chart-5:#FB7185; --chart-6:#A78BFA; --chart-7:#22D3EE; --chart-8:#94A3B8;
+  --shadow-card:none; --shadow-pop:0 12px 32px rgb(0 0 0 / .5);
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+/* Custom HMI engineering style details */
+.tag-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}

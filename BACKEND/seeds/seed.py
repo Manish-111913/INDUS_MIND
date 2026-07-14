@@ -11,7 +11,7 @@ Run: ``make seed``  (or ``python -m seeds.seed``).
 from __future__ import annotations
 
 import asyncio
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import select
 
@@ -79,12 +79,27 @@ PROMPTS = [
      "Compare the regulation clause to the current procedure and report whether the procedure "
      "satisfies it, with a gap explanation if not.\n\nClause:\n{{clause}}\n\n"
      "Procedure:\n{{procedure}}"),
+    ("compliance.parse_clauses", "compliance", ["document"],
+     "You parse a regulation document into a structured clause tree. Extract every numbered "
+     "clause with its number, a short title, the full clause text, a category, and a default "
+     "severity (low|medium|high|critical). Preserve the dotted numbering so the hierarchy can be "
+     "rebuilt. Do not invent clauses.\n\nDocument:\n{{document}}"),
     ("lessons.detect", "lessons", ["incidents"],
      "Detect systemic patterns across these incidents and draft a lesson learned with a "
      "recommended preventive action.\n\nIncidents:\n{{incidents}}"),
     ("brief.daily", "chat", ["metrics"],
      "Write a concise daily operations brief highlighting the top 3 risks from these metrics.\n\n"
      "{{metrics}}"),
+    ("maint.optimize", "chat", ["scope", "proposed_changes"],
+     "You are optimizing a preventive-maintenance schedule. Given the scope and a set of "
+     "heuristically-proposed interval changes, explain concisely whether each change is sound and "
+     "summarize the overall recommendation. Do not invent equipment.\n\n"
+     "Scope:\n{{scope}}\n\nProposed changes:\n{{proposed_changes}}"),
+    ("maint.predict_explain", "chat", ["equipment", "drivers", "history"],
+     "You explain a predictive-maintenance risk score. Given the heuristic risk drivers and the "
+     "equipment failure history, write drivers[] and a concise, actionable recommendation, citing "
+     "the history records. Do not change the numbers.\n\n"
+     "Equipment: {{equipment}}\nDrivers:\n{{drivers}}\nHistory:\n{{history}}"),
 ]
 
 # ── asset seed (docs/02 §7, §23) ──────────────────────────────────────────────
@@ -430,6 +445,555 @@ async def _seed_insights(session, tenant) -> int:
     return added
 
 
+# ── maintenance seed (docs/02 §7, §18) ────────────────────────────────────────
+# Corpus story: recurring P-101 mechanical-seal failures + an overdue FW-P1
+# firewater test. `_NOW` is fixed so the seed is deterministic and re-runnable.
+_NOW = datetime(2026, 7, 14, 9, 0, tzinfo=UTC)
+
+# (equip_tag, name, freq_type, interval_days, next_due_days_from_now, template)
+MAINT_SCHEDULES = [
+    ("FW-P1", "Quarterly Firewater Pump Test (OISD-STD-118 cl.6.4)", "time", 90, -6,
+     {"title": "Quarterly firewater pump flow/pressure test", "type": "inspection",
+      "priority": "high", "description": "OISD-STD-118 clause 6.4 quarterly test per SOP-114."}),
+    ("P-101", "Monthly Mechanical Seal Inspection", "time", 30, 6,
+     {"title": "Inspect P-101 mechanical seal & flush plan 52", "type": "preventive",
+      "priority": "high"}),
+    ("C-3", "Compressor Vibration Survey", "time", 60, 18,
+     {"title": "C-3 overhead compressor vibration survey", "type": "predictive",
+      "priority": "medium"}),
+    ("B-1", "Boiler Safety Valve Pop Test", "time", 180, 40,
+     {"title": "B-1 boiler PSV pop test", "type": "inspection", "priority": "medium"}),
+    ("TF-2", "Transformer Oil DGA", "time", 365, 120,
+     {"title": "TF-2 transformer oil dissolved-gas analysis", "type": "preventive",
+      "priority": "low"}),
+]
+
+# (equip_tag, mode_code, code_code, severity, occurred_days_ago, downtime_min, prod_loss, desc)
+MAINT_FAILURES = [
+    ("P-101", "leakage", "seal_leak", "high", 300, 240, 50000,
+     "Mechanical seal failure — crude leak at P-101, seal faces scored."),
+    ("P-101", "leakage", "seal_leak", "high", 205, 180, 40000,
+     "Repeat outboard mechanical-seal leak on P-101."),
+    ("P-101", "leakage", "seal_leak", "critical", 92, 300, 80000,
+     "Third seal failure this year on P-101; flush plan 52 suspect."),
+    ("C-3", "overheating", "overheating", "medium", 150, 120, 20000,
+     "C-3 overhead compressor discharge over-temperature trip."),
+    ("P-201", "wear", "bearing_failure", "medium", 120, 90, 15000,
+     "Cooling-water pump P-201 bearing wear, high vibration."),
+    ("C-101", "fatigue", "vibration_high", "high", 60, 240, 60000,
+     "Cracked-gas compressor C-101 rotor imbalance, high radial vibration."),
+    ("FUR-1", "corrosion", "corrosion", "medium", 200, 360, 30000,
+     "Furnace FUR-1 convection-tube corrosion, partial plugging."),
+    ("E-101", "corrosion", "corrosion", "low", 175, 60, 5000,
+     "Crude preheat exchanger E-101 tube-side fouling."),
+]
+
+# Additional (non-failure) work orders — 22 to reach 30 total.
+# (title, equip_tag, type, priority, status, assignee_email, due_days_ago,
+#  started_days_ago, closed_days_ago, labor_hours, closure_notes)
+MAINT_WORK_ORDERS = [
+    ("Quarterly firewater pump test FW-P1 (OVERDUE)", "FW-P1", "inspection", "high", "open",
+     "technician@indusmind.io", 6, None, None, None, None),
+    ("Replace impeller housing gasket on P-101", "P-101", "corrective", "critical", "in_progress",
+     "technician@indusmind.io", -2, 1, None, None, None),
+    ("Emergency vibration inspection C-101 cylinder head", "C-101", "predictive", "critical",
+     "on_hold", "engineer@indusmind.io", 0, 1, None, None, None),
+    ("Safety valve validation on boiler B-1", "B-1", "inspection", "medium", "review",
+     "compliance@indusmind.io", -6, 3, None, None, None),
+    ("Calibrate pressure gauge on P-101", "P-101", "inspection", "high", "closed",
+     "technician@indusmind.io", 20, 22, 21, 1.5, "Calibrated zero/span; within tolerance."),
+    ("Monthly lube-oil top-up C-3", "C-3", "preventive", "low", "closed",
+     "technician@indusmind.io", 35, 36, 35, 1.0, "Lube oil topped up, filter checked."),
+    ("Thermography survey TF-1/TF-2", "TF-2", "predictive", "medium", "closed",
+     "engineer@indusmind.io", 50, 52, 51, 2.5, "No hotspots detected."),
+    ("Replace air filter K-1", "K-1", "preventive", "low", "closed",
+     "technician@indusmind.io", 60, 61, 62, 0.5, "Filter replaced, differential normal."),
+    ("Boiler B-1 water treatment check", "B-1", "preventive", "medium", "closed",
+     "engineer@indusmind.io", 70, 71, 70, 1.5, "Dosing verified, blowdown ok."),
+    ("Inspect P-201 coupling alignment", "P-201", "preventive", "medium", "closed",
+     "technician@indusmind.io", 80, 81, 85, 3.0, "Alignment corrected (late close)."),
+    ("Overhaul quench pump P-401", "P-401", "corrective", "high", "closed",
+     "engineer@indusmind.io", 95, 97, 96, 6.0, "Wear rings replaced, tested ok."),
+    ("Instrument air dryer service K-1", "K-1", "preventive", "low", "closed",
+     "technician@indusmind.io", 110, 111, 110, 1.0, "Desiccant regenerated."),
+    ("Tank TK-01 roof seal inspection", "TK-01", "inspection", "low", "closed",
+     "compliance@indusmind.io", 125, 126, 125, 2.0, "Seal intact, no gaps."),
+    ("Exchanger E-401 tube cleaning", "E-401", "preventive", "medium", "closed",
+     "engineer@indusmind.io", 140, 142, 141, 5.0, "Hydro-jet cleaned, duty restored."),
+    ("Motor M-201 insulation test", "M-201", "predictive", "medium", "closed",
+     "technician@indusmind.io", 155, 156, 155, 1.5, "IR value acceptable."),
+    ("Column V-101 relief-valve check", "V-101", "inspection", "high", "closed",
+     "compliance@indusmind.io", 170, 171, 170, 2.0, "PSV within set pressure."),
+    ("Furnace FUR-1 burner tuning", "FUR-1", "preventive", "high", "closed",
+     "engineer@indusmind.io", 185, 187, 186, 4.0, "Combustion tuned, O2 trim ok."),
+    ("Reflux drum V-230 level-tx calibration", "V-230", "inspection", "low", "closed",
+     "technician@indusmind.io", 200, 201, 200, 1.0, "LT calibrated."),
+    ("Effluent pump P-501 seal check", "P-501", "preventive", "low", "closed",
+     "technician@indusmind.io", 215, 216, 218, 1.5, "Seal ok (late close)."),
+    ("Refrigeration compressor C-201 oil analysis", "C-201", "predictive", "high", "closed",
+     "engineer@indusmind.io", 230, 231, 230, 2.0, "Oil condition normal."),
+    ("Neutralization tank V-501 pH probe swap", "V-501", "preventive", "low", "closed",
+     "technician@indusmind.io", 245, 246, 245, 1.0, "Probe replaced/calibrated."),
+    ("Standby pump P-102 monthly run test", "P-102", "preventive", "medium", "closed",
+     "technician@indusmind.io", 260, 261, 260, 1.0, "Ran 30 min, params nominal."),
+]
+
+
+async def _seed_maintenance(session, tenant, users) -> tuple[int, int]:
+    """30 historical work orders + 8 failures consistent with the corpus story."""
+    from app.modules.maintenance.models import (
+        FailureRecord,
+        MaintenanceSchedule,
+        WorkOrder,
+    )
+
+    existing = (await session.execute(
+        select(WorkOrder).where(WorkOrder.tenant_id == tenant.id).limit(1))).scalar_one_or_none()
+    if existing is not None:
+        return 0, 0
+
+    async def _lookup_ids(category: str) -> dict[str, object]:
+        rows = (await session.execute(
+            select(Lookup).where(Lookup.tenant_id.is_(None), Lookup.category == category))).scalars()
+        return {r.code: r.id for r in rows}
+
+    modes = await _lookup_ids("failure_modes")
+    codes = await _lookup_ids("failure_codes")
+    equipment = {
+        e.tag: e for e in (await session.execute(
+            select(Equipment).where(Equipment.tenant_id == tenant.id))).scalars()
+    }
+    users_by_email = {u.email: u for u in users}
+    admin = users_by_email.get("admin@indusmind.io")
+    engineer = users_by_email.get("engineer@indusmind.io")
+
+    # Schedules
+    for tag, name, freq, interval, due_offset, template in MAINT_SCHEDULES:
+        eq = equipment.get(tag)
+        session.add(MaintenanceSchedule(
+            tenant_id=tenant.id, equipment_id=eq.id if eq else None, name=name,
+            frequency_type=freq, interval_days=interval,
+            next_due_at=_NOW + timedelta(days=due_offset), task_template=template, active=True,
+            created_by=admin.id if admin else None, updated_by=admin.id if admin else None))
+    await session.flush()
+
+    seq = 2001
+    n_failures = 0
+    n_wos = 0
+
+    # Corrective closed WOs, each linked to a failure record (drives MTBF/MTTR).
+    for tag, mode_code, code_code, severity, days_ago, downtime, loss, desc in MAINT_FAILURES:
+        eq = equipment.get(tag)
+        occurred = _NOW - timedelta(days=days_ago)
+        failure = FailureRecord(
+            tenant_id=tenant.id, equipment_id=eq.id if eq else None,
+            failure_mode_id=modes.get(mode_code), failure_code_id=codes.get(code_code),
+            severity=severity, occurred_at=occurred, detected_by="operator",
+            downtime_minutes=downtime, production_loss=loss, description=desc, rca_status="none",
+            created_by=engineer.id if engineer else None,
+            updated_by=engineer.id if engineer else None)
+        session.add(failure)
+        await session.flush()
+        n_failures += 1
+
+        repair_h = round(downtime / 60.0, 1)
+        wo = WorkOrder(
+            tenant_id=tenant.id, wo_number=f"WO-{seq}",
+            title=f"Corrective repair: {desc[:60]}", description=desc,
+            equipment_id=eq.id if eq else None, type="corrective", priority=severity,
+            status="closed", assignee_id=engineer.id if engineer else None,
+            requested_by=engineer.id if engineer else None,
+            due_at=occurred + timedelta(hours=8), started_at=occurred,
+            closed_at=occurred + timedelta(hours=max(repair_h, 1)), sla_breach=False,
+            failure_id=failure.id, failure_code_id=codes.get(code_code),
+            labor_hours=repair_h, closure_notes=f"Repaired: {desc}", source="manual",
+            created_by=engineer.id if engineer else None,
+            updated_by=engineer.id if engineer else None)
+        session.add(wo)
+        await session.flush()
+        failure.work_order_id = wo.id
+        seq += 1
+        n_wos += 1
+
+    # Assorted PM / inspection / open WOs to reach 30.
+    for (title, tag, wo_type, priority, status, assignee_email, due_ago, started_ago,
+         closed_ago, labor, notes) in MAINT_WORK_ORDERS:
+        eq = equipment.get(tag)
+        assignee = users_by_email.get(assignee_email)
+        due_at = _NOW - timedelta(days=due_ago)
+        started_at = _NOW - timedelta(days=started_ago) if started_ago is not None else None
+        closed_at = _NOW - timedelta(days=closed_ago) if closed_ago is not None else None
+        wo = WorkOrder(
+            tenant_id=tenant.id, wo_number=f"WO-{seq}", title=title, equipment_id=eq.id if eq else None,
+            type=wo_type, priority=priority, status=status,
+            assignee_id=assignee.id if assignee else None,
+            requested_by=admin.id if admin else None, due_at=due_at, started_at=started_at,
+            closed_at=closed_at, sla_breach=bool(closed_at and closed_at > due_at),
+            labor_hours=labor, closure_notes=notes, source="manual",
+            created_by=admin.id if admin else None, updated_by=admin.id if admin else None)
+        session.add(wo)
+        await session.flush()
+        seq += 1
+        n_wos += 1
+
+    return n_wos, n_failures
+
+
+async def _seed_predictions(session, tenant) -> int:
+    """Run the prediction engine once so the demo dashboard shows P-101 / FW-P1."""
+    from app.modules.maintenance.prediction_service import PredictionService
+
+    created = await PredictionService(session, tenant.id).refresh(actor=None)
+    return len(created)
+
+
+# ── compliance seed (docs/02 §7, §19) ─────────────────────────────────────────
+# OISD-STD-118 + Factory Act excerpts (~15 clauses). The seeded clauses reference
+# the corpus so the mapping agent links clause 9.1 → P-101 (mapping) and raises
+# the demo gap on clause 6.4 (FW-P1 quarterly firewater test overdue / no record).
+# (code, title, body, edition, source_doc_title, [(clause_no, title, text, category, severity)])
+COMPLIANCE_REGULATIONS = [
+    ("OISD-STD-118", "OISD-STD-118 — Layout & Safety Requirements", "oisd", "2020",
+     "OISD-STD-118 — Clause Excerpts (Layout & Safety)", [
+         ("6.4", "Quarterly firewater pump testing",
+          "Firewater pumps shall be tested for performance on a quarterly basis and records "
+          "maintained for a minimum of three years.", "fire_safety", "high"),
+         ("6.5", "Firewater ring main pressure",
+          "The firewater ring main shall be maintained at the specified pressure at all times "
+          "with a documented monitoring programme.", "fire_safety", "medium"),
+         ("7.2", "Pressure relief valve testing",
+          "Pressure relief valves on pressure vessels shall be tested at intervals not exceeding "
+          "twelve months.", "mechanical_integrity", "high"),
+         ("9.1", "Vibration monitoring of critical rotating equipment",
+          "Rotating equipment of criticality A, such as crude feed pump P-101, shall have "
+          "vibration monitoring and a documented predictive maintenance programme.", "reliability",
+          "high"),
+         ("9.2", "Predictive maintenance records",
+          "Predictive maintenance records for criticality A equipment shall be retained and made "
+          "available for audit.", "reliability", "medium"),
+         ("5.3", "Inter-unit spacing",
+          "Plant layout shall maintain the minimum inter-unit spacing per the approved layout "
+          "drawing.", "layout", "medium"),
+         ("8.1", "Hazardous area classification review",
+          "Hazardous area classification drawings shall be reviewed and updated periodically.",
+          "electrical_safety", "medium"),
+         ("10.2", "Emergency shutdown function testing",
+          "Emergency shutdown systems shall be function-tested semi-annually.", "safety_systems",
+          "high"),
+     ]),
+    ("FACTORY-ACT-1948", "Factory Act 1948 — Health, Safety & Welfare (Excerpts)", "factory_act",
+     "1948", None, [
+         ("21", "Fencing of machinery",
+          "All dangerous parts of machinery shall be securely fenced.", "safety", "high"),
+         ("28", "Hoists and lifts",
+          "Hoists and lifts shall be thoroughly examined by a competent person at least once every "
+          "six months.", "mechanical", "high"),
+         ("31", "Pressure plant safe working pressure",
+          "Where any plant or machinery is operated at a pressure above atmospheric, effective "
+          "measures shall be taken to ensure the safe working pressure is not exceeded.",
+          "pressure_safety", "high"),
+         ("33", "Steam boiler examination",
+          "Every steam boiler shall be examined by a competent person at least once in every "
+          "period of twelve months.", "pressure_safety", "high"),
+         ("36", "Precautions for confined spaces",
+          "No person shall enter any confined space unless a permit-to-work has been issued.",
+          "confined_space", "high"),
+         ("40", "Safety of buildings and machinery",
+          "If any building or machinery is in a dangerous condition, a competent person shall "
+          "certify its safe use annually.", "structural", "medium"),
+         ("87", "Dangerous operations records",
+          "Records of hazardous process operations shall be maintained and made available for "
+          "inspection.", "records", "medium"),
+     ]),
+]
+
+
+async def _seed_compliance(session, tenant, users) -> tuple[int, int, dict]:
+    """Regulations + clause trees, then one scan → demo mappings + FW-P1 gap."""
+    from app.modules.compliance.mapping_agent import ComplianceScanService
+    from app.modules.compliance.models import Regulation, RegulationClause
+    from app.modules.documents.models import Document
+
+    existing = (await session.execute(
+        select(Regulation).where(Regulation.tenant_id == tenant.id).limit(1))).scalar_one_or_none()
+    if existing is not None:
+        return 0, 0, {}
+
+    admin = next((u for u in users if u.email == "admin@indusmind.io"), users[0])
+    docs = {d.title: d for d in (await session.execute(
+        select(Document).where(Document.tenant_id == tenant.id))).scalars()}
+
+    n_reg = n_clause = 0
+    for code, title, body, edition, src_title, clauses in COMPLIANCE_REGULATIONS:
+        src = docs.get(src_title) if src_title else None
+        reg = Regulation(tenant_id=tenant.id, code=code, title=title, body=body, edition=edition,
+                         status="active", source_document_id=src.id if src else None,
+                         created_by=admin.id, updated_by=admin.id)
+        session.add(reg)
+        await session.flush()
+        n_reg += 1
+        by_no: dict[str, RegulationClause] = {}
+        for idx, (no, ctitle, text, cat, sev) in enumerate(clauses):
+            parent_no = no.rsplit(".", 1)[0] if "." in no else None
+            parent = by_no.get(parent_no)
+            clause = RegulationClause(
+                tenant_id=tenant.id, regulation_id=reg.id, clause_no=no,
+                parent_id=parent.id if parent else None, title=ctitle, text=text, category=cat,
+                severity_default=sev, order_index=idx,
+                path=f"{parent_no} > {no}" if parent else no,
+                created_by=admin.id, updated_by=admin.id)
+            session.add(clause)
+            await session.flush()
+            by_no[no] = clause
+            n_clause += 1
+
+    result = await ComplianceScanService(session, tenant.id).scan(scope={}, actor=admin)
+    return n_reg, n_clause, result
+
+
+# ── notifications routing rules (docs/02 §20, §34) ────────────────────────────
+# (event_type, category, priority, audience, channels, title_template)
+NOTIFICATION_RULES = [
+    ("workorder.assigned", "wo_assigned", "high", ["assignee"], ["in_app", "email"],
+     "Work order {wo_number} assigned to you"),
+    ("prediction.created", "prediction", "high",
+     ["role:Maintenance Engineer", "role:Plant Manager"], ["in_app"],
+     "Predictive alert on {equipment_tag}"),
+    ("rca.published", "system", "normal", ["role:Maintenance Engineer"], ["in_app"],
+     "RCA published"),
+    ("lesson.published", "mention", "normal", ["subscribers"], ["in_app"],
+     "New lesson learned: {lesson_title}"),
+    ("document.ingested", "doc_processed", "normal", ["actor"], ["in_app"],
+     "Document processed"),
+]
+
+
+async def _seed_notification_rules(session) -> int:
+    from app.modules.notifications.models import NotificationRule
+
+    existing = {r.event_type for r in (await session.execute(
+        select(NotificationRule).where(NotificationRule.tenant_id.is_(None)))).scalars()}
+    added = 0
+    for event_type, category, priority, audience, channels, title in NOTIFICATION_RULES:
+        if event_type not in existing:
+            session.add(NotificationRule(
+                tenant_id=None, event_type=event_type, category=category, priority=priority,
+                audience=audience, channels=channels, title_template=title, active=True))
+            added += 1
+    await session.flush()
+    return added
+
+
+# ── dashboard widget registry (docs/02 §21) ───────────────────────────────────
+# (key, name, type, required_permission, default_params, description)
+WIDGETS = [
+    ("kpi.oee", "Overall Equipment Effectiveness", "kpi", "wo.read", {}, "Health-weighted OEE proxy"),
+    ("kpi.unplanned_downtime", "Unplanned Downtime", "kpi", "wo.read", {}, "Downtime hours (90d)"),
+    ("kpi.wo_backlog", "Work Order Backlog", "kpi", "wo.read", {}, "Open WOs + backlog hours"),
+    ("kpi.compliance_score", "Compliance Score", "kpi", "comp.read", {}, "Clause coverage %"),
+    ("kpi.mtbf", "MTBF", "kpi", "wo.read", {}, "Mean time between failure"),
+    ("kpi.mttr", "MTTR", "kpi", "wo.read", {}, "Mean time to repair"),
+    ("kpi.active_work_orders", "Active Work Orders", "kpi", "wo.read", {}, "Open WO count"),
+    ("kpi.registered_regulations", "Registered Regulations", "kpi", "comp.read", {}, "Regs + clauses"),
+    ("kpi.active_gaps", "Active Gaps", "kpi", "comp.read", {}, "Open compliance gaps"),
+    ("kpi.audits_pending", "Audits Pending", "kpi", "comp.read", {}, "Planned audits"),
+    ("kpi.documents_ingested", "Documents Ingested", "kpi", "doc.read", {}, "Completed documents"),
+    ("kpi.ai_pipeline_success", "AI Pipeline Success", "kpi", "doc.reprocess", {}, "Ingestion success %"),
+    ("kpi.my_open_wos", "My Open Work Orders", "kpi", "wo.read", {}, "WOs assigned to me"),
+    ("kpi.hours_logged", "Hours Logged", "kpi", "wo.read", {}, "My closed-WO labour hours"),
+    ("chart.downtime_trend", "Downtime Trend", "chart", "wo.read", {}, "Monthly downtime hours"),
+    ("chart.failure_pareto", "Failure Pareto", "chart", "wo.read", {}, "Failures by mode"),
+    ("chart.gap_trend", "Gap Trend", "chart", "comp.read", {}, "Gaps by status"),
+    ("chart.ingestion_throughput", "Ingestion Throughput", "chart", "doc.reprocess", {}, "Jobs/day"),
+    ("chart.llm_spend", "LLM Spend", "chart", "ai.config", {}, "Tokens by capability"),
+    ("chart.area_health", "Area Health", "heatmap", "equip.read", {}, "Avg health by area"),
+    ("list.ai_brief", "Daily AI Brief", "list", "copilot.use", {}, "AI insight cards"),
+    ("table.my_tasks", "My Tasks", "table", "wo.read", {}, "My assigned work orders"),
+    ("list.predictions", "Predictive Alerts", "list", "wo.read", {}, "Open predictions"),
+    ("list.compliance_gaps", "Open Gaps", "list", "comp.read", {}, "Compliance gaps"),
+]
+
+
+async def _seed_widgets(session) -> int:
+    from app.modules.dashboards.models import WidgetRegistry
+
+    existing = {w.key for w in (await session.execute(select(WidgetRegistry))).scalars()}
+    added = 0
+    for key, name, wtype, perm, params, desc in WIDGETS:
+        if key not in existing:
+            session.add(WidgetRegistry(
+                key=key, name=name, type=wtype, data_endpoint=f"/dashboards/widgets/{key}/data",
+                default_params=params, required_permission=perm, description=desc,
+                config={"cache_ttl": 45}))
+            added += 1
+    await session.flush()
+    return added
+
+
+# Per-role dashboard layouts (reproduce the frontend role dashboards with live widgets).
+def _grid(i, w=1, h=1):
+    return {"x": (i % 4) * w, "y": (i // 4) * h, "w": w, "h": h}
+
+
+ROLE_DASHBOARDS = {
+    "Plant Manager": ["kpi.oee", "kpi.unplanned_downtime", "kpi.wo_backlog", "kpi.compliance_score",
+                      "list.ai_brief", "chart.area_health"],
+    "Field Technician": ["kpi.my_open_wos", "kpi.hours_logged", "table.my_tasks"],
+    "Admin": ["kpi.documents_ingested", "kpi.ai_pipeline_success", "chart.ingestion_throughput",
+              "chart.llm_spend"],
+    "Maintenance Engineer": ["kpi.active_work_orders", "kpi.mtbf", "kpi.mttr", "kpi.wo_backlog",
+                             "list.predictions", "chart.failure_pareto"],
+    "Compliance Officer": ["kpi.compliance_score", "kpi.registered_regulations", "kpi.active_gaps",
+                           "kpi.audits_pending", "list.compliance_gaps", "chart.gap_trend"],
+}
+
+
+async def _seed_dashboards(session, tenant, roles) -> int:
+    from app.modules.dashboards.models import DashboardConfig
+
+    existing = {c.role_id for c in (await session.execute(select(DashboardConfig).where(
+        DashboardConfig.tenant_id == tenant.id, DashboardConfig.user_id.is_(None)))).scalars()}
+    added = 0
+    for role_name, widget_keys in ROLE_DASHBOARDS.items():
+        role = roles.get(role_name)
+        if role is None or role.id in existing:
+            continue
+        params = {"list.ai_brief": {"role": role_name}}
+        layout = [{"widget_key": k, "grid": _grid(i), "params": params.get(k, {})}
+                  for i, k in enumerate(widget_keys)]
+        session.add(DashboardConfig(tenant_id=tenant.id, role_id=role.id, user_id=None,
+                                    layout=layout))
+        added += 1
+    await session.flush()
+    return added
+
+
+# ── analytics report definitions (docs/02 §22) ────────────────────────────────
+# (key, name, category, sql_template, params_schema, chart_config)
+REPORTS = [
+    ("downtime_by_area", "Downtime by Area", "maintenance",
+     "SELECT a.name AS area, "
+     "ROUND(COALESCE(SUM(f.downtime_minutes), 0) / 60.0, 1) AS downtime_hours, "
+     "COUNT(f.id) AS failures "
+     "FROM failure_records f JOIN equipment e ON e.id = f.equipment_id "
+     "JOIN areas a ON a.id = e.area_id "
+     "WHERE f.tenant_id = :tenant AND f.deleted_at IS NULL "
+     "GROUP BY a.name ORDER BY downtime_hours DESC",
+     [], {"type": "bar", "x": "area", "y": "downtime_hours"}),
+    ("mtbf_by_class", "MTBF by Equipment Class", "maintenance",
+     "SELECT COALESCE(l.label, 'Unclassified') AS equipment_class, COUNT(f.id) AS failures, "
+     "ROUND(EXTRACT(EPOCH FROM (now() - MIN(f.occurred_at))) / 3600.0 "
+     "/ GREATEST(COUNT(f.id), 1), 1) AS mtbf_hours_approx "
+     "FROM equipment e LEFT JOIN failure_records f "
+     "ON f.equipment_id = e.id AND f.deleted_at IS NULL "
+     "LEFT JOIN lookups l ON l.id = e.type_id "
+     "WHERE e.tenant_id = :tenant AND e.deleted_at IS NULL "
+     "GROUP BY l.label HAVING COUNT(f.id) > 0 ORDER BY failures DESC",
+     [], {"type": "bar", "x": "equipment_class", "y": "failures"}),
+    ("compliance_gap_aging", "Compliance Gap Aging", "compliance",
+     "SELECT g.title, g.severity, g.status, "
+     "EXTRACT(DAY FROM (now() - g.created_at))::int AS age_days "
+     "FROM compliance_gaps g WHERE g.tenant_id = :tenant AND g.deleted_at IS NULL "
+     "AND g.status NOT IN ('resolved', 'accepted_risk') ORDER BY age_days DESC",
+     [], {"type": "table"}),
+    ("knowledge_coverage", "Knowledge Coverage", "knowledge",
+     "SELECT COALESCE(l.label, 'Unclassified') AS doc_type, COUNT(d.id) AS documents, "
+     "COALESCE(SUM(d.page_count), 0) AS pages "
+     "FROM documents d LEFT JOIN lookups l ON l.id = d.doc_type_id "
+     "WHERE d.tenant_id = :tenant AND d.deleted_at IS NULL "
+     "GROUP BY l.label ORDER BY documents DESC",
+     [], {"type": "bar", "x": "doc_type", "y": "documents"}),
+]
+
+
+async def _seed_reports(session) -> int:
+    from app.modules.analytics.models import ReportDefinition
+
+    existing = {r.key for r in (await session.execute(select(ReportDefinition).where(
+        ReportDefinition.tenant_id.is_(None)))).scalars()}
+    added = 0
+    for key, name, category, sql, params_schema, chart in REPORTS:
+        if key not in existing:
+            session.add(ReportDefinition(
+                tenant_id=None, key=key, name=name, category=category, sql_template=sql,
+                params_schema=params_schema, chart_config=chart,
+                required_permission="analytics.read"))
+            added += 1
+    await session.flush()
+    return added
+
+
+# ── quality NCRs (docs/02 §21) — incl. the monsoon-seal overlap for lessons ────
+# (equip_tag, area_code, defect_code, severity, days_ago, description)
+QUALITY_NCRS = [
+    # Monsoon-season mechanical-seal cluster across pumps → drives the lessons pattern.
+    ("P-201", ("JAM", "UTIL"), "contamination", "major", 350,
+     "Monsoon moisture ingress caused a mechanical seal leak on cooling water pump P-201."),
+    ("P-401", ("VAD", "CRACK"), "material", "major", 345,
+     "Seal leak after heavy monsoon rain; water contamination in the seal flush on quench pump P-401."),
+    ("FW-P1", ("JAM", "TANK"), "surface_finish", "minor", 340,
+     "Firewater pump seal weeping during the monsoon; moisture found in the bearing housing."),
+    ("P-101", ("JAM", "CDU"), "material", "major", 355,
+     "Repeat mechanical seal leak on crude feed pump P-101 correlating with monsoon humidity."),
+    # Unrelated NCRs for defect-Pareto variety.
+    ("E-101", ("JAM", "CDU"), "weld_defect", "major", 120,
+     "Weld porosity on the E-101 replacement nozzle exceeds ASME B31.3 limits."),
+    ("V-101", ("JAM", "CDU"), "dimensional", "minor", 90,
+     "Dimensional deviation on column tray spacing in V-101."),
+    ("E-401", ("VAD", "CRACK"), "surface_finish", "minor", 60,
+     "Surface finish out of specification on exchanger E-401 tube bundle."),
+    ("TK-01", ("JAM", "TANK"), "assembly", "minor", 200,
+     "Assembly gap on the TK-01 floating-roof seal."),
+    ("V-501", ("VAD", "EFF"), "contamination", "major", 45,
+     "Contamination found in a neutralization tank V-501 process sample."),
+]
+
+
+async def _seed_quality(session, tenant, users) -> int:
+    from app.modules.equipment.models import Area
+    from app.modules.quality.models import NCR
+
+    existing = (await session.execute(
+        select(NCR).where(NCR.tenant_id == tenant.id).limit(1))).scalar_one_or_none()
+    if existing is not None:
+        return 0
+    admin = next((u for u in users if u.email == "admin@indusmind.io"), users[0])
+    equipment = {e.tag: e for e in (await session.execute(
+        select(Equipment).where(Equipment.tenant_id == tenant.id))).scalars()}
+    areas = {(a.plant_id, a.code): a for a in (await session.execute(
+        select(Area).where(Area.tenant_id == tenant.id))).scalars()}
+    plants_by_code = {p.code: p for p in (await session.execute(
+        select(Plant).where(Plant.tenant_id == tenant.id))).scalars()}
+    defect_ids = {r.code: r.id for r in (await session.execute(
+        select(Lookup).where(Lookup.tenant_id.is_(None),
+                             Lookup.category == "defect_types"))).scalars()}
+
+    seq = 1
+    for tag, (plant_code, area_code), defect, severity, days_ago, desc in QUALITY_NCRS:
+        eq = equipment.get(tag)
+        plant = plants_by_code.get(plant_code)
+        area = areas.get((plant.id, area_code)) if plant else None
+        detected = _NOW - timedelta(days=days_ago)
+        session.add(NCR(
+            tenant_id=tenant.id, ncr_number=f"NCR-{detected.year}-{seq:03d}",
+            area_id=area.id if area else None, line=area_code,
+            defect_type_id=defect_ids.get(defect), severity=severity, description=desc,
+            equipment_id=eq.id if eq else None, status="open", detected_at=detected,
+            created_by=admin.id, updated_by=admin.id))
+        seq += 1
+    await session.flush()
+    return seq - 1
+
+
+async def _seed_lessons(session, tenant, users) -> int:
+    """Run the clustering agent so the 'monsoon seal failure' lesson emerges."""
+    from app.modules.lessons.agent import LessonsAgent
+
+    admin = next((u for u in users if u.email == "admin@indusmind.io"), users[0])
+    created = await LessonsAgent(session, tenant.id).detect(scope={}, actor=admin)
+    return len(created)
+
+
 async def run(*, with_documents: bool = False) -> None:
     # Document ingestion (needs MinIO + pipeline deps) is opt-in so unit tests that
     # only need the config/asset seed stay fast; `make seed` enables it below.
@@ -446,8 +1010,17 @@ async def run(*, with_documents: bool = False) -> None:
         n_plants, n_areas, n_equipment = await _seed_assets(session, tenant)
         await _seed_ai(session)
         await _seed_insights(session, tenant)
+        n_wos, n_failures = await _seed_maintenance(session, tenant, users)
         admin = next((u for u in users if u.email == "admin@indusmind.io"), users[0])
+        n_preds = await _seed_predictions(session, tenant)
         n_docs = await _seed_documents(session, tenant, admin) if with_documents else 0
+        n_reg, n_clause, scan = await _seed_compliance(session, tenant, users)
+        n_rules = await _seed_notification_rules(session)
+        n_widgets = await _seed_widgets(session)
+        n_dash = await _seed_dashboards(session, tenant, roles)
+        n_reports = await _seed_reports(session)
+        n_ncrs = await _seed_quality(session, tenant, users)
+        n_lessons = await _seed_lessons(session, tenant, users)
         await session.commit()
 
         # Project the equipment hierarchy into the graph (best-effort; graph is optional).
@@ -465,10 +1038,17 @@ async def run(*, with_documents: bool = False) -> None:
             await set_effective_permissions(tenant.id, user.id, eff)
 
     log.info("seed_done", permissions=len(perms), roles=len(roles), lookups_added=added_lookups,
-             users=len(users), plants=n_plants, areas=n_areas, equipment=n_equipment, documents=n_docs)
+             users=len(users), plants=n_plants, areas=n_areas, equipment=n_equipment,
+             work_orders=n_wos, failures=n_failures, documents=n_docs,
+             regulations=n_reg, clauses=n_clause, compliance_scan=scan,
+             notification_rules=n_rules, widgets=n_widgets, dashboards=n_dash,
+             reports=n_reports, ncrs=n_ncrs, lessons=n_lessons)
     print(f"Seeded: {len(perms)} permissions, {len(roles)} roles, {added_lookups} lookups added, "
           f"{len(users)} demo users, {n_plants} plants, {n_areas} areas, {n_equipment} equipment, "
-          f"{n_docs} documents ingested (password {DEMO_PASSWORD}).")
+          f"{n_wos} work orders, {n_failures} failures, "
+          f"{n_docs} documents ingested, {n_reg} regulations, {n_clause} clauses, "
+          f"compliance scan {scan}, {n_widgets} widgets, {n_dash} dashboards, "
+          f"{n_reports} reports, {n_ncrs} NCRs, {n_lessons} lesson(s) (password {DEMO_PASSWORD}).")
 
 
 if __name__ == "__main__":

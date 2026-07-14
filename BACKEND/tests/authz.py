@@ -13,7 +13,7 @@ the RBAC gate, not the handler's happy path).
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -84,6 +84,85 @@ ENDPOINTS: list[GuardedEndpoint] = [
     GuardedEndpoint("POST", "/api/v1/graph/query", "graph.read",
                     {"start_type": "Equipment", "start_key": "P-101"}),
     GuardedEndpoint("POST", "/api/v1/graph/rebuild", "tenant.manage", {}),
+    # maintenance module
+    GuardedEndpoint("GET", "/api/v1/work-orders", "wo.read"),
+    GuardedEndpoint("POST", "/api/v1/work-orders", "wo.create",
+                    {"title": "Matrix WO", "type": "preventive", "priority": "medium"}),
+    GuardedEndpoint("GET", "/api/v1/work-orders/00000000-0000-0000-0000-000000000009",
+                    "wo.read"),
+    GuardedEndpoint("POST", "/api/v1/work-orders/00000000-0000-0000-0000-000000000009/assign",
+                    "wo.assign", {"assignee_id": "00000000-0000-0000-0000-000000000009"}),
+    GuardedEndpoint("POST", "/api/v1/work-orders/00000000-0000-0000-0000-000000000009/transition",
+                    "wo.create", {"status": "in_progress"}),
+    GuardedEndpoint("POST", "/api/v1/work-orders/00000000-0000-0000-0000-000000000009/close",
+                    "wo.close", {"closure_notes": "done"}),
+    GuardedEndpoint("GET", "/api/v1/work-orders/00000000-0000-0000-0000-000000000009/ai-context",
+                    "wo.read"),
+    GuardedEndpoint("GET", "/api/v1/maintenance/schedules", "wo.read"),
+    GuardedEndpoint("POST", "/api/v1/maintenance/schedules", "maint.schedule",
+                    {"name": "Matrix schedule", "interval_days": 30}),
+    GuardedEndpoint("POST", "/api/v1/maintenance/schedules/optimize", "maint.schedule",
+                    {"scope": {}}),
+    GuardedEndpoint("POST", "/api/v1/maintenance/proposals/"
+                    "00000000-0000-0000-0000-000000000009/apply", "maint.schedule", {}),
+    GuardedEndpoint("GET", "/api/v1/maintenance/metrics", "wo.read"),
+    GuardedEndpoint("GET", "/api/v1/failures", "wo.read"),
+    GuardedEndpoint("POST", "/api/v1/failures", "wo.close",
+                    {"occurred_at": "2026-07-01T00:00:00Z"}),
+    # predictions + RCA (B10)
+    GuardedEndpoint("GET", "/api/v1/maintenance/predictions", "wo.read"),
+    GuardedEndpoint("POST", "/api/v1/maintenance/predictions/"
+                    "00000000-0000-0000-0000-000000000009/accept", "maint.predict.act", {}),
+    GuardedEndpoint("POST", "/api/v1/maintenance/predictions/"
+                    "00000000-0000-0000-0000-000000000009/dismiss", "maint.predict.act",
+                    {"reason": "not applicable"}),
+    GuardedEndpoint("POST", "/api/v1/ai/rca/00000000-0000-0000-0000-000000000009/run",
+                    "rca.run", {}),
+    # compliance module (B11)
+    GuardedEndpoint("GET", "/api/v1/compliance/regulations", "comp.read"),
+    GuardedEndpoint("POST", "/api/v1/compliance/regulations", "comp.map",
+                    {"code": "MTX-REG", "title": "Matrix Regulation"}),
+    GuardedEndpoint("POST", "/api/v1/compliance/regulations/import", "comp.map",
+                    {"document_id": "00000000-0000-0000-0000-000000000009"}),
+    GuardedEndpoint("POST", "/api/v1/compliance/clauses", "comp.map",
+                    {"regulation_id": "00000000-0000-0000-0000-000000000009",
+                     "clause_no": "1.1", "text": "x"}),
+    GuardedEndpoint("GET", "/api/v1/compliance/mappings", "comp.read"),
+    GuardedEndpoint("POST", "/api/v1/compliance/mappings", "comp.map",
+                    {"clause_id": "00000000-0000-0000-0000-000000000009",
+                     "target_type": "equipment",
+                     "target_id": "00000000-0000-0000-0000-000000000009"}),
+    GuardedEndpoint("PATCH", "/api/v1/compliance/mappings/00000000-0000-0000-0000-000000000009",
+                    "comp.map", {"status": "confirmed"}),
+    GuardedEndpoint("GET", "/api/v1/compliance/coverage", "comp.read"),
+    GuardedEndpoint("GET", "/api/v1/compliance/gaps", "comp.read"),
+    GuardedEndpoint("POST", "/api/v1/compliance/gaps", "comp.gap.manage", {"title": "Matrix gap"}),
+    GuardedEndpoint("POST", "/api/v1/compliance/gaps/"
+                    "00000000-0000-0000-0000-000000000009/create-remediation", "comp.gap.manage", {}),
+    GuardedEndpoint("POST", "/api/v1/ai/compliance/scan", "comp.gap.manage", {"scope": {}}),
+    GuardedEndpoint("POST", "/api/v1/compliance/evidence-packages", "comp.evidence.generate",
+                    {"scope": {}}),
+    GuardedEndpoint("GET", "/api/v1/compliance/audits", "comp.read"),
+    GuardedEndpoint("POST", "/api/v1/compliance/audits", "comp.gap.manage", {"name": "Matrix audit"}),
+    # quality module (B12)
+    GuardedEndpoint("GET", "/api/v1/quality/ncrs", "qual.read"),
+    GuardedEndpoint("GET", "/api/v1/quality/ncrs/trends", "qual.read"),
+    GuardedEndpoint("POST", "/api/v1/quality/ncrs", "qual.manage", {"description": "Matrix NCR"}),
+    # lessons module (B12)
+    GuardedEndpoint("GET", "/api/v1/lessons", "lesson.read"),
+    GuardedEndpoint("POST", "/api/v1/ai/lessons/detect", "lesson.publish", {"scope": {}}),
+    GuardedEndpoint("POST", "/api/v1/lessons/00000000-0000-0000-0000-000000000009/publish",
+                    "lesson.publish", {}),
+    # notifications module (B12)
+    GuardedEndpoint("POST", "/api/v1/notifications/broadcast", "notif.manage",
+                    {"title": "Matrix broadcast"}),
+    # analytics module (B12)
+    GuardedEndpoint("GET", "/api/v1/analytics/reports", "analytics.read"),
+    GuardedEndpoint("POST", "/api/v1/analytics/reports/"
+                    "00000000-0000-0000-0000-000000000009/run", "analytics.read", {}),
+    GuardedEndpoint("POST", "/api/v1/analytics/reports/"
+                    "00000000-0000-0000-0000-000000000009/export", "analytics.export",
+                    {"format": "csv"}),
 ]
 
 

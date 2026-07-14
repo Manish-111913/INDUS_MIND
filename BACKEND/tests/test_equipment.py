@@ -151,9 +151,12 @@ async def test_summary_history_metrics(db, client):
     assert summary["plant"]["code"] == "JAM"
     assert summary["area"]["code"] == "CDU"
 
-    # No audit rows yet for the seeded row → empty timeline; a PATCH creates one.
-    assert (await client.get(f"/api/v1/equipment/{p101['id']}/history",
-                             headers=headers)).json()["data"] == []
+    # Timeline aggregates providers across modules (B3): P-101 carries seeded
+    # work orders + failures; a PATCH adds an audit event on top.
+    seeded_history = (await client.get(f"/api/v1/equipment/{p101['id']}/history",
+                                       headers=headers)).json()["data"]
+    seeded_sources = {e["source"] for e in seeded_history}
+    assert {"work_order", "failure"} <= seeded_sources
     await client.patch(f"/api/v1/equipment/{p101['id']}", headers=headers,
                        json={"health_score": 91, "version": p101["version"]})
     history = (await client.get(f"/api/v1/equipment/{p101['id']}/history",
@@ -163,7 +166,9 @@ async def test_summary_history_metrics(db, client):
     metrics = (await client.get(f"/api/v1/equipment/{p101['id']}/metrics",
                                 headers=headers)).json()["data"]
     assert metrics["health_score"] == 91.0
-    assert metrics["mtbf_hours"] is None  # placeholder until maintenance module
+    # Maintenance module now registers the metrics provider (real numbers).
+    assert metrics["failures"] == 3  # P-101 seal-failure story
+    assert metrics["mttr_hours"] is not None
 
 
 # ── bulk CSV import with row-level report ─────────────────────────────────────

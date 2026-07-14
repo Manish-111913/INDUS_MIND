@@ -98,3 +98,33 @@ class EvalRunRead(BaseModel):
     summary: dict
     results: list
     created_at: datetime
+
+
+# ── RCA (docs/02 §7, §15) ─────────────────────────────────────────────────────
+class RCARead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    failure_id: uuid.UUID
+    method: str
+    status: str
+    ai_output: dict
+    five_why: list
+    fishbone: dict
+    human_edits: dict
+    root_cause_final: str | None = None
+    corrective_actions: list
+    confidence: float | None = None
+    published_at: datetime | None = None
+    version: int
+
+
+class RCAUpdate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+    root_cause_final: str | None = None
+    corrective_actions: list | None = None
+    human_edits: dict | None = None
+    five_why: list | None = None
+
+
+class RCAPublish(BaseModel):
+    spawn_work_orders: bool = True

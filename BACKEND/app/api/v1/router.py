@@ -14,15 +14,23 @@ from fastapi import APIRouter
 from app.common.responses import success
 from app.modules.ai.ai_router import router as ai_router
 from app.modules.ai.chat_router import router as chat_router
+from app.modules.ai.rca_router import router as rca_router
+from app.modules.analytics.router import router as analytics_router
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
+from app.modules.compliance.router import router as compliance_router
+from app.modules.dashboards.router import router as dashboards_router
 from app.modules.documents.router import router as documents_router
 from app.modules.equipment.router import router as equipment_router
 from app.modules.ingestion.entities_router import router as entities_router
 from app.modules.ingestion.router import router as ingestion_router
 from app.modules.knowledge.router import router as knowledge_router
 from app.modules.knowledge.search_router import router as search_router
+from app.modules.lessons.router import router as lessons_router
 from app.modules.lookups.router import router as lookups_router
+from app.modules.maintenance.router import router as maintenance_router
+from app.modules.notifications.router import router as notifications_router
+from app.modules.quality.router import router as quality_router
 from app.modules.users.router import router as users_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -45,5 +53,12 @@ api_router.include_router(knowledge_router)
 api_router.include_router(search_router)
 api_router.include_router(ai_router)
 api_router.include_router(chat_router)
+api_router.include_router(rca_router)
 api_router.include_router(audit_router)
-# ai, maintenance, compliance, ... register here as they are implemented.
+api_router.include_router(maintenance_router)
+api_router.include_router(compliance_router)
+api_router.include_router(quality_router)
+api_router.include_router(lessons_router)
+api_router.include_router(notifications_router)
+api_router.include_router(dashboards_router)
+api_router.include_router(analytics_router)

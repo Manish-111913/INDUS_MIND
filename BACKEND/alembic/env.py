@@ -20,13 +20,20 @@ from app.core.config import settings
 # Import model modules here so their tables register on Base.metadata before
 # autogenerate runs.
 from app.modules.ai import models as _ai  # noqa: E402,F401
+from app.modules.analytics import models as _analytics  # noqa: E402,F401
 from app.modules.audit import models as _audit  # noqa: E402,F401
 from app.modules.auth import models as _auth  # noqa: E402,F401
+from app.modules.compliance import models as _compliance  # noqa: E402,F401
+from app.modules.dashboards import models as _dashboards  # noqa: E402,F401
 from app.modules.documents import models as _documents  # noqa: E402,F401
 from app.modules.equipment import models as _equipment  # noqa: E402,F401
 from app.modules.ingestion import models as _ingestion  # noqa: E402,F401
 from app.modules.knowledge import models as _knowledge  # noqa: E402,F401
+from app.modules.lessons import models as _lessons  # noqa: E402,F401
 from app.modules.lookups import models as _lookups  # noqa: E402,F401
+from app.modules.maintenance import models as _maintenance  # noqa: E402,F401
+from app.modules.notifications import models as _notifications  # noqa: E402,F401
+from app.modules.quality import models as _quality  # noqa: E402,F401
 from app.modules.tenants import models as _tenants  # noqa: E402,F401
 from app.modules.users import models as _users  # noqa: E402,F401
 

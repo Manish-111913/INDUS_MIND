@@ -26,7 +26,7 @@ from app.core.logging import get_logger
 log = get_logger("core.llm")
 
 _CONFIG_TTL = 60.0
-_config_cache: dict[tuple[str, str], tuple[float, "ResolvedConfig"]] = {}
+_config_cache: dict[tuple[str, str], tuple[float, ResolvedConfig]] = {}
 
 
 class Capability(StrEnum):
@@ -246,3 +246,12 @@ async def _record_usage(session, tenant_id, capability, config: ResolvedConfig,
         total_tokens=response.prompt_tokens + response.completion_tokens,
         latency_ms=response.latency_ms))
     await session.flush()
+
+    # Prometheus: LLM tokens + latency by capability/provider (docs/02 §29).
+    if settings.metrics_enabled:
+        from app.core import metrics
+
+        metrics.observe_llm(
+            capability, provider.name, response.prompt_tokens,
+            response.completion_tokens, response.latency_ms,
+        )

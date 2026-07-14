@@ -60,7 +60,7 @@ class Session(Base, TenantMixin, AuditFieldsMixin):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    tokens: Mapped[list["RefreshToken"]] = relationship(back_populates="session")
+    tokens: Mapped[list[RefreshToken]] = relationship(back_populates="session")
 
     @property
     def is_active(self) -> bool:

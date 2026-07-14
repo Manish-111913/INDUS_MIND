@@ -19,10 +19,25 @@ from app.core import database, redis, storage
 from app.core.config import settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
-from app.core.middleware import RequestContextMiddleware
+from app.core.middleware import RequestContextMiddleware, SecurityHeadersMiddleware
 
 configure_logging(settings.log_level)
 log = get_logger("main")
+
+# ── Sentry (docs/02 §29) — only initialised when a DSN is configured ─────────
+if settings.sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.starlette import StarletteIntegration
+
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.app_env,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        send_default_pii=False,  # never ship user/prompt data to Sentry (docs/02 §28)
+        integrations=[StarletteIntegration(), FastApiIntegration()],
+    )
+    log.info("sentry_initialised", environment=settings.app_env)
 
 
 @asynccontextmanager
@@ -54,10 +69,14 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Explicit allowlists (docs/02 §39 — strict CORS): a credentialed API must not
+    # reflect arbitrary methods/headers. These cover every verb + header the app uses.
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Idempotency-Key"],
     expose_headers=["X-Request-ID"],
 )
+# Outermost: hardening headers wrap every response, including CORS + error envelopes.
+app.add_middleware(SecurityHeadersMiddleware)
 
 register_exception_handlers(app)
 app.include_router(api_router)
@@ -66,6 +85,17 @@ app.include_router(api_router)
 from app.ws.router import router as ws_router  # noqa: E402
 
 app.include_router(ws_router)
+
+
+# ── metrics (docs/02 §29) ────────────────────────────────────────────────────
+@app.get("/metrics", tags=["meta"], summary="Prometheus metrics", include_in_schema=False)
+async def metrics_endpoint():
+    from starlette.responses import Response
+
+    from app.core import metrics
+
+    payload, content_type = await metrics.render_metrics()
+    return Response(content=payload, media_type=content_type)
 
 
 # ── health / readiness (docs/02 §29) ─────────────────────────────────────────

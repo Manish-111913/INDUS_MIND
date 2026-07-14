@@ -1,0 +1,35 @@
+# Pre-commit hooks (docs/02 §39, §43 — secret scanning + lint gate).
+# Install once:  pip install pre-commit && pre-commit install
+# Run on demand: pre-commit run --all-files
+#
+# gitleaks blocks any commit that would introduce a secret; ruff keeps the
+# backend lint-clean. Config lives at the repo root so it covers BACKEND/,
+# FRONTEND/ and infra/ alike.
+minimum_pre_commit_version: "3.5.0"
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secret scan)
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: detect-private-key            # blocks committing PEM/SSH private keys
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-merge-conflict
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff                          # lint the backend (config: BACKEND/pyproject.toml)
+        name: ruff (backend lint)
+        args: ["--fix"]
+        files: ^BACKEND/.*\.py$

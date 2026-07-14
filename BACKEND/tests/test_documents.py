@@ -54,7 +54,7 @@ async def test_upload_confirm_flow(db, minio, client):
     assert up.status_code == 201, up.text
     d = up.json()["data"]
     doc_id = d["document_id"]
-    assert d["storage_key"].startswith(f"tenant/") and d["storage_key"].endswith("/v1/original.pdf")
+    assert d["storage_key"].startswith("tenant/") and d["storage_key"].endswith("/v1/original.pdf")
 
     await _put_object(d["presigned_url"], PDF_BYTES, "application/pdf")
 

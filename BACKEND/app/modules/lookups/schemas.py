@@ -6,6 +6,8 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 class LookupRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -18,8 +20,7 @@ class LookupRead(BaseModel):
     active: bool
 
 
-class LookupCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class LookupCreate(StrictModel):
     category: str = Field(min_length=1, max_length=64)
     code: str = Field(min_length=1, max_length=64)
     label: str = Field(min_length=1, max_length=255)
@@ -28,8 +29,7 @@ class LookupCreate(BaseModel):
     active: bool = True
 
 
-class LookupUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class LookupUpdate(StrictModel):
     label: str | None = Field(default=None, min_length=1, max_length=255)
     sort: int | None = None
     meta: dict | None = None

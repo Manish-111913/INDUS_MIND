@@ -1,0 +1,9 @@
+# Terraform local state, plans, provider cache, and real variable files.
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+*.auto.tfvars
+crash.log

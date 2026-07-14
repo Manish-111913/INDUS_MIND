@@ -139,7 +139,6 @@ def _parse_docx(data: bytes) -> ParsedDocument:
 def _parse_email(data: bytes, mime: str) -> ParsedDocument:
     units: list[ParsedUnit] = []
     try:
-        import io
         import tempfile
 
         import extract_msg  # lazy

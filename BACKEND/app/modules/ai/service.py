@@ -1,8 +1,19 @@
-"""Prompt rendering service (docs/02 §38).
+"""Prompt rendering service (docs/02 §38, §39 — prompt-injection hardening).
 
 Renders `prompt_templates` via safe substitution with a variable whitelist — only
 variables declared on the template are interpolated; unknown supplied keys are
 rejected. No eval / format-string injection.
+
+Prompt-injection defence (docs/02 §39: "retrieved document text is data"):
+retrieved chunks, uploaded document text and other untrusted content are wrapped
+in the templates between the ``FENCE_START`` / ``FENCE_END`` sentinels, and every
+template carries an explicit rule telling the model to treat everything between
+the fences as data and never obey instructions found inside it. To stop a
+malicious document from *forging* a fence boundary and escaping the data region,
+``render()`` strips the sentinel tokens out of every interpolated value before
+substitution — so the only fences the model ever sees are the ones the template
+author placed. Use ``fence(label, text)`` when assembling untrusted content into
+a prompt outside the template system.
 """
 
 from __future__ import annotations
@@ -13,6 +24,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFound, ValidationFailed
 from app.modules.ai.repository import PromptRepository
+
+# Sentinels that delimit an untrusted-data region inside a prompt. Chosen to be
+# visually distinct and vanishingly unlikely to occur in real content; any that
+# *do* appear in a value are stripped by ``_sanitize`` so they cannot be forged.
+FENCE_START = "⟦UNTRUSTED-DATA⟧"
+FENCE_END = "⟦/UNTRUSTED-DATA⟧"
+
+
+def _sanitize(value: str) -> str:
+    """Remove fence sentinels from an interpolated value (anti-fence-forgery)."""
+    return value.replace(FENCE_START, "").replace(FENCE_END, "")
+
+
+def fence(label: str, text: str) -> str:
+    """Wrap untrusted ``text`` in a labelled data region for prompt inclusion."""
+    return f"{FENCE_START} {label}\n{_sanitize(str(text))}\n{FENCE_END}"
 
 
 class PromptService:
@@ -32,5 +59,6 @@ class PromptService:
                                    code="PROMPT_VARIABLE_UNKNOWN", http_status=422)
         rendered = template.template
         for name in whitelist:
-            rendered = rendered.replace("{{" + name + "}}", str(variables.get(name, "")))
+            # Sanitize values so untrusted content cannot forge a fence boundary.
+            rendered = rendered.replace("{{" + name + "}}", _sanitize(str(variables.get(name, ""))))
         return rendered

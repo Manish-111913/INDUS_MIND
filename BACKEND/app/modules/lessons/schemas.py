@@ -8,6 +8,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 class LessonRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -26,8 +28,7 @@ class LessonRead(BaseModel):
     version: int
 
 
-class LessonUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class LessonUpdate(StrictModel):
     title: str | None = Field(default=None, min_length=1, max_length=512)
     narrative: str | None = None
     pattern_summary: str | None = None
@@ -36,5 +37,5 @@ class LessonUpdate(BaseModel):
     version: int | None = None
 
 
-class LessonDetect(BaseModel):
+class LessonDetect(StrictModel):
     scope: dict = Field(default_factory=dict)

@@ -7,9 +7,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
 
-class TenantCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+
+class TenantCreate(StrictModel):
     name: str = Field(min_length=1, max_length=255)
     slug: str = Field(min_length=1, max_length=120, pattern=r"^[a-z0-9-]+$")
     plan: str = "free"

@@ -77,7 +77,7 @@ class EventBus:
     def subscribe(self, event_type: EventType, handler: Handler) -> None:
         self._subscribers[event_type].append(handler)
 
-    def set_bridge(self, bridge: "RedisStreamBridge | None") -> None:
+    def set_bridge(self, bridge: RedisStreamBridge | None) -> None:
         self._bridge = bridge
 
     async def publish(self, event: Event) -> None:

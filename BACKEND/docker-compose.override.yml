@@ -1,0 +1,12 @@
+# Local override — do not commit machine-specific tweaks upstream.
+# Another project already publishes host port 6379 (redis-invexis), which left
+# indusmind-redis-1 stuck in "Created". The app talks to redis over the compose
+# network as redis:6379, so we only need to move the *host* publish off 6379.
+services:
+  redis:
+    ports: !override ["6380:6379"]
+  # Host :5432 is shadowed by a native Postgres on this machine, so host-run
+  # tools (alembic/uvicorn via .venv) hit the wrong server. Publish the container
+  # on 5433 and point DATABASE_URL there.
+  postgres:
+    ports: !override ["5433:5432"]

@@ -1,7 +1,8 @@
 """Rate limiting — Redis sliding-window log (docs/02 §40).
 
 Per user+route-class limits: auth 5/min/IP · /ai/* + chat 20/min/user ·
-uploads 30/hour/user · general 120/min/user. Exceeding → 429 + Retry-After.
+uploads 30/hour/user · exports 10/hour/user · general 120/min/user.
+Exceeding → 429 + Retry-After.
 Enabled via RATE_LIMIT_ENABLED (off in tests; a unit test covers the limiter).
 """
 
@@ -56,6 +57,8 @@ def _class_for(request: Request) -> tuple[str, int, int, bool]:
         return "ai", 20, 60, False
     if method == "POST" and (path.endswith("/upload-url") or path.endswith("/versions")):
         return "upload", 30, 3600, False
+    if method == "POST" and (path.endswith("/export") or path.endswith("/evidence-packages")):
+        return "export", 10, 3600, False
     return "general", 120, 60, False
 
 

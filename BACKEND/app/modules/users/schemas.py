@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.common.schemas import StrictModel
+
 
 # ── permissions ──────────────────────────────────────────────────────────────
 class PermissionRead(BaseModel):
@@ -19,15 +21,13 @@ class PermissionRead(BaseModel):
 
 
 # ── roles ────────────────────────────────────────────────────────────────────
-class RoleCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class RoleCreate(StrictModel):
     name: str = Field(min_length=1, max_length=128)
     description: str | None = Field(default=None, max_length=255)
     permission_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
-class RoleUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class RoleUpdate(StrictModel):
     name: str | None = Field(default=None, min_length=1, max_length=128)
     description: str | None = Field(default=None, max_length=255)
     version: int | None = None
@@ -43,13 +43,12 @@ class RoleRead(BaseModel):
     permissions: list[str] = Field(default_factory=list)
 
 
-class RolePermissionsUpdate(BaseModel):
+class RolePermissionsUpdate(StrictModel):
     permission_ids: list[uuid.UUID]
 
 
 # ── users ────────────────────────────────────────────────────────────────────
-class UserCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class UserCreate(StrictModel):
     email: EmailStr
     full_name: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8, max_length=256)
@@ -57,15 +56,13 @@ class UserCreate(BaseModel):
     role_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
-class UserInvite(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class UserInvite(StrictModel):
     email: EmailStr
     full_name: str = Field(min_length=1, max_length=255)
     role_ids: list[uuid.UUID] = Field(default_factory=list)
 
 
-class UserUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class UserUpdate(StrictModel):
     full_name: str | None = Field(default=None, min_length=1, max_length=255)
     phone: str | None = Field(default=None, max_length=32)
     locale: str | None = Field(default=None, max_length=16)
@@ -99,8 +96,7 @@ class FeatureFlagRead(BaseModel):
     rollout_pct: int = 100
 
 
-class FeatureFlagUpsert(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class FeatureFlagUpsert(StrictModel):
     key: str = Field(min_length=1, max_length=128)
     enabled: bool = False
     role_scope: list[str] = Field(default_factory=list)

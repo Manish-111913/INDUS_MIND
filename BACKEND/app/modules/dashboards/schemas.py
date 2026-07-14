@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from app.common.schemas import StrictModel
 
 
-class LayoutItem(BaseModel):
+class LayoutItem(StrictModel):
     widget_key: str
     grid: dict = Field(default_factory=dict)  # {x,y,w,h}
     params: dict = Field(default_factory=dict)
 
 
-class ConfigSave(BaseModel):
+class ConfigSave(StrictModel):
     layout: list[LayoutItem] = Field(default_factory=list)

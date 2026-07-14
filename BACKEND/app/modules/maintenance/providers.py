@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.equipment.providers import history_registry, metrics_registry
 from app.modules.equipment.schemas import TimelineEvent
 from app.modules.knowledge.providers import federated_registry
-from app.modules.maintenance.models import FailureRecord, WorkOrder
+from app.modules.maintenance.models import WorkOrder
 from app.modules.maintenance.repository import (
     FailureRepository,
     MetricsRepository,

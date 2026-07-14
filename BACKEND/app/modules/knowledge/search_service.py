@@ -224,12 +224,17 @@ class SavedSearchService:
         return list((await self.session.execute(stmt)).scalars())
 
     async def create(self, *, user_id: uuid.UUID, name: str, query: str, filters: dict):
+        from app.modules.audit.service import AuditService
         from app.modules.knowledge.models import SavedSearch
 
         row = SavedSearch(tenant_id=self.tenant_id, user_id=user_id, name=name, query=query,
                           filters=filters, created_by=user_id, updated_by=user_id)
         self.session.add(row)
         await self.session.flush()
+        await AuditService(self.session).write(
+            action="saved_search.create", entity_type="saved_search", entity_id=row.id,
+            tenant_id=self.tenant_id, actor_id=user_id, after={"name": name, "query": query},
+        )
         return row
 
     async def delete(self, *, user_id: uuid.UUID, saved_id: uuid.UUID) -> None:
@@ -246,3 +251,9 @@ class SavedSearchService:
             raise NotFound("Saved search not found", code="SAVED_SEARCH_NOT_FOUND")
         row.deleted_at = func.now()
         await self.session.flush()
+        from app.modules.audit.service import AuditService
+
+        await AuditService(self.session).write(
+            action="saved_search.delete", entity_type="saved_search", entity_id=saved_id,
+            tenant_id=self.tenant_id, actor_id=user_id,
+        )

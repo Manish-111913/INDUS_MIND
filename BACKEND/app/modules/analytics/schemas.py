@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 class ReportRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -20,17 +22,16 @@ class ReportRead(BaseModel):
     required_permission: str | None = None
 
 
-class ReportRun(BaseModel):
+class ReportRun(StrictModel):
     params: dict = Field(default_factory=dict)
 
 
-class ReportExport(BaseModel):
+class ReportExport(StrictModel):
     format: str = Field(default="xlsx", pattern=r"^(xlsx|pdf|csv)$")
     params: dict = Field(default_factory=dict)
 
 
-class ReportSchedule(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ReportSchedule(StrictModel):
     cron: str = Field(min_length=1, max_length=64)
     recipients: list[str] = Field(default_factory=list)
     params: dict = Field(default_factory=dict)

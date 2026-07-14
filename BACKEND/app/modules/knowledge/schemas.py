@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
-
-
 import uuid
 from datetime import datetime
 
 from pydantic import BaseModel as _BaseModel
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
+
+from app.common.schemas import StrictModel
 
 
-class GraphQueryRequest(BaseModel):
+class GraphQueryRequest(StrictModel):
     """Constrained pattern DSL — validated against the type whitelist (never raw Cypher)."""
     start_type: str
     start_key: str | None = None
@@ -21,8 +20,7 @@ class GraphQueryRequest(BaseModel):
     depth: int = Field(default=2, ge=1, le=3)
 
 
-class SavedSearchCreate(_BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class SavedSearchCreate(StrictModel):
     name: str = Field(min_length=1, max_length=255)
     query: str = Field(min_length=1)
     filters: dict = Field(default_factory=dict)

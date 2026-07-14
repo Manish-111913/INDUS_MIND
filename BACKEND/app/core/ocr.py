@@ -81,11 +81,11 @@ def _ocr_image(data: bytes, *, page_no: int) -> OCRPage:
 def _ocr_local(data: bytes, page_no: int) -> OCRPage:
     # PaddleOCR preferred; pytesseract fallback. Both lazy.
     try:
-        from paddleocr import PaddleOCR  # type: ignore
+        import io
 
         import numpy as np
+        from paddleocr import PaddleOCR  # type: ignore  # noqa: F401  (availability probe)
         from PIL import Image
-        import io
 
         engine = _paddle()
         img = np.array(Image.open(io.BytesIO(data)).convert("RGB"))

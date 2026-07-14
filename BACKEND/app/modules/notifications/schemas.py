@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.common.schemas import StrictModel
+
 
 class NotificationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -22,7 +24,7 @@ class NotificationRead(BaseModel):
     created_at: datetime
 
 
-class MarkReadRequest(BaseModel):
+class MarkReadRequest(StrictModel):
     ids: list[uuid.UUID] | None = None
     all: bool = False
 
@@ -33,19 +35,17 @@ class MarkReadRequest(BaseModel):
         return self
 
 
-class PreferenceUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class PreferenceUpdate(StrictModel):
     category: str = Field(max_length=48)
     channel: str = Field(pattern=r"^(in_app|email|push)$")
     enabled: bool
 
 
-class PreferencesUpdate(BaseModel):
+class PreferencesUpdate(StrictModel):
     preferences: list[PreferenceUpdate] = Field(min_length=1)
 
 
-class BroadcastRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class BroadcastRequest(StrictModel):
     category: str = Field(default="system", max_length=48)
     priority: str = Field(default="normal", max_length=16)
     title: str = Field(min_length=1, max_length=512)

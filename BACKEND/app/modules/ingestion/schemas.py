@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.common.schemas import StrictModel
+
 
 class IngestionJobRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -50,8 +52,7 @@ class EntityRead(BaseModel):
     version: int
 
 
-class EntityUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class EntityUpdate(StrictModel):
     status: str  # confirmed | corrected | rejected
     value: str | None = None
     version: int | None = None

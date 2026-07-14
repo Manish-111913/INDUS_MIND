@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { User, UserRole } from '../types';
-import { api, setTokens } from '../lib/api/client';
+import { api, setTokens, USE_MOCK, mapMeToUser } from '../lib/api/client';
 
 interface AuthState {
   user: User | null;
@@ -37,13 +37,22 @@ export const useAuthStore = create<AuthState>((set, get) => {
     login: async (email, password) => {
       set({ isLoading: true, error: null });
       try {
-        const data = await api.post<{ token: string; refreshToken: string; user: User }>('/auth/login', {
-          email,
-          password,
-        });
-        setTokens(data.token, data.refreshToken);
-        set({ user: data.user, isAuthenticated: true, isLoading: false });
-        return data.user;
+        // Live backend (docs/02 §24): { access_token, expires_in, user } + an
+        // httpOnly refresh cookie. Mock backend: { token, refreshToken, user }.
+        const data = await api.post<any>('/auth/login', { email, password });
+        setTokens(data.access_token ?? data.token, data.refreshToken ?? null);
+
+        let user: User;
+        if (!USE_MOCK) {
+          // Roles/permissions/flags are not on the login payload — hydrate the
+          // full profile from /auth/me.
+          const me = await api.get<any>('/auth/me');
+          user = mapMeToUser(me);
+        } else {
+          user = data.user as User;
+        }
+        set({ user, isAuthenticated: true, isLoading: false });
+        return user;
       } catch (err: any) {
         const msg = err?.error?.message || 'Login failed';
         set({ error: msg, isLoading: false });
@@ -52,6 +61,14 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     register: async (name, email, password) => {
+      // The live backend has no self-service registration endpoint (docs/02 §24
+      // — accounts are provisioned via POST /users/invite by an admin). Only the
+      // mock backend supports open sign-up.
+      if (!USE_MOCK) {
+        const err = { error: { code: 'NOT_SUPPORTED', message: 'Self sign-up is disabled. Ask an administrator to invite you.' } };
+        set({ error: err.error.message, isLoading: false });
+        throw err;
+      }
       set({ isLoading: true, error: null });
       try {
         const data = await api.post<{ token: string; refreshToken: string; user: User }>('/auth/register', {
@@ -70,6 +87,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     logout: () => {
+      // Best-effort server-side revoke (clears the refresh cookie + session).
+      if (!USE_MOCK) {
+        api.post('/auth/logout').catch(() => {});
+      }
       setTokens(null, null);
       set({ user: null, isAuthenticated: false, error: null });
     },
@@ -83,7 +104,9 @@ export const useAuthStore = create<AuthState>((set, get) => {
 
       set({ isLoading: true, error: null });
       try {
-        const user = await api.get<User>('/auth/me');
+        const me = await api.get<any>('/auth/me');
+        // Live /auth/me → { user, roles, permissions, flags }; mock → User.
+        const user: User = !USE_MOCK ? mapMeToUser(me) : (me as User);
         set({ user, isAuthenticated: true, isLoading: false });
         return user;
       } catch (err) {

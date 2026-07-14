@@ -10,7 +10,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -76,6 +76,9 @@ class Settings(BaseSettings):
 
     # ── Observability ────────────────────────────────────────────────────────
     sentry_dsn: str = ""
+    sentry_traces_sample_rate: float = 0.0
+    metrics_enabled: bool = True
+    metrics_port: int = 9100  # worker-process Prometheus exporter (docs/02 §29)
 
     # ── Feature flags default ────────────────────────────────────────────────
     feature_defaults_json: str = "{}"

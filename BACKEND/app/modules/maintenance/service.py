@@ -31,7 +31,6 @@ from app.modules.maintenance.models import (
 from app.modules.maintenance.repository import (
     FailureRepository,
     MetricsRepository,
-    ProposalRepository,
     ScheduleRepository,
     WorkOrderRepository,
 )

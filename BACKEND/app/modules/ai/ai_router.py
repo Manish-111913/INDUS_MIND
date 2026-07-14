@@ -10,14 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.responses import success
 from app.core.database import get_session
+from app.core.exceptions import NotFound
 from app.modules.ai import cache
+from app.modules.ai.chat_service import scope_from_dict
 from app.modules.ai.copilot import CopilotService
 from app.modules.ai.evals import load_questions, run_evals
 from app.modules.ai.insights_service import InsightsService
 from app.modules.ai.models import EvalRun
 from app.modules.ai.schemas import AIQueryRequest, AIQueryResponse, EvalRunRead, InsightRead
-from app.modules.ai.chat_service import scope_from_dict
-from app.core.exceptions import NotFound
 from app.modules.auth.dependencies import CurrentUser, require
 
 router = APIRouter(prefix="/ai", tags=["ai"])

@@ -8,18 +8,18 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 # ── plants ───────────────────────────────────────────────────────────────────
-class PlantCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class PlantCreate(StrictModel):
     name: str = Field(min_length=1, max_length=255)
     code: str = Field(min_length=1, max_length=64)
     location: str | None = Field(default=None, max_length=255)
     timezone: str = "Asia/Kolkata"
 
 
-class PlantUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class PlantUpdate(StrictModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     location: str | None = None
     timezone: str | None = None
@@ -37,15 +37,13 @@ class PlantRead(BaseModel):
 
 
 # ── areas ────────────────────────────────────────────────────────────────────
-class AreaCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class AreaCreate(StrictModel):
     plant_id: uuid.UUID
     name: str = Field(min_length=1, max_length=255)
     code: str = Field(min_length=1, max_length=64)
 
 
-class AreaUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class AreaUpdate(StrictModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     version: int | None = None
 
@@ -60,8 +58,7 @@ class AreaRead(BaseModel):
 
 
 # ── equipment ────────────────────────────────────────────────────────────────
-class EquipmentCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class EquipmentCreate(StrictModel):
     plant_id: uuid.UUID
     area_id: uuid.UUID | None = None
     parent_id: uuid.UUID | None = None
@@ -78,8 +75,7 @@ class EquipmentCreate(BaseModel):
     health_score: Decimal | None = Field(default=None, ge=0, le=100)
 
 
-class EquipmentUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class EquipmentUpdate(StrictModel):
     area_id: uuid.UUID | None = None
     parent_id: uuid.UUID | None = None
     name: str | None = Field(default=None, min_length=1, max_length=255)

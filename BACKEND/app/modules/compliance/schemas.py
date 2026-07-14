@@ -13,10 +13,11 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 # ── regulations ──────────────────────────────────────────────────────────────
-class RegulationCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class RegulationCreate(StrictModel):
     code: str = Field(min_length=1, max_length=64)
     title: str = Field(min_length=1, max_length=512)
     body: str = Field(default="internal", max_length=32)
@@ -25,8 +26,7 @@ class RegulationCreate(BaseModel):
     edition: str | None = Field(default=None, max_length=32)
 
 
-class RegulationUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class RegulationUpdate(StrictModel):
     code: str | None = Field(default=None, min_length=1, max_length=64)
     title: str | None = Field(default=None, min_length=1, max_length=512)
     body: str | None = Field(default=None, max_length=32)
@@ -49,7 +49,7 @@ class RegulationRead(BaseModel):
     version: int
 
 
-class RegulationImport(BaseModel):
+class RegulationImport(StrictModel):
     document_id: uuid.UUID
     code: str | None = Field(default=None, max_length=64)
     title: str | None = Field(default=None, max_length=512)
@@ -57,8 +57,7 @@ class RegulationImport(BaseModel):
 
 
 # ── clauses ──────────────────────────────────────────────────────────────────
-class ClauseCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ClauseCreate(StrictModel):
     regulation_id: uuid.UUID
     clause_no: str = Field(min_length=1, max_length=32)
     parent_id: uuid.UUID | None = None
@@ -69,8 +68,7 @@ class ClauseCreate(BaseModel):
     order_index: int = 0
 
 
-class ClauseUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ClauseUpdate(StrictModel):
     clause_no: str | None = Field(default=None, min_length=1, max_length=32)
     parent_id: uuid.UUID | None = None
     title: str | None = Field(default=None, max_length=512)
@@ -97,8 +95,7 @@ class ClauseRead(BaseModel):
 
 
 # ── mappings ─────────────────────────────────────────────────────────────────
-class MappingCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class MappingCreate(StrictModel):
     clause_id: uuid.UUID
     target_type: str = Field(max_length=16)  # procedure_doc|equipment|record
     target_id: uuid.UUID
@@ -107,8 +104,7 @@ class MappingCreate(BaseModel):
     rationale: str | None = None
 
 
-class MappingStatusUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class MappingStatusUpdate(StrictModel):
     status: str = Field(pattern=r"^(proposed|confirmed|rejected)$")
     version: int | None = None
 
@@ -129,8 +125,7 @@ class MappingRead(BaseModel):
 
 
 # ── gaps ─────────────────────────────────────────────────────────────────────
-class GapCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class GapCreate(StrictModel):
     clause_id: uuid.UUID | None = None
     title: str = Field(min_length=1, max_length=512)
     severity: str = Field(default="medium", max_length=16)
@@ -142,14 +137,15 @@ class GapCreate(BaseModel):
     due_at: datetime | None = None
 
 
-class GapUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class GapUpdate(StrictModel):
     title: str | None = Field(default=None, min_length=1, max_length=512)
     severity: str | None = Field(default=None, max_length=16)
     description: str | None = None
     owner_id: uuid.UUID | None = None
     due_at: datetime | None = None
-    status: str | None = Field(default=None, pattern=r"^(open|in_remediation|resolved|accepted_risk)$")
+    status: str | None = Field(
+        default=None, pattern=r"^(open|in_remediation|resolved|accepted_risk)$"
+    )
     version: int | None = None
 
 
@@ -174,13 +170,12 @@ class GapRead(BaseModel):
 
 
 # ── scan (docs/02 §15) ────────────────────────────────────────────────────────
-class ComplianceScan(BaseModel):
+class ComplianceScan(StrictModel):
     scope: dict = Field(default_factory=dict)
 
 
 # ── audits ───────────────────────────────────────────────────────────────────
-class AuditCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class AuditCreate(StrictModel):
     name: str = Field(min_length=1, max_length=255)
     body: str | None = Field(default=None, max_length=32)
     scheduled_at: datetime | None = None
@@ -189,8 +184,7 @@ class AuditCreate(BaseModel):
     checklist: list = Field(default_factory=list)
 
 
-class AuditUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class AuditUpdate(StrictModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     body: str | None = Field(default=None, max_length=32)
     scheduled_at: datetime | None = None
@@ -215,8 +209,7 @@ class AuditRead(BaseModel):
 
 
 # ── evidence packages ────────────────────────────────────────────────────────
-class EvidencePackageCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class EvidencePackageCreate(StrictModel):
     scope: dict = Field(default_factory=dict)
     audit_id: uuid.UUID | None = None
     title: str | None = Field(default=None, max_length=255)

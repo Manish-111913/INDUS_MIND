@@ -7,10 +7,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 # ── /ai/query ────────────────────────────────────────────────────────────────
-class AIQueryRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class AIQueryRequest(StrictModel):
     query: str = Field(min_length=1)
     scope: dict = Field(default_factory=dict)
 
@@ -29,14 +30,12 @@ class AIQueryResponse(BaseModel):
 
 
 # ── chat ─────────────────────────────────────────────────────────────────────
-class ChatSessionCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ChatSessionCreate(StrictModel):
     title: str | None = Field(default=None, max_length=255)
     scope: dict = Field(default_factory=dict)
 
 
-class ChatSessionUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ChatSessionUpdate(StrictModel):
     title: str | None = Field(default=None, max_length=255)
     pinned: bool | None = None
 
@@ -51,8 +50,7 @@ class ChatSessionRead(BaseModel):
     updated_at: datetime
 
 
-class MessageCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class MessageCreate(StrictModel):
     content: str = Field(min_length=1)
 
 
@@ -70,8 +68,7 @@ class ChatMessageRead(BaseModel):
     created_at: datetime
 
 
-class FeedbackRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class FeedbackRequest(StrictModel):
     value: str = Field(pattern=r"^(up|down)$")
     reason: str | None = Field(default=None, max_length=1024)
 
@@ -118,13 +115,12 @@ class RCARead(BaseModel):
     version: int
 
 
-class RCAUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class RCAUpdate(StrictModel):
     root_cause_final: str | None = None
     corrective_actions: list | None = None
     human_edits: dict | None = None
     five_why: list | None = None
 
 
-class RCAPublish(BaseModel):
+class RCAPublish(StrictModel):
     spawn_work_orders: bool = True

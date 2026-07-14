@@ -64,5 +64,5 @@ class BaseRepository(Generic[M]):
         """Optimistic-lock guard for PATCH (docs/02 §14)."""
         if expected is None or not hasattr(entity, "version"):
             return
-        if getattr(entity, "version") != expected:
+        if entity.version != expected:
             raise VersionMismatch()

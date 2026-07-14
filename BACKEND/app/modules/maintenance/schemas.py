@@ -14,10 +14,11 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 # ── work orders ──────────────────────────────────────────────────────────────
-class WorkOrderCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class WorkOrderCreate(StrictModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
     equipment_id: uuid.UUID | None = None
@@ -29,8 +30,7 @@ class WorkOrderCreate(BaseModel):
     parts: list = Field(default_factory=list)
 
 
-class WorkOrderUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class WorkOrderUpdate(StrictModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
     equipment_id: uuid.UUID | None = None
@@ -69,28 +69,25 @@ class WorkOrderRead(BaseModel):
     version: int
 
 
-class WorkOrderAssign(BaseModel):
+class WorkOrderAssign(StrictModel):
     assignee_id: uuid.UUID
     version: int | None = None
 
 
-class WorkOrderTransition(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class WorkOrderTransition(StrictModel):
     status: str = Field(max_length=16)
     note: str | None = None
     version: int | None = None
 
 
-class PartLine(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class PartLine(StrictModel):
     part_no: str | None = None
     name: str | None = None
     qty: float = 1
     cost: float | None = None
 
 
-class WorkOrderClose(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class WorkOrderClose(StrictModel):
     failure_code_id: uuid.UUID | None = None
     failure_mode_id: uuid.UUID | None = None
     closure_notes: str = Field(min_length=1)
@@ -101,8 +98,7 @@ class WorkOrderClose(BaseModel):
 
 
 # ── schedules ────────────────────────────────────────────────────────────────
-class ScheduleCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ScheduleCreate(StrictModel):
     equipment_id: uuid.UUID | None = None
     name: str = Field(min_length=1, max_length=255)
     frequency_type: str = Field(default="time", max_length=16)
@@ -112,8 +108,7 @@ class ScheduleCreate(BaseModel):
     active: bool = True
 
 
-class ScheduleUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ScheduleUpdate(StrictModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     frequency_type: str | None = Field(default=None, max_length=16)
     interval_days: int | None = Field(default=None, ge=1)
@@ -137,13 +132,12 @@ class ScheduleRead(BaseModel):
     version: int
 
 
-class ScheduleOptimize(BaseModel):
+class ScheduleOptimize(StrictModel):
     scope: dict = Field(default_factory=dict)
 
 
 # ── failures ─────────────────────────────────────────────────────────────────
-class FailureCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class FailureCreate(StrictModel):
     equipment_id: uuid.UUID | None = None
     work_order_id: uuid.UUID | None = None
     failure_mode_id: uuid.UUID | None = None
@@ -156,8 +150,7 @@ class FailureCreate(BaseModel):
     description: str | None = None
 
 
-class FailureUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class FailureUpdate(StrictModel):
     failure_mode_id: uuid.UUID | None = None
     failure_code_id: uuid.UUID | None = None
     severity: str | None = Field(default=None, max_length=16)
@@ -274,6 +267,5 @@ class PredictionRead(BaseModel):
     version: int
 
 
-class PredictionDismiss(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class PredictionDismiss(StrictModel):
     reason: str = Field(min_length=1, max_length=1024)

@@ -14,7 +14,6 @@ import asyncio
 from sqlalchemy import select
 
 from app.core.logging import get_logger
-from app.workers.celery_app import celery
 
 # Register every module's models so SQLAlchemy can resolve cross-module foreign
 # keys (e.g. work_orders.assignee_id → users) when this task runs in the worker
@@ -33,6 +32,7 @@ from app.modules.notifications import models as _notifications  # noqa: E402,F40
 from app.modules.quality import models as _quality  # noqa: E402,F401
 from app.modules.tenants import models as _tenants  # noqa: E402,F401
 from app.modules.users import models as _users  # noqa: E402,F401
+from app.workers.celery_app import celery
 
 log = get_logger("workers.scheduler")
 

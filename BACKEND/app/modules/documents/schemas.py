@@ -7,10 +7,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
+
 
 # ── upload flow ──────────────────────────────────────────────────────────────
-class UploadUrlRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class UploadUrlRequest(StrictModel):
     filename: str = Field(min_length=1, max_length=512)
     mime: str = Field(min_length=1, max_length=255)
     size: int = Field(ge=1)
@@ -23,8 +24,7 @@ class UploadUrlResponse(BaseModel):
     storage_key: str
 
 
-class ConfirmMeta(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class ConfirmMeta(StrictModel):
     doc_type_id: uuid.UUID | None = None
     plant_id: uuid.UUID | None = None
     title: str | None = Field(default=None, max_length=512)
@@ -32,7 +32,7 @@ class ConfirmMeta(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
-class ConfirmRequest(BaseModel):
+class ConfirmRequest(StrictModel):
     checksum: str = Field(min_length=8, max_length=128)
     meta: ConfirmMeta = Field(default_factory=ConfirmMeta)
 
@@ -74,8 +74,7 @@ class DocumentDetail(DocumentRead):
     job: JobStagesRead | None = None
 
 
-class VersionCreateRequest(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class VersionCreateRequest(StrictModel):
     filename: str = Field(min_length=1, max_length=512)
     mime: str = Field(min_length=1, max_length=255)
     size: int = Field(ge=1)
@@ -102,7 +101,7 @@ class VersionRead(BaseModel):
     created_at: datetime
 
 
-class ReprocessRequest(BaseModel):
+class ReprocessRequest(StrictModel):
     from_stage: str | None = None
 
 

@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars (gitignored) and fill in per environment.
+# Only non-default / account-specific values are needed here.
+
+project     = "indusmind"
+environment = "prod"
+region      = "ap-south-1"
+azs         = ["ap-south-1a", "ap-south-1b"]
+
+# Images pushed to ECR by the backend CD pipeline (repo:tag).
+api_image    = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/indusmind-api:GITSHA"
+worker_image = "123456789012.dkr.ecr.ap-south-1.amazonaws.com/indusmind-worker:GITSHA"
+
+# HTTPS cert for api.<domain> (must be in the same region as the ALB).
+acm_certificate_arn = "arn:aws:acm:ap-south-1:123456789012:certificate/REPLACE-ME"
+
+cors_origins = "https://app.indusmind.example"

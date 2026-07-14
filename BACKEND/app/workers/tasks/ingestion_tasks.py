@@ -42,6 +42,6 @@ def ingest_document(self, document_id: str, tenant_id: str, from_stage: str | No
         log.error("ingest_failed", document_id=document_id, retries=self.request.retries,
                   error=str(exc))
         if self.request.retries < self.max_retries:
-            raise self.retry(exc=exc, countdown=2 ** self.request.retries)  # exp backoff
+            raise self.retry(exc=exc, countdown=2 ** self.request.retries) from exc  # exp backoff
         asyncio.run(_fail(document_id, tenant_id, str(exc)))
         raise

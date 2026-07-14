@@ -17,7 +17,7 @@ from app.common.responses import success
 from app.core.database import get_session
 from app.modules.auth.dependencies import CurrentUser, require
 from app.modules.ingestion import events as _events  # noqa: F401 — registers bus→queue subscriber
-from app.modules.ingestion.schemas import IngestionJobRead, MessageResponse
+from app.modules.ingestion.schemas import IngestionJobRead
 from app.modules.ingestion.service import IngestionService
 
 router = APIRouter(prefix="/ingestion", tags=["ingestion"])

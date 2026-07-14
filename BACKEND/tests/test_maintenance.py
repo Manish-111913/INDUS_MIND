@@ -245,10 +245,11 @@ async def test_beat_generates_due_work_orders(db, client):
     """The hourly PM checker turns due schedules into source=schedule work orders."""
     await seed_run()
     headers = await _admin_headers(client)
+    from sqlalchemy import select as _select
+
     from app.core.database import SessionFactory
     from app.modules.maintenance.service import ScheduleService
     from app.modules.tenants.models import Tenant
-    from sqlalchemy import select as _select
 
     async with SessionFactory() as session:
         tenant = (await session.execute(_select(Tenant))).scalars().first()

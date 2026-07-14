@@ -33,7 +33,6 @@ from app.modules.maintenance.repository import (
     FailureRepository,
     PredictionRepository,
     ScheduleRepository,
-    WorkOrderRepository,
 )
 from app.modules.maintenance.schemas import WorkOrderCreate
 

@@ -8,7 +8,7 @@ Token count is estimated as chars/4 (no tokenizer dependency).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from app.modules.ingestion.parsing import ParsedDocument, ParsedUnit
 
@@ -37,8 +37,10 @@ def _merge_bbox(units: list[ParsedUnit]) -> dict | None:
     coords = [u.bbox["coords"] for u in units if u.bbox and u.bbox.get("coords")]
     if not coords:
         return None
-    xs0 = min(c[0] for c in coords); ys0 = min(c[1] for c in coords)
-    xs1 = max(c[2] for c in coords); ys1 = max(c[3] for c in coords)
+    xs0 = min(c[0] for c in coords)
+    ys0 = min(c[1] for c in coords)
+    xs1 = max(c[2] for c in coords)
+    ys1 = max(c[3] for c in coords)
     return {"coords": [xs0, ys0, xs1, ys1]}
 
 
@@ -65,7 +67,8 @@ def chunk_document(parsed: ParsedDocument) -> list[Chunk]:
 
     for unit in parsed.units:
         if unit.kind == "table":
-            flush(buffer); buffer, buffer_tokens = [], 0
+            flush(buffer)
+            buffer, buffer_tokens = [], 0
             header = f"[Table · {unit.section_path or ''}]".strip()
             table_unit = ParsedUnit(page_no=unit.page_no, section_path=unit.section_path,
                                     text=f"{header}\n{unit.text}", kind="table", bbox=unit.bbox)
@@ -73,7 +76,8 @@ def chunk_document(parsed: ParsedDocument) -> list[Chunk]:
             continue
 
         if unit.page_no != current_page:
-            flush(buffer); buffer, buffer_tokens = [], 0
+            flush(buffer)
+            buffer, buffer_tokens = [], 0
             current_page = unit.page_no
 
         buffer.append(unit)

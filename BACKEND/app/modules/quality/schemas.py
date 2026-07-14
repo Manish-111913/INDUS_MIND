@@ -7,9 +7,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.common.schemas import StrictModel
 
-class NCRCreate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+
+class NCRCreate(StrictModel):
     area_id: uuid.UUID | None = None
     line: str | None = Field(default=None, max_length=64)
     defect_type_id: uuid.UUID | None = None
@@ -20,8 +21,7 @@ class NCRCreate(BaseModel):
     detected_at: datetime | None = None
 
 
-class NCRUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class NCRUpdate(StrictModel):
     area_id: uuid.UUID | None = None
     line: str | None = Field(default=None, max_length=64)
     defect_type_id: uuid.UUID | None = None

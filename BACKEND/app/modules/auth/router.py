@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.database import get_session
 from app.modules.auth import oauth
 from app.modules.auth.dependencies import CurrentUser, get_current_user
+from app.modules.auth.repository import UserRepository
 from app.modules.auth.schemas import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -30,7 +31,6 @@ from app.modules.auth.schemas import (
     UserRead,
 )
 from app.modules.auth.service import AuthService, RequestMeta
-from app.modules.auth.repository import UserRepository
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

@@ -6,6 +6,7 @@
 import { MOCK_USERS, MOCK_NAV_ITEMS, MockUserDbEntry } from './mockData';
 import { ApiResponseEnvelope, ApiErrorEnvelope, User, NavigationItem, DocumentFile, ExtractedEntity } from '../../types';
 import { MOCK_LOOKUPS, SEED_DOCUMENTS } from './mockDocuments';
+import { adaptRequest, NoBackendRouteError, type AdaptedRequest } from './adapters';
 
 // Users created at runtime via the sign-up flow, persisted to localStorage so they
 // survive reloads and can authenticate exactly like the seeded demo accounts.
@@ -369,6 +370,42 @@ export const setTokens = (accessToken: string | null, refreshToken: string | nul
 
 // Base URL configuration
 const API_BASE_URL = (import.meta as any).env.VITE_PUBLIC_API_BASE_URL || '/api/mock/v1';
+
+// Explicit API mode. `VITE_API_MODE=mock` forces the offline demo backend even
+// when a real base URL is set; `live` forces real HTTP. When unset we infer it
+// from the base URL (the built-in mock server lives under /api/mock).
+export const API_MODE: 'mock' | 'live' =
+  ((import.meta as any).env.VITE_API_MODE as 'mock' | 'live') ||
+  (API_BASE_URL.startsWith('/api/mock') ? 'mock' : 'live');
+export const USE_MOCK = API_MODE === 'mock';
+
+// WebSocket base (notifications + ingestion progress, docs/02 §35).
+export const WS_URL: string = (import.meta as any).env.VITE_WS_URL || 'ws://localhost:8000/ws';
+
+/**
+ * Adapt the real backend GET /auth/me payload — { user (UserRead), roles[],
+ * permissions[], flags[] } — into the frontend `User` shape. In mock mode the
+ * mock server already returns a frontend `User`, so this is only used live.
+ */
+export function mapMeToUser(me: any): User {
+  const u = me?.user ?? me ?? {};
+  const flags: Record<string, boolean> = {};
+  if (Array.isArray(me?.flags)) {
+    for (const f of me.flags) flags[f.key] = !!f.enabled;
+  }
+  const roles: string[] = Array.isArray(me?.roles) ? me.roles : [];
+  return {
+    id: String(u.id ?? ''),
+    email: u.email ?? '',
+    name: u.full_name ?? u.name ?? u.email ?? '',
+    // Backend returns role *names*; the frontend keys dashboards/RBAC off a
+    // single primary role. Fall back to the least-privileged role.
+    role: (roles[0] as User['role']) ?? 'Field Technician',
+    permissions: Array.isArray(me?.permissions) ? me.permissions : (u.permissions ?? []),
+    featureFlags: flags,
+    plant: u.plant ?? '',
+  };
+}
 
 // Helper to decode user email from mock token
 function getUserFromToken(token: string): User | null {
@@ -2499,20 +2536,45 @@ export async function apiRequest<T>(
     headers['Authorization'] = `Bearer ${inMemoryAccessToken}`;
   }
 
-  const requestOptions = {
+  const requestOptions: RequestInit = {
     ...options,
     headers,
+    // Send the httpOnly refresh_token cookie set by /auth/login so the
+    // cookie-based refresh flow (docs/02 §24) works cross-origin in dev.
+    credentials: 'include',
   };
 
   try {
     // Check if we are running in mock mode
-    if (API_BASE_URL.startsWith('/api/mock')) {
+    if (USE_MOCK) {
       const response = await simulateNetworkCall<T>(url, requestOptions);
       return response.data;
     }
 
-    // Real API call logic (for production and backend integration)
-    const res = await fetch(url, requestOptions);
+    // Real API call logic (for production and backend integration).
+    // Route the frontend path/shape through the live adapter registry: rewrite
+    // the path to the backend contract and reshape the response back.
+    const method = (options.method || 'GET').toUpperCase();
+    let adapted: AdaptedRequest | null = null;
+    try {
+      adapted = adaptRequest(method, path);
+    } catch (e) {
+      if (e instanceof NoBackendRouteError) {
+        throw { error: { code: 'NOT_AVAILABLE', message: `${e.frontendPath} is not available on this backend.` } };
+      }
+      throw e;
+    }
+    const liveUrl = `${API_BASE_URL}${adapted?.path ?? path}`;
+    let liveOptions = requestOptions;
+    if (adapted?.adaptBody && typeof options.body === 'string') {
+      try {
+        liveOptions = { ...requestOptions, body: JSON.stringify(adapted.adaptBody(JSON.parse(options.body))) };
+      } catch { /* leave body untouched if not JSON */ }
+    }
+    const applyAdapt = (data: any, meta?: any) =>
+      adapted?.adaptResponse ? adapted.adaptResponse(data, meta) : data;
+
+    const res = await fetch(liveUrl, liveOptions);
 
     if (res.status === 401) {
       if (isRefreshing) {
@@ -2527,27 +2589,30 @@ export async function apiRequest<T>(
       isRefreshing = true;
 
       try {
+        // Refresh token rides in an httpOnly cookie (docs/02 §24) — no body,
+        // but credentials must be included so the browser sends it. The backend
+        // rotates the cookie and returns a fresh access token.
         const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken: inMemoryRefreshToken }),
+          credentials: 'include',
         });
 
         if (refreshResponse.ok) {
-          const envelope = await refreshResponse.json() as ApiResponseEnvelope<{ token: string; refreshToken: string }>;
-          const { token, refreshToken } = envelope.data;
-          setTokens(token, refreshToken);
+          const envelope = await refreshResponse.json() as ApiResponseEnvelope<{ access_token: string; expires_in: number }>;
+          const token = envelope.data.access_token;
+          setTokens(token, null);
           isRefreshing = false;
           onRefreshed(token);
           // Retry original request
           headers['Authorization'] = `Bearer ${token}`;
-          const retryRes = await fetch(url, { ...options, headers });
+          const retryRes = await fetch(liveUrl, { ...liveOptions, headers });
           if (!retryRes.ok) {
             const errJson = await retryRes.json() as ApiErrorEnvelope;
             throw errJson;
           }
           const retryEnvelope = await retryRes.json() as ApiResponseEnvelope<T>;
-          return retryEnvelope.data;
+          return applyAdapt(retryEnvelope.data, retryEnvelope.meta);
         } else {
           // Refresh failed
           setTokens(null, null);
@@ -2567,7 +2632,7 @@ export async function apiRequest<T>(
     }
 
     const envelope = await res.json() as ApiResponseEnvelope<T>;
-    return envelope.data;
+    return applyAdapt(envelope.data, envelope.meta);
   } catch (error: any) {
     // If mock threw, we normalize it directly
     const normalized = normalizeError(error);

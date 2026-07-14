@@ -95,6 +95,15 @@ celery.conf.update(
     },
 )
 
+# Prometheus task-duration/outcome metrics + worker exporter (docs/02 §29).
+# Connects Celery signals; the exporter only starts inside the worker process
+# (worker_ready), so importing this module from the API is a no-op there.
+if settings.metrics_enabled:
+    from app.core.metrics import init_celery_metrics
+
+    init_celery_metrics()
+
+
 @celery.task(name="app.workers.ping")
 def ping() -> str:
     """Trivial task to confirm broker + worker wiring end-to-end."""

@@ -1,0 +1,32 @@
+# gitleaks configuration (docs/02 §39, §43).
+# Extends the upstream default ruleset and adds an allowlist for the
+# intentionally-committed, non-production placeholders so the hook doesn't cry
+# wolf on demo fixtures. Real secrets live only in the gitignored .env / AWS
+# Secrets Manager and are never committed.
+
+title = "IndusMind gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Committed placeholders & demo fixtures — not real secrets"
+
+paths = [
+  '''.*\.env\.example$''',                 # committed template of env var NAMES only
+  '''BACKEND/keys/.*''',                   # dev RSA keypair, gitignored + regenerated at runtime
+  '''BACKEND/seeds/.*''',                  # demo seed data (fixed demo password by design)
+  '''BACKEND/tests/.*''',                  # test fixtures
+  '''.*docker-compose.*\.ya?ml$''',        # local-only minio/postgres dev creds
+  '''FRONTEND/src/lib/api/client\.ts''',   # mock server: localStorage keys/fixtures (entropy FPs)
+  '''.*/node_modules/.*''',                # vendored deps (also gitignored)
+  '''.*/(dist|build|\.next|\.venv)/.*''',  # build artifacts / virtualenv (also gitignored)
+]
+
+# Known non-secret literals that appear in source as dev defaults / demo values.
+regexes = [
+  '''change-me-dev-secret''',        # SECRET_KEY dev default (overridden by env in prod)
+  '''minioadmin''',                  # local MinIO dev credential
+  '''indusmind-neo4j''',             # local Neo4j dev password
+  '''Demo@1234''',                   # seeded demo-user password
+]

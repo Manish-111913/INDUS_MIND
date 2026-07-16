@@ -32,7 +32,6 @@ import { ImportWizard } from './components/views/data/ImportWizard';
 import { SparePartsModule } from './components/views/maintenance/SparePartsModule';
 import { ShiftLogbookModule } from './components/views/maintenance/ShiftLogbookModule';
 import { LandingPage } from './components/views/LandingPage';
-import { RefreshCw, Bot } from 'lucide-react';
 import { I18nProvider } from './lib/i18n';
 
 const queryClient = new QueryClient({
@@ -45,7 +44,7 @@ const queryClient = new QueryClient({
 });
 
 function MainAppContent() {
-  const { isAuthenticated, isLoading, checkSession, user } = useAuthStore();
+  const { isAuthenticated, checkSession } = useAuthStore();
   const [currentHash, setCurrentHash] = useState(() => window.location.hash || '#landing');
   const [initialChecking, setInitialChecking] = useState(true);
 
@@ -113,30 +112,9 @@ function MainAppContent() {
     }
   }, [isAuthenticated, currentHash, initialChecking]);
 
-  // Loading Screen for Bootstrap
-  if (initialChecking || (isLoading && !isAuthenticated)) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg text-text-primary font-sans">
-        <div className="p-4 rounded-xl bg-gradient-to-br from-primary/20 to-surface border border-primary/30 flex flex-col items-center space-y-4 shadow-2xl relative">
-          <div 
-            className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-            style={{
-              backgroundImage: `linear-gradient(var(--primary) 1px, transparent 1px), linear-gradient(90deg, var(--primary) 1px, transparent 1px)`,
-              backgroundSize: '16px 16px'
-            }}
-          />
-          <div className="relative">
-            <Bot className="w-10 h-10 text-primary animate-pulse" />
-            <RefreshCw className="w-10 h-10 text-ai absolute inset-0 animate-spin opacity-40" style={{ animationDuration: '4s' }} />
-          </div>
-          <div className="text-center">
-            <span className="block font-display text-lg font-bold tracking-tight text-text-primary">IndusMind</span>
-            <span className="block font-mono text-[9px] text-primary tracking-widest uppercase mt-0.5">Establishing Secure Node Connection</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // No bootstrap loading spinner — render straight through while the session
+  // check runs in the background (the auth guard above handles redirects once
+  // `initialChecking` clears).
 
   // 5. Route Mapping Table
   const renderActiveRoute = () => {

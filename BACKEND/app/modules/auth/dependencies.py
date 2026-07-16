@@ -139,6 +139,23 @@ async def get_current_user(
     )
 
 
+async def get_current_user_optional(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> CurrentUser | None:
+    """Auth if credentials are present, else None — for public-to-authed routes.
+
+    Endpoints the anonymous landing page hits (e.g. i18n bundles) must serve
+    without a token, but still bind identity/log-context when one is supplied.
+    Any auth failure degrades to anonymous rather than raising a 401.
+    """
+    if not request.headers.get(API_KEY_HEADER) and not request.headers.get("Authorization"):
+        return None
+    try:
+        return await get_current_user(request, session)
+    except (Unauthenticated, TokenExpired, PermissionDenied):
+        return None
+
+
 async def get_tenant_context(
     current: CurrentUser = Depends(get_current_user),
 ) -> uuid.UUID:

@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.responses import success
 from app.core.database import get_session
 from app.core.exceptions import ValidationFailed
-from app.modules.auth.dependencies import CurrentUser, get_current_user, require
+from app.modules.auth.dependencies import CurrentUser, get_current_user_optional, require
 from app.modules.i18n.service import I18nService, bundle_etag
 
 router = APIRouter(tags=["i18n"])
@@ -31,7 +31,7 @@ async def get_bundle(
     namespace: str,
     request: Request,
     response: Response,
-    _: CurrentUser = Depends(get_current_user),
+    _: CurrentUser | None = Depends(get_current_user_optional),
     session: AsyncSession = Depends(get_session),
 ) -> dict | Response:
     bundle = await I18nService(session).bundle(locale, namespace)

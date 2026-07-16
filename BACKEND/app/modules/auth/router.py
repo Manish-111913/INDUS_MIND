@@ -26,6 +26,7 @@ from app.modules.auth.schemas import (
     LoginRequest,
     LoginResponse,
     MessageResponse,
+    RegisterRequest,
     MfaSetupResponse,
     MfaVerifyRequest,
     RefreshResponse,
@@ -133,6 +134,24 @@ async def login(
     svc = AuthService(session)
     result = await svc.login(
         email=body.email, password=body.password, mfa_code=body.mfa_code, meta=_meta(request)
+    )
+    _set_refresh_cookie(response, result.refresh_raw)
+    payload = LoginResponse(
+        access_token=result.access.access_token,
+        expires_in=result.access.expires_in,
+        user=UserRead.model_validate(result.user),
+    )
+    return success(payload.model_dump())
+
+
+@router.post("/register", status_code=201, summary="Self-service sign-up → account + auto-login")
+async def register(
+    body: RegisterRequest, request: Request, response: Response,
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    svc = AuthService(session)
+    result = await svc.register(
+        full_name=body.full_name, email=body.email, password=body.password, meta=_meta(request)
     )
     _set_refresh_cookie(response, result.refresh_raw)
     payload = LoginResponse(

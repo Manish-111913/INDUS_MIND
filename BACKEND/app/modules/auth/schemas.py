@@ -17,6 +17,13 @@ class LoginRequest(StrictModel):
     mfa_code: str | None = Field(default=None, pattern=r"^\d{6}$")
 
 
+class RegisterRequest(StrictModel):
+    # `EmailStr` accepts any valid address — registration is not domain-locked.
+    full_name: str = Field(min_length=1, max_length=200)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=256)
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID

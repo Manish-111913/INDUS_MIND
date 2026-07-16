@@ -68,6 +68,14 @@ class Settings(BaseSettings):
     # ── Rate limiting ────────────────────────────────────────────────────────
     rate_limit_enabled: bool = True
 
+    # ── Self-service registration (docs/02 §24) ──────────────────────────────
+    # When enabled, POST /auth/register lets anyone create an account with any
+    # email domain. New users join `default_tenant_slug` with the least-privilege
+    # `self_signup_role` and are logged in immediately. Turn off for invite-only.
+    self_signup_enabled: bool = True
+    self_signup_role: str = "Field Technician"
+    default_tenant_slug: str = "indusmind"
+
     # ── OAuth ────────────────────────────────────────────────────────────────
     oauth_google_client_id: str = ""
     oauth_google_client_secret: str = ""

@@ -36,8 +36,9 @@ http://localhost:3000
 
 ## 1. Getting an account ("sign up")
 
-**Important:** IndusMind has **no public "Create account" button.** It's a company
-tool, so accounts are handed out, not self-registered. You have **three** ways in:
+You have **four** ways in. **Any email address works** (Gmail, company, anything) —
+accounts are *not* restricted to `@indusmind.io`; the demo accounts just happen to
+use that domain.
 
 ### Option A — Use a ready-made demo account (easiest, start here)
 
@@ -56,7 +57,21 @@ The setup step already created 5 demo users. **The password for all of them is
 > others later to *see how the menu shrinks* — that's the permission system working,
 > not a bug.
 
-### Option B — Have an admin create a real account for you (the true "sign up")
+### Option B — Sign yourself up (self-service registration)
+
+Self sign-up is **enabled**. On the login screen click **Create account** (the
+"Create Operator Account" page), enter your **full name, any email, and a
+password**, and submit. You're created and **logged in immediately**.
+
+- New self-registered accounts get the **least-privilege role** (they can sign in
+  and look around, but an admin grants more access for sensitive actions).
+- **Password rules:** at least 10 characters, including a number and a symbol
+  (e.g. `Welcome@2026`). The demo password `Demo@1234` is only 9 characters, so
+  pick something longer when registering.
+- **To turn self sign-up off** (invite-only, more secure), an admin sets
+  `SELF_SIGNUP_ENABLED=false` in `BACKEND/.env` and restarts the backend.
+
+### Option C — Have an admin create a real account for you
 
 This is how a new engineer would really get access:
 
@@ -67,7 +82,7 @@ This is how a new engineer would really get access:
    real inbox — it lands in **MailHog**, a fake inbox at <http://localhost:8025>.
    Open it, click the invite, and set a password.
 
-### Option C — Forgot your password
+### Option D — Forgot your password
 
 1. On the login screen click **Forgot password**.
 2. Enter your email → the reset email appears in **MailHog** (<http://localhost:8025>).

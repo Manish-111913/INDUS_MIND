@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.events import Event, EventType, bus
-from app.core.exceptions import AppError, NotFound, Unauthenticated, ValidationFailed
+from app.core.exceptions import AppError, ConflictError, NotFound, Unauthenticated, ValidationFailed
 from app.core.logging import get_logger
 from app.core.redis import get_redis
 from app.core.security import decrypt_secret, encrypt_secret, hash_password, verify_password
@@ -104,6 +104,61 @@ class AuthService:
             tenant_id=user.tenant_id, actor_id=user.id, actor_ip=meta.ip,
         )
         await bus.publish(Event(EventType.USER_LOGGED_IN, tenant_id=str(user.tenant_id),
+                                actor_id=str(user.id)))
+        return result
+
+    # ── self-service registration (docs/02 §24) ─────────────────────────────
+    async def register(
+        self, *, full_name: str, email: str, password: str, meta: RequestMeta
+    ) -> LoginResult:
+        """Open sign-up: create an account with any email and log it in.
+
+        Gated by `settings.self_signup_enabled`. New users land in the default
+        tenant with the least-privilege role, so a public registrant can sign in
+        but sees only what that role permits until an admin grants more.
+        """
+        if not settings.self_signup_enabled:
+            raise ValidationFailed(
+                "Self sign-up is disabled. Ask an administrator to invite you.",
+                code="SIGNUP_DISABLED", http_status=403)
+
+        # Email is unique across the platform (login resolves it tenant-agnostically).
+        if await self.users.get_by_email(None, email) is not None:
+            raise ConflictError("Email already in use", code="EMAIL_TAKEN")
+
+        from app.modules.tenants.repository import TenantRepository
+
+        tenant = await TenantRepository(self.session).get_by_slug(settings.default_tenant_slug)
+        if tenant is None:
+            raise ValidationFailed("Registration is not configured (no default tenant). "
+                                   "Seed the database first.", code="SIGNUP_NO_TENANT")
+
+        self._enforce_password_policy(await self._password_policy(tenant.id), password)
+
+        user = await self.users.add(User(
+            tenant_id=tenant.id, email=email, full_name=full_name,
+            password_hash=hash_password(password), status="active",
+        ))
+
+        # Assign the configured least-privilege role (best-effort: if it's missing
+        # the account is still created, just with no permissions until granted).
+        from app.modules.users.repository import RoleRepository, UserRoleRepository
+        from app.modules.users.service import refresh_user_permissions
+
+        role = await RoleRepository(self.session, tenant.id).get_by_name(settings.self_signup_role)
+        if role is not None:
+            await UserRoleRepository(self.session).set_roles(user.id, [role.id])
+        await refresh_user_permissions(self.session, tenant.id, user.id)
+
+        await self.audit.write(
+            action="auth.register", entity_type="user", entity_id=user.id,
+            tenant_id=tenant.id, actor_id=user.id, actor_ip=meta.ip,
+            after={"email": email, "role": settings.self_signup_role if role else None},
+        )
+
+        result = await self._establish_session(user, meta)
+        user.last_login_at = datetime.now(UTC)
+        await bus.publish(Event(EventType.USER_LOGGED_IN, tenant_id=str(tenant.id),
                                 actor_id=str(user.id)))
         return result
 

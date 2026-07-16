@@ -29,6 +29,8 @@ import {
 import { AdminSuite } from './components/views/admin/AdminSuite';
 import { ProfileSettings } from './components/views/profile/ProfileSettings';
 import { ImportWizard } from './components/views/data/ImportWizard';
+import { SparePartsModule } from './components/views/maintenance/SparePartsModule';
+import { ShiftLogbookModule } from './components/views/maintenance/ShiftLogbookModule';
 import { LandingPage } from './components/views/LandingPage';
 import { RefreshCw, Bot } from 'lucide-react';
 import { I18nProvider } from './lib/i18n';
@@ -167,12 +169,16 @@ function MainAppContent() {
         return <Equipment360 />;
       case '#maintenance':
         return <MaintenanceHub />;
+      case '#parts':
+        return <SparePartsModule />;
       case '#compliance':
         return <ComplianceHub />;
       case '#lessons-learned':
         return <LessonsLearnedHub />;
       case '#quality':
         return <QualityHub />;
+      case '#logbook':
+        return <ShiftLogbookModule />;
       case '#notifications':
         return <NotificationsHub />;
       case '#analytics':
@@ -181,6 +187,8 @@ function MainAppContent() {
         return <ImportWizard currentHash={currentHash} />;
       case '#admin':
         return <AdminSuite currentHash={currentHash} onRouteChange={handleRouteChange} />;
+      case '#audit-log':
+        return <AuditLogs />;
       case '#profile':
       case '#settings':
         return <ProfileSettings currentHash={currentHash} onRouteChange={handleRouteChange} />;

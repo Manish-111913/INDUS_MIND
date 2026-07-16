@@ -610,7 +610,7 @@ export function RoleDashboard() {
             </p>
           </div>
           <div className="mt-4 md:mt-0">
-            <button onClick={triggerRefresh} className="px-4 py-2 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm cursor-pointer flex items-center space-x-2">
+            <button onClick={() => { window.location.hash = '#admin/users'; }} className="px-4 py-2 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm cursor-pointer flex items-center space-x-2">
               <Users className="w-4 h-4" />
               <span>Invite New Operator</span>
             </button>
@@ -701,8 +701,8 @@ export function RoleDashboard() {
               </div>
             </div>
 
-            <button 
-              onClick={() => alert('Launching full administrative platform override panel...')}
+            <button
+              onClick={() => { window.location.hash = '#admin/settings'; }}
               className="w-full mt-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded cursor-pointer transition-colors"
             >
               Access Global Settings Node

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.pagination import PageParams
 from app.common.responses import success
 from app.core.database import get_session
+from app.core.exceptions import NotFound
 from app.modules.auth.dependencies import CurrentUser, require
 from app.modules.documents.schemas import (
     ConfirmRequest,
@@ -80,10 +81,17 @@ async def list_documents(
 
 
 @router.get("/{document_id}", summary="Document metadata + ingestion job stages")
-async def get_document(document_id: uuid.UUID,
+async def get_document(document_id: str,
                        actor: CurrentUser = Depends(require("doc.read")),
                        session: AsyncSession = Depends(get_session)) -> dict:
-    document, job = await DocumentService(session, actor.tenant_id).get_detail(document_id)
+    # Accept the id as a raw string so a malformed/stale id (e.g. a stray "doc-1"
+    # from a bookmarked link) resolves to a clean 404 "not found" rather than a
+    # 422 validation fault that the UI renders as a scary "System Fault".
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise NotFound("Document not found", code="DOC_NOT_FOUND")
+    document, job = await DocumentService(session, actor.tenant_id).get_detail(doc_uuid)
     detail = DocumentDetail.model_validate(document)
     detail.job = JobStagesRead.model_validate(job) if job else None
     return success(detail.model_dump())

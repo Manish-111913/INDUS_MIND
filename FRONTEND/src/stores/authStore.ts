@@ -62,24 +62,31 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     register: async (name, email, password) => {
-      // The live backend has no self-service registration endpoint (docs/02 §24
-      // — accounts are provisioned via POST /users/invite by an admin). Only the
-      // mock backend supports open sign-up.
-      if (!USE_MOCK) {
-        const err = { error: { code: 'NOT_SUPPORTED', message: 'Self sign-up is disabled. Ask an administrator to invite you.' } };
-        set({ error: err.error.message, isLoading: false });
-        throw err;
-      }
       set({ isLoading: true, error: null });
       try {
-        const data = await api.post<{ token: string; refreshToken: string; user: User }>('/auth/register', {
+        // Live backend (docs/02 §24): open sign-up returns { access_token,
+        // expires_in, user } + an httpOnly refresh cookie and logs the user in.
+        // Mock backend: { token, refreshToken, user }. Note the field name:
+        // the live API expects `full_name`.
+        const data = await api.post<any>('/auth/register', {
+          full_name: name,
           name,
           email,
           password,
         });
-        setTokens(data.token, data.refreshToken);
-        set({ user: data.user, isAuthenticated: true, isLoading: false });
-        return data.user;
+        setTokens(data.access_token ?? data.token, data.refreshToken ?? null);
+
+        let user: User;
+        if (!USE_MOCK) {
+          // Roles/permissions/flags aren't on the register payload — hydrate the
+          // full profile from /auth/me, same as login.
+          const me = await api.get<any>('/auth/me');
+          user = mapMeToUser(me);
+        } else {
+          user = data.user as User;
+        }
+        set({ user, isAuthenticated: true, isLoading: false });
+        return user;
       } catch (err: any) {
         const msg = err?.error?.message || 'Registration failed';
         set({ error: msg, isLoading: false });

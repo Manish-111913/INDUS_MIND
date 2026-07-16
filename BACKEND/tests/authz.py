@@ -52,6 +52,22 @@ ENDPOINTS: list[GuardedEndpoint] = [
                     {"category": "matrix_cat", "code": "c1", "label": "C1"}),
     GuardedEndpoint("PUT", "/api/v1/feature-flags", "flag.manage",
                     {"key": "matrix_flag", "enabled": True}),
+    # settings + notification templates (docs/05 S1, S3)
+    GuardedEndpoint("GET", "/api/v1/settings", "settings.manage"),
+    GuardedEndpoint("PUT", "/api/v1/settings", "settings.manage",
+                    {"key": "branding.app_name", "scope": "tenant", "value": "Matrix"}),
+    GuardedEndpoint("GET", "/api/v1/admin/notification-templates",
+                    "notifications.templates.manage"),
+    GuardedEndpoint("POST", "/api/v1/admin/notification-templates/preview",
+                    "notifications.templates.manage",
+                    {"body_tpl": "Hi {{ name }}", "sample_payload": {"name": "Sam"}}),
+    # AI observability + meters (docs/05 S4, S5)
+    GuardedEndpoint("GET", "/api/v1/admin/ai-usage/summary", "ai.observability.view"),
+    GuardedEndpoint("GET", "/api/v1/admin/ai-feedback", "ai.observability.view"),
+    GuardedEndpoint("POST", "/api/v1/meter-definitions", "readings.manage",
+                    {"code": "mtx_meter", "name": "Matrix Meter"}),
+    GuardedEndpoint("POST", "/api/v1/equipment/00000000-0000-0000-0000-000000000009/readings",
+                    "readings.record", {"meter_code": "vibration", "value": 1.0}),
     # equipment module
     GuardedEndpoint("GET", "/api/v1/equipment", "equip.read"),
     GuardedEndpoint("GET", "/api/v1/plants", "equip.read"),

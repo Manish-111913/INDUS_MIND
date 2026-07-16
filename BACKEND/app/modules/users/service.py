@@ -9,6 +9,7 @@ the auth layer calls on a permission-cache miss.
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import secrets
 import uuid
 
@@ -72,14 +73,14 @@ class RoleService:
         roles = await self.repo.list()
         return [(r, await self.repo.permission_codes(r.id)) for r in roles]
 
-    async def get_detail(self, role_id: uuid.UUID) -> tuple[Role, list[str]]:
+    async def get_detail(self, role_id: uuid.UUID) -> tuple[Role, builtins.list[str]]:
         role = await self.repo.get(role_id)
         if role is None:
             raise NotFound("Role not found", code="ROLE_NOT_FOUND")
         return role, await self.repo.permission_codes(role.id)
 
     async def create(self, *, name: str, description: str | None,
-                     permission_ids: list[uuid.UUID], actor) -> tuple[Role, list[str]]:
+                     permission_ids: builtins.list[uuid.UUID], actor) -> tuple[Role, builtins.list[str]]:
         if await self.repo.get_by_name(name) is not None:
             raise ConflictError("Role name already exists", code="ROLE_NAME_TAKEN")
         role = await self.repo.add(Role(name=name, description=description, is_system=False,
@@ -92,7 +93,7 @@ class RoleService:
         return role, await self.repo.permission_codes(role.id)
 
     async def update(self, role_id: uuid.UUID, *, name: str | None, description: str | None,
-                     version: int | None, actor) -> tuple[Role, list[str]]:
+                     version: int | None, actor) -> tuple[Role, builtins.list[str]]:
         role = await self.repo.get(role_id)
         if role is None:
             raise NotFound("Role not found", code="ROLE_NOT_FOUND")
@@ -128,8 +129,8 @@ class RoleService:
         await self.audit.write(action="role.delete", entity_type="role", entity_id=role.id,
                                tenant_id=self.tenant_id, actor_id=actor.id)
 
-    async def set_permissions(self, role_id: uuid.UUID, permission_ids: list[uuid.UUID],
-                              *, actor) -> tuple[Role, list[str]]:
+    async def set_permissions(self, role_id: uuid.UUID, permission_ids: builtins.list[uuid.UUID],
+                              *, actor) -> tuple[Role, builtins.list[str]]:
         role = await self.repo.get(role_id)
         if role is None:
             raise NotFound("Role not found", code="ROLE_NOT_FOUND")
@@ -148,7 +149,7 @@ class RoleService:
                                 actor_id=str(actor.id), payload={"role_id": str(role.id)}))
         return role, after
 
-    async def _reindex_users(self, user_ids: list[uuid.UUID]) -> None:
+    async def _reindex_users(self, user_ids: builtins.list[uuid.UUID]) -> None:
         """Recompute + re-cache perms and force-refresh tokens for affected users."""
         users_repo = UserRepository(self.session)
         for uid in user_ids:
@@ -174,14 +175,14 @@ class UserService:
         roles = {u.id: await self._roles(u.id) for u in page.items}
         return page, roles
 
-    async def get(self, user_id: uuid.UUID) -> tuple[User, list[str]]:
+    async def get(self, user_id: uuid.UUID) -> tuple[User, builtins.list[str]]:
         user = await self.repo.get(user_id)
         if user is None:
             raise NotFound("User not found", code="USER_NOT_FOUND")
         return user, await self._roles(user.id)
 
     async def create(self, *, email: str, full_name: str, password: str, phone: str | None,
-                     role_ids: list[uuid.UUID], actor) -> tuple[User, list[str]]:
+                     role_ids: builtins.list[uuid.UUID], actor) -> tuple[User, builtins.list[str]]:
         if await self.users.get_by_email(self.tenant_id, email) is not None:
             raise ConflictError("Email already in use", code="EMAIL_TAKEN")
         user = await self.users.add(User(
@@ -196,8 +197,8 @@ class UserService:
                                tenant_id=self.tenant_id, actor_id=actor.id, after={"email": email})
         return user, await self._roles(user.id)
 
-    async def invite(self, *, email: str, full_name: str, role_ids: list[uuid.UUID],
-                     actor) -> tuple[User, list[str]]:
+    async def invite(self, *, email: str, full_name: str, role_ids: builtins.list[uuid.UUID],
+                     actor) -> tuple[User, builtins.list[str]]:
         if await self.users.get_by_email(self.tenant_id, email) is not None:
             raise ConflictError("Email already in use", code="EMAIL_TAKEN")
         user = await self.users.add(User(
@@ -217,7 +218,7 @@ class UserService:
                                tenant_id=self.tenant_id, actor_id=actor.id, after={"email": email})
         return user, await self._roles(user.id)
 
-    async def update(self, user_id: uuid.UUID, *, data, actor) -> tuple[User, list[str]]:
+    async def update(self, user_id: uuid.UUID, *, data, actor) -> tuple[User, builtins.list[str]]:
         user = await self.repo.get(user_id)
         if user is None:
             raise NotFound("User not found", code="USER_NOT_FOUND")
@@ -245,7 +246,7 @@ class UserService:
                                before=before, after={"full_name": user.full_name})
         return user, await self._roles(user.id)
 
-    async def set_status(self, user_id: uuid.UUID, *, status: str, actor) -> tuple[User, list[str]]:
+    async def set_status(self, user_id: uuid.UUID, *, status: str, actor) -> tuple[User, builtins.list[str]]:
         user = await self.repo.get(user_id)
         if user is None:
             raise NotFound("User not found", code="USER_NOT_FOUND")
@@ -286,7 +287,7 @@ class FeatureFlagService:
     async def list(self) -> list[FeatureFlag]:
         return await self.repo.list_for_tenant(self.tenant_id)
 
-    async def upsert(self, *, key: str, enabled: bool, role_scope: list[str],
+    async def upsert(self, *, key: str, enabled: bool, role_scope: builtins.list[str],
                      rollout_pct: int, actor) -> FeatureFlag:
         flag = await self.repo.get(self.tenant_id, key)
         if flag is None:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 
 import httpx
 
@@ -185,7 +186,10 @@ async def test_eval_run_scores(db, minio, client):
 async def test_rate_limiter_sliding_window(db):
     from app.core.ratelimit import limiter
 
-    key = "ratelimit:test:user1"
+    # Unique per run: the window is 60s and `check` leaves the hits in Redis, so a
+    # fixed key makes this pass only on a cold Redis and fail on any re-run inside
+    # the minute.
+    key = f"ratelimit:test:{uuid.uuid4()}"
     allowed = [await limiter.check(key, 3, 60) for _ in range(4)]
     assert [a[0] for a in allowed] == [True, True, True, False]
     assert allowed[-1][1] >= 1  # Retry-After seconds

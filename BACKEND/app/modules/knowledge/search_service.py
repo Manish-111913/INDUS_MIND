@@ -42,6 +42,13 @@ CANNED_ACTIONS = [
 ]
 
 
+def _lookup(labels: dict[uuid.UUID, str], key: uuid.UUID | None, default: str = "") -> str:
+    """Nullable-FK-safe label lookup: doc_type_id / plant_id are NULLable."""
+    if key is None:
+        return default
+    return labels.get(key) or default
+
+
 def _highlight(text: str, query: str, width: int = 220) -> str:
     terms = [t for t in re.split(r"\W+", query) if len(t) > 1]
     lowered = text.lower()
@@ -103,10 +110,10 @@ class SearchService:
             items.append({
                 "id": str(d.id), "title": d.title, "type": "Documents",
                 "snippet": _highlight(c.text, query),
-                "source": type_labels.get(d.doc_type_id) or "Documents",
+                "source": _lookup(type_labels, d.doc_type_id, "Documents"),
                 "relevance": int(round(min(99, 60 + 39 * (c.score / top)))),
                 "matchType": c.match_kind,
-                "plant": plant_names.get(d.plant_id, ""),
+                "plant": _lookup(plant_names, d.plant_id),
                 "date": d.created_at.date().isoformat(),
                 "status": d.ingestion_status,
                 "link": f"#documents/{d.id}",
@@ -134,12 +141,12 @@ class SearchService:
             e = rows.get(uuid.UUID(str(m["id"])))
             if e is None:
                 continue
-            desc = f"{type_labels.get(e.type_id, 'Equipment')} · criticality {e.criticality}"
+            desc = f"{_lookup(type_labels, e.type_id, 'Equipment')} · criticality {e.criticality}"
             items.append({
                 "id": str(e.id), "title": f"{e.name} ({e.tag})", "type": "Equipment",
                 "snippet": _highlight(f"{e.name}. {desc}. {e.manufacturer or ''} {e.model or ''}", query),
                 "source": "Tag Registry", "relevance": int(round(float(m["score"]) * 100)),
-                "matchType": "keyword", "plant": plant_names.get(e.plant_id, ""),
+                "matchType": "keyword", "plant": _lookup(plant_names, e.plant_id),
                 "date": (e.install_date or e.created_at.date()).isoformat(),
                 "status": e.status, "link": f"#equipment?tag={e.tag}",
             })
@@ -189,7 +196,7 @@ class SearchService:
         rows = list((await self.session.execute(stmt)).scalars())
         type_labels = {r.id: r.label for r in await self.lookups.by_category("doc_types")}
         return [{"id": str(d.id), "name": d.title, "category": "Documents",
-                 "desc": type_labels.get(d.doc_type_id) or "Document",
+                 "desc": _lookup(type_labels, d.doc_type_id, "Document"),
                  "route": f"#documents/{d.id}"} for d in rows]
 
     async def _suggest_equipment(self, q: str, limit: int) -> list[dict]:

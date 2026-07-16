@@ -9,6 +9,7 @@ publishes a typed event; the pipeline (B5) consumes document.uploaded.
 from __future__ import annotations
 
 import asyncio
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 from datetime import UTC, datetime
 
@@ -163,7 +164,7 @@ class DocumentService:
         document = await self._get(document_id)
         return storage.presigned_get(document.storage_key)
 
-    async def list_versions(self, document_id: uuid.UUID) -> list[DocumentVersion]:
+    async def list_versions(self, document_id: uuid.UUID) -> builtins.list[DocumentVersion]:
         await self._get(document_id)
         return await self.versions.list_for_document(document_id)
 

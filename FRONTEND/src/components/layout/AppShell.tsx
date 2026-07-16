@@ -8,7 +8,7 @@ import * as Icons from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNavigationQuery } from '../../lib/api/navigation';
 import { NavigationItem } from '../../types';
-import { api } from '../../lib/api/client';
+import { api, USE_MOCK } from '../../lib/api/client';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useI18n } from '../../lib/i18n';
 
@@ -351,24 +351,30 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
   }, [isCommandOpen]);
 
   // Reactive Live Notifications Store
-  const { 
-    notifications, 
-    activeToast, 
-    dismissToast, 
-    markAllAsRead, 
-    markAsRead, 
-    simulateIncomingEvent 
+  const {
+    notifications,
+    activeToast,
+    dismissToast,
+    markAllAsRead,
+    markAsRead,
+    simulateIncomingEvent,
+    initLive
   } = useNotificationStore();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  // Real-time simulation interval: push mock events every 45 seconds
+  // Live mode: hydrate the inbox from the server + open the realtime WS once.
+  // Mock mode: push a fake event every 45s so the demo feels alive.
   useEffect(() => {
+    if (!USE_MOCK) {
+      initLive();
+      return;
+    }
     const timer = setInterval(() => {
       simulateIncomingEvent();
     }, 45000);
     return () => clearInterval(timer);
-  }, [simulateIncomingEvent]);
+  }, [simulateIncomingEvent, initLive]);
 
   // Helper to format breadcrumbs
   const getBreadcrumbs = () => {

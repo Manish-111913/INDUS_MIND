@@ -2,16 +2,24 @@
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
+from typing import TYPE_CHECKING, cast
 
 from sqlalchemy import Select, and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+if TYPE_CHECKING:
+    from sqlalchemy import CursorResult
+
 from app.common.pagination import PageParams, PageResult, paginate
 from app.modules.notifications.models import (
     Notification,
+    NotificationEventPreference,
     NotificationPreference,
     NotificationRule,
+    NotificationTemplate,
+    OutboundEmailLog,
 )
 
 
@@ -43,6 +51,18 @@ class NotificationRepository:
         stmt = stmt.order_by(Notification.created_at.desc())
         return await paginate(self.session, stmt, params, Notification)
 
+    async def since_for_events(self, user_id: uuid.UUID, event_codes: builtins.list[str],
+                               since) -> builtins.list[Notification]:
+        """Notifications for a user in the given event codes created since `since`
+        (docs/05 S3 daily-digest grouping)."""
+        if not event_codes:
+            return []
+        stmt = self._base(user_id).where(
+            Notification.event_code.in_(event_codes),
+            Notification.created_at >= since,
+        ).order_by(Notification.created_at.desc())
+        return list((await self.session.execute(stmt)).scalars().all())
+
     async def unread_count(self, user_id: uuid.UUID) -> int:
         from sqlalchemy import func
 
@@ -56,7 +76,7 @@ class NotificationRepository:
         await self.session.flush()
         return notification
 
-    async def mark_read(self, user_id: uuid.UUID, *, ids: list[uuid.UUID] | None,
+    async def mark_read(self, user_id: uuid.UUID, *, ids: builtins.list[uuid.UUID] | None,
                         all_: bool) -> int:
         from datetime import UTC, datetime
 
@@ -68,7 +88,8 @@ class NotificationRepository:
             cond = and_(cond, Notification.id.in_(ids))
         result = await self.session.execute(
             update(Notification).where(cond).values(read_at=datetime.now(UTC)))
-        return result.rowcount or 0
+        # execute(update(...)) yields a CursorResult; `Result` alone has no rowcount.
+        return cast("CursorResult", result).rowcount or 0
 
 
 class PreferenceRepository:
@@ -98,6 +119,105 @@ class PreferenceRepository:
             pref.enabled = enabled
         await self.session.flush()
         return pref
+
+
+class EventPreferenceRepository:
+    """Per-user event-code delivery matrix (docs/05 S3)."""
+
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | str) -> None:
+        self.session = session
+        self.tenant_id = tenant_id
+
+    async def for_user(self, user_id: uuid.UUID | str) -> list[NotificationEventPreference]:
+        return list((await self.session.execute(select(NotificationEventPreference).where(
+            NotificationEventPreference.tenant_id == self.tenant_id,
+            NotificationEventPreference.user_id == user_id))).scalars().all())
+
+    async def get(self, user_id, event_code: str) -> NotificationEventPreference | None:
+        return (await self.session.execute(select(NotificationEventPreference).where(
+            NotificationEventPreference.tenant_id == self.tenant_id,
+            NotificationEventPreference.user_id == user_id,
+            NotificationEventPreference.event_code == event_code))).scalar_one_or_none()
+
+    async def upsert(self, user_id, event_code: str, *, in_app: bool, email: bool,
+                     digest: str) -> NotificationEventPreference:
+        pref = await self.get(user_id, event_code)
+        if pref is None:
+            pref = NotificationEventPreference(
+                tenant_id=self.tenant_id, user_id=user_id, event_code=event_code,
+                in_app=in_app, email=email, digest=digest)
+            self.session.add(pref)
+        else:
+            pref.in_app, pref.email, pref.digest = in_app, email, digest
+        await self.session.flush()
+        return pref
+
+
+class TemplateRepository:
+    """Notification templates: tenant override → system default (docs/05 S3)."""
+
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | str) -> None:
+        self.session = session
+        self.tenant_id = tenant_id
+
+    async def resolve(self, event_code: str, channel: str, locale: str) -> NotificationTemplate | None:
+        """Tenant template wins over system; requested locale wins over 'en' fallback."""
+        stmt = select(NotificationTemplate).where(
+            NotificationTemplate.event_code == event_code,
+            NotificationTemplate.channel == channel,
+            NotificationTemplate.is_active.is_(True),
+            NotificationTemplate.deleted_at.is_(None),
+            NotificationTemplate.locale.in_([locale, "en"]),
+            (NotificationTemplate.tenant_id == self.tenant_id)
+            | (NotificationTemplate.tenant_id.is_(None)),
+        )
+        rows = list((await self.session.execute(stmt)).scalars().all())
+        if not rows:
+            return None
+        rows.sort(key=lambda t: (t.tenant_id is not None, t.locale == locale), reverse=True)
+        return rows[0]
+
+    async def get(self, template_id: uuid.UUID | str) -> NotificationTemplate | None:
+        return (await self.session.execute(select(NotificationTemplate).where(
+            NotificationTemplate.id == template_id,
+            NotificationTemplate.deleted_at.is_(None),
+            (NotificationTemplate.tenant_id == self.tenant_id)
+            | (NotificationTemplate.tenant_id.is_(None)),
+        ))).scalar_one_or_none()
+
+    async def list(self, *, event_code: str | None = None) -> list[NotificationTemplate]:
+        stmt = select(NotificationTemplate).where(
+            NotificationTemplate.deleted_at.is_(None),
+            (NotificationTemplate.tenant_id == self.tenant_id)
+            | (NotificationTemplate.tenant_id.is_(None)),
+        )
+        if event_code:
+            stmt = stmt.where(NotificationTemplate.event_code == event_code)
+        return list((await self.session.execute(
+            stmt.order_by(NotificationTemplate.event_code, NotificationTemplate.channel))
+        ).scalars().all())
+
+    async def add(self, row: NotificationTemplate) -> NotificationTemplate:
+        self.session.add(row)
+        await self.session.flush()
+        return row
+
+
+class OutboundEmailRepository:
+    def __init__(self, session: AsyncSession, tenant_id: uuid.UUID | str) -> None:
+        self.session = session
+        self.tenant_id = tenant_id
+
+    async def log(self, *, to_email: str, subject: str | None, status: str,
+                  template_id: uuid.UUID | None = None, provider_msg_id: str | None = None,
+                  error: str | None = None) -> OutboundEmailLog:
+        row = OutboundEmailLog(
+            tenant_id=self.tenant_id, to_email=to_email, subject=(subject or "")[:512],
+            status=status, template_id=template_id, provider_msg_id=provider_msg_id,
+            error=(error or None))
+        self.session.add(row)
+        await self.session.flush()
+        return row
 
 
 class RuleRepository:

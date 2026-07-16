@@ -10,13 +10,12 @@ from __future__ import annotations
 import secrets
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pyotp
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.email import send_email
 from app.core.events import Event, EventType, bus
 from app.core.exceptions import AppError, NotFound, Unauthenticated, ValidationFailed
 from app.core.logging import get_logger
@@ -36,7 +35,6 @@ log = get_logger("auth.service")
 
 LOGIN_MAX_FAILS = 5
 LOGIN_LOCK_TTL = 15 * 60  # 15 minutes (docs/02 §6)
-RESET_TTL = 60 * 60  # 1 hour
 MFA_SETUP_TTL = 10 * 60
 
 
@@ -234,45 +232,174 @@ class AuthService:
             tenant_id=tenant_id, actor_id=user_id, actor_ip=meta.ip,
         )
 
-    # ── password reset ───────────────────────────────────────────────────────
+    async def revoke_other_sessions(
+        self, *, user_id: uuid.UUID | str, tenant_id: uuid.UUID | str,
+        keep_session_id: uuid.UUID | str | None, meta: RequestMeta,
+    ) -> int:
+        """Sign out everywhere except the current session (docs/08 S11)."""
+        revoked = 0
+        for sess in await self.sessions.list_active_for_user(user_id):
+            if keep_session_id and str(sess.id) == str(keep_session_id):
+                continue
+            await self.tokens.revoke_by_session(sess.id)
+            await self.sessions.revoke(sess.id)
+            revoked += 1
+        await self.audit.write(action="auth.session_revoke_others", entity_type="user",
+                               entity_id=user_id, tenant_id=tenant_id, actor_id=user_id,
+                               actor_ip=meta.ip, after={"revoked": revoked})
+        return revoked
+
+    async def change_password(
+        self, *, user_id: uuid.UUID | str, tenant_id: uuid.UUID | str,
+        current_password: str, new_password: str, keep_session_id: uuid.UUID | str | None,
+        meta: RequestMeta,
+    ) -> None:
+        """Verify current password, enforce policy, rotate, and sign out other
+        sessions (docs/08 S11). Emits auth.password_changed."""
+        user = await self.users.get(user_id)
+        if user is None or not user.password_hash or not verify_password(
+                current_password, user.password_hash):
+            raise ValidationFailed("Current password is incorrect",
+                                   code="CURRENT_PASSWORD_INVALID", http_status=422)
+        self._enforce_password_policy(await self._password_policy(tenant_id), new_password)
+        user.password_hash = hash_password(new_password)
+        await self.session.flush()
+        # Keep the caller's session; kill the rest so a stolen device is locked out.
+        await self.revoke_other_sessions(user_id=user_id, tenant_id=tenant_id,
+                                         keep_session_id=keep_session_id, meta=meta)
+        await self.audit.write(action="auth.password_changed", entity_type="user",
+                               entity_id=user_id, tenant_id=tenant_id, actor_id=user_id,
+                               actor_ip=meta.ip)
+        await bus.publish(Event(EventType.PASSWORD_CHANGED, tenant_id=str(tenant_id),
+                                actor_id=str(user_id)))
+        # Fire the notification email (best-effort).
+        try:
+            await self._send_templated(
+                user, event_code="auth.password_changed",
+                fallback_subject="Your IndusMind password was changed",
+                fallback_body="Your password was just changed. If this wasn't you, reset it "
+                              "immediately and review your active sessions.",
+                context={"full_name": user.full_name})
+        except Exception as exc:  # noqa: BLE001
+            get_logger("auth").warning("password_changed_email_failed", error=str(exc))
+
+    # ── password reset (docs/08 N1) ──────────────────────────────────────────
     async def forgot_password(self, *, email: str, meta: RequestMeta) -> None:
+        """Issue a single-use reset token and email its link.
+
+        Runs in constant-ish time and always returns without signalling whether
+        the email exists — user-enumeration defence. The token is stored only as a
+        SHA-256 hash; the plaintext lives solely in the emailed link.
+        """
+        from app.core.security import sha256_hex
+        from app.modules.auth.repository import PasswordResetTokenRepository
+
         user = await self.users.get_by_email(None, email)
-        if user is not None:
-            token = secrets.token_urlsafe(32)
-            await get_redis().set(f"auth:reset:{token}", str(user.id), ex=RESET_TTL)
-            link = f"{settings.frontend_url}/reset-password?token={token}"
-            await send_email(
-                user.email, "Reset your IndusMind password",
-                f"Use this link within 1 hour to reset your password:\n{link}\n",
-            )
-            await self.audit.write(
-                action="auth.password_reset_requested", entity_type="user",
-                entity_id=user.id, tenant_id=user.tenant_id, actor_id=user.id, actor_ip=meta.ip,
-            )
-            await bus.publish(Event(EventType.PASSWORD_RESET_REQUESTED,
-                                    tenant_id=str(user.tenant_id), actor_id=str(user.id)))
-        # Always succeed silently — never reveal whether the email exists.
+        if user is None:
+            return  # silent success
+
+        ttl_minutes = await self._reset_ttl_minutes(user.tenant_id)
+        raw = secrets.token_urlsafe(32)
+        expires_at = datetime.now(UTC) + timedelta(minutes=ttl_minutes)
+        reset_repo = PasswordResetTokenRepository(self.session)
+        # One live token per user: issuing a new link voids any earlier one.
+        await reset_repo.invalidate_user_tokens(user.id)
+        await reset_repo.add(user_id=user.id, token_hash=sha256_hex(raw), expires_at=expires_at)
+
+        base_url = await self._app_base_url(user.tenant_id)
+        reset_url = f"{base_url}/reset-password?token={raw}"
+        await self._send_templated(
+            user, event_code="auth.password_reset",
+            fallback_subject="Reset your IndusMind password",
+            fallback_body=f"Use this link within {ttl_minutes} minutes to reset your "
+                          f"password:\n{reset_url}\n",
+            context={"reset_url": reset_url, "full_name": user.full_name,
+                     "ttl_minutes": ttl_minutes})
+        await self.audit.write(
+            action="auth.password_reset_requested", entity_type="user",
+            entity_id=user.id, tenant_id=user.tenant_id, actor_id=user.id, actor_ip=meta.ip,
+        )
+        await bus.publish(Event(EventType.PASSWORD_RESET_REQUESTED,
+                                tenant_id=str(user.tenant_id), actor_id=str(user.id)))
 
     async def reset_password(self, *, token: str, new_password: str, meta: RequestMeta) -> None:
-        redis = get_redis()
-        user_id = await redis.get(f"auth:reset:{token}")
-        if not user_id:
+        from app.core.security import sha256_hex
+        from app.modules.auth.repository import PasswordResetTokenRepository
+
+        reset_repo = PasswordResetTokenRepository(self.session)
+        row = await reset_repo.get_by_hash(sha256_hex(token))
+        # One rejection path for unknown / expired / already-used, so a caller
+        # can't distinguish them by response.
+        if row is None or row.used_at is not None or row.expires_at <= datetime.now(UTC):
             raise ValidationFailed("Invalid or expired reset token", code="INVALID_RESET_TOKEN")
-        user = await self.users.get(user_id)
+        user = await self.users.get(row.user_id)
         if user is None:
             raise ValidationFailed("Invalid or expired reset token", code="INVALID_RESET_TOKEN")
 
+        self._enforce_password_policy(await self._password_policy(user.tenant_id), new_password)
         user.password_hash = hash_password(new_password)
-        await self.users.bump_token_version(user.id)  # invalidate live access tokens
+        await reset_repo.mark_used(row.id)              # single-use
+        await self.users.bump_token_version(user.id)    # invalidate live access tokens
         await self.tokens.revoke_all_for_user(user.id)  # kill all refresh families
         await self.sessions.revoke_all_for_user(user.id)
-        await redis.delete(f"auth:reset:{token}")
         await self.audit.write(
             action="auth.password_reset_completed", entity_type="user", entity_id=user.id,
             tenant_id=user.tenant_id, actor_id=user.id, actor_ip=meta.ip,
         )
         await bus.publish(Event(EventType.PASSWORD_RESET_COMPLETED,
                                 tenant_id=str(user.tenant_id), actor_id=str(user.id)))
+
+    # ── reset/password helpers ───────────────────────────────────────────────
+    async def _setting(self, tenant_id, key: str, default):
+        from app.modules.settings.service import SettingsService
+
+        try:
+            return (await SettingsService(self.session, tenant_id).effective(None)).get(key, default)
+        except Exception:  # noqa: BLE001 — settings must never block the auth flow
+            return default
+
+    async def _reset_ttl_minutes(self, tenant_id) -> int:
+        return int(await self._setting(tenant_id, "auth.reset_token_ttl_minutes", 30))
+
+    async def _app_base_url(self, tenant_id) -> str:
+        return str(await self._setting(tenant_id, "app.base_url", settings.frontend_url))
+
+    async def _password_policy(self, tenant_id) -> dict:
+        default = {"min_length": 10, "require_number": True, "require_symbol": True}
+        policy = await self._setting(tenant_id, "auth.password_policy", default)
+        return policy if isinstance(policy, dict) else default
+
+    @staticmethod
+    def _enforce_password_policy(policy: dict, password: str) -> None:
+        """Validate against the tenant policy (docs/08 S11). Same rule the frontend
+        strength meter reads, so backend and UI cannot diverge."""
+        problems: list[str] = []
+        if len(password) < int(policy.get("min_length", 10)):
+            problems.append(f"at least {policy.get('min_length', 10)} characters")
+        if policy.get("require_number") and not any(c.isdigit() for c in password):
+            problems.append("a number")
+        if policy.get("require_symbol") and password.isalnum():
+            problems.append("a symbol")
+        if problems:
+            raise ValidationFailed("Password must contain " + ", ".join(problems),
+                                   code="PASSWORD_POLICY", http_status=422)
+
+    async def _send_templated(self, user, *, event_code: str, fallback_subject: str,
+                              fallback_body: str, context: dict) -> None:
+        """Render the notification template for `event_code` if seeded, else use
+        the fallback copy. Recipients are email addresses, so this bypasses the
+        NotificationRouter (which routes to users) and logs the send directly."""
+        from app.modules.notifications import templating
+        from app.modules.notifications.repository import TemplateRepository
+        from app.modules.notifications.senders import send_email_logged
+
+        tpl = await TemplateRepository(self.session, user.tenant_id).resolve(
+            event_code, "email", user.locale or "en")
+        subject = templating.render(tpl.subject_tpl, context) if tpl else fallback_subject
+        body = templating.render(tpl.body_tpl, context) if tpl else fallback_body
+        await send_email_logged(self.session, user.tenant_id, to_email=user.email,
+                                subject=subject, body=body,
+                                template_id=tpl.id if tpl else None)
 
     # ── MFA (TOTP) ───────────────────────────────────────────────────────────
     async def mfa_setup(self, *, user: User) -> tuple[str, str]:
@@ -282,9 +409,10 @@ class AuthService:
         return secret, uri
 
     async def mfa_verify(self, *, user: User, code: str, meta: RequestMeta) -> None:
-        secret = await get_redis().get(f"auth:mfa:setup:{user.id}")
-        if not secret:
+        stored = await get_redis().get(f"auth:mfa:setup:{user.id}")
+        if not stored:
             raise ValidationFailed("MFA setup not started or expired", code="MFA_SETUP_EXPIRED")
+        secret = str(stored)  # decode_responses=True → str at runtime
         if not pyotp.TOTP(secret).verify(code, valid_window=1):
             raise ValidationFailed("Invalid MFA code", code="MFA_INVALID")
         user.mfa_secret = encrypt_secret(secret)

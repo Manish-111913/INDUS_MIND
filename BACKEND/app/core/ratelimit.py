@@ -40,7 +40,7 @@ class RateLimiter:
         if count > limit:
             await redis.zrem(key, member)  # don't count the rejected request
             oldest = await redis.zrange(key, 0, 0, withscores=True)
-            retry_after = math.ceil(window - (now - oldest[0][1])) if oldest else window
+            retry_after = math.ceil(window - (now - float(oldest[0][1]))) if oldest else window
             return False, max(1, retry_after)
         return True, 0
 

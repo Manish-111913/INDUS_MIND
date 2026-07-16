@@ -47,6 +47,30 @@ PERMISSIONS: list[tuple[str, str, str, str]] = [
     ("flag.manage", "flag", "manage", "Manage feature flags"),
     ("audit.read", "audit", "read", "View the audit log"),
     ("tenant.manage", "tenant", "manage", "Manage tenant settings & lookups"),
+    # ── docs/05 supplement modules ────────────────────────────────────────────
+    ("settings.manage", "settings", "manage", "Manage tenant/plant/user settings (S1)"),
+    ("views.manage", "views", "manage", "Manage shared saved views (S2)"),
+    ("notifications.templates.manage", "notifications", "templates.manage",
+     "Manage notification templates (S3)"),
+    ("ai.observability.view", "ai", "observability.view", "View AI usage/cost + feedback (S4)"),
+    ("readings.record", "readings", "record", "Record meter readings (S5)"),
+    ("readings.manage", "readings", "manage", "Manage meter definitions (S5)"),
+    ("imports.run", "imports", "run", "Run bulk data imports (S6)"),
+    ("exports.run", "exports", "run", "Run data exports (S6)"),
+    ("reports.manage", "reports", "manage", "Manage report templates & schedules (S6)"),
+    ("extraction_rules.manage", "extraction_rules", "manage",
+     "Manage entity-extraction rules (S7)"),
+    ("integrations.manage", "integrations", "manage",
+     "Manage API keys & webhook endpoints (S8)"),
+    ("tours.manage", "tours", "manage", "Manage guided tours & changelog entries (S10)"),
+    ("demo.seed", "demo", "seed", "Load sample plant data into this tenant (S10)"),
+    # ── B19 final (docs/08) ─────────────────────────────────────────────────────
+    ("audit.view", "audit", "view", "View the audit log viewer (N3)"),
+    ("parts.manage", "parts", "manage", "Manage spare parts & stock (S12)"),
+    ("logbook.write", "logbook", "write", "Write & submit shift logs (S13)"),
+    ("retention.manage", "retention", "manage", "Manage data-retention policies (S14)"),
+    ("content.manage", "content", "manage", "Manage content pages (N5)"),
+    ("translations.manage", "translations", "manage", "Manage i18n translations (S9)"),
 ]
 
 ALL_PERMISSION_CODES: set[str] = {code for code, *_ in PERMISSIONS}
@@ -75,6 +99,9 @@ ROLE_MATRIX: dict[str, set[str]] = {
         "lesson.read", "lesson.publish",
         "copilot.use", "copilot.scope.all", "graph.read",
         "analytics.read", "analytics.export", "notif.manage", "audit.read",
+        "views.manage", "ai.observability.view", "readings.record", "readings.manage",
+        "imports.run", "exports.run", "reports.manage",
+        "audit.view", "parts.manage", "logbook.write",  # docs/08
     },
     "Maintenance Engineer": {
         "doc.read", "doc.create", "doc.update", "doc.reprocess", "doc.export",
@@ -83,10 +110,13 @@ ROLE_MATRIX: dict[str, set[str]] = {
         "maint.schedule", "maint.predict.act", "rca.run", "rca.publish",
         "comp.read", "lesson.read", "lesson.publish",
         "copilot.use", "graph.read", "analytics.read",
+        "readings.record", "readings.manage", "imports.run", "exports.run",
+        "parts.manage", "logbook.write",  # docs/08 S12/S13
     },
     "Field Technician": {
         "doc.read", "doc.create", "equip.read", "wo.read", "wo.close",
-        "lesson.read", "copilot.use", "graph.read",
+        "lesson.read", "copilot.use", "graph.read", "readings.record", "exports.run",
+        "logbook.write",  # docs/08 S13
     },
     "Compliance Officer": {
         "doc.read", "doc.create", "doc.update", "doc.export",
@@ -94,7 +124,7 @@ ROLE_MATRIX: dict[str, set[str]] = {
         "comp.read", "comp.map", "comp.gap.manage", "comp.evidence.generate",
         "qual.read", "lesson.read",
         "copilot.use", "copilot.scope.all", "graph.read",
-        "analytics.read", "analytics.export", "audit.read",
+        "analytics.read", "analytics.export", "audit.read", "exports.run", "reports.manage",
     },
     "Quality Engineer": {
         "doc.read", "doc.create", "doc.update", "doc.export",
@@ -102,15 +132,17 @@ ROLE_MATRIX: dict[str, set[str]] = {
         "comp.read", "qual.read", "qual.manage",
         "lesson.read", "lesson.publish",
         "copilot.use", "graph.read", "analytics.read", "analytics.export", "audit.read",
+        "exports.run",
     },
     "Auditor": {
         "doc.read", "doc.export", "equip.read", "wo.read",
         "comp.read", "qual.read", "lesson.read",
-        "copilot.use", "graph.read", "analytics.read", "audit.read",
+        "copilot.use", "graph.read", "analytics.read", "audit.read", "exports.run",
     },
     "Operator": {
         "doc.read", "doc.create", "equip.read", "wo.read", "wo.create",
-        "lesson.read", "copilot.use", "graph.read",
+        "lesson.read", "copilot.use", "graph.read", "readings.record", "exports.run",
+        "logbook.write",  # docs/08 S13 — operators write the shift logs
     },
 }
 

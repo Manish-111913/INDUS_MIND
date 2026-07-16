@@ -4,6 +4,8 @@
  */
 
 import { create } from 'zustand';
+import { api, USE_MOCK } from '../lib/api/client';
+import { realtime } from '../lib/api/ws';
 
 export interface AppNotification {
   id: string;
@@ -37,6 +39,47 @@ interface NotificationState {
   dismissToast: () => void;
   updatePreference: (category: string, channel: keyof NotificationPreferences[string], value: boolean) => void;
   simulateIncomingEvent: () => void;
+  /** Live mode only: fetch the server inbox + open the realtime WS. No-op in mock mode. */
+  initLive: () => void;
+}
+
+// ── backend → frontend mapping (live mode) ───────────────────────────────────
+// Backend categories (docs/05 S3): wo_assigned, gap_detected, prediction,
+// doc_processed, mention, digest, safety_alert, system, plus quality/ncr events.
+function mapServerCategory(cat?: string): AppNotification['category'] {
+  switch ((cat || '').toLowerCase()) {
+    case 'safety_alert':
+    case 'safety':
+      return 'Safety Alerts';
+    case 'gap_detected':
+    case 'compliance':
+      return 'Compliance';
+    case 'ncr':
+    case 'quality':
+    case 'defect':
+      return 'Quality Defects';
+    default: // wo_assigned, prediction, doc_processed, mention, digest, system
+      return 'Work Orders';
+  }
+}
+
+function mapServerType(priority?: string): AppNotification['type'] {
+  const p = (priority || '').toLowerCase();
+  if (p === 'critical') return 'critical';
+  if (p === 'high' || p === 'warn' || p === 'warning') return 'warn';
+  return 'info';
+}
+
+function mapServerNotification(n: any): AppNotification {
+  return {
+    id: String(n.id),
+    title: n.title || 'Notification',
+    desc: n.body || '',
+    type: mapServerType(n.priority),
+    isRead: n.read_at != null,
+    timestamp: n.created_at ? new Date(n.created_at).getTime() : Date.now(),
+    category: mapServerCategory(n.category),
+  };
 }
 
 const DEFAULT_NOTIFICATIONS: AppNotification[] = [
@@ -118,9 +161,16 @@ const MOCK_SIMULATED_EVENTS = [
   }
 ];
 
+// Guards the realtime listener against being attached more than once (the WS
+// client is a singleton, so one listener survives all re-mounts).
+let liveListenerAttached = false;
+
 export const useNotificationStore = create<NotificationState>((set, get) => {
   // Initialize from LocalStorage or Fallbacks
   const loadNotifications = (): AppNotification[] => {
+    // Live mode starts empty; the real inbox is hydrated by initLive() from the
+    // server. Only the offline mock demo seeds fixture notifications.
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_live_notifications');
     if (stored) {
       try { return JSON.parse(stored); } catch (e) {}
@@ -162,16 +212,24 @@ export const useNotificationStore = create<NotificationState>((set, get) => {
     },
 
     markAsRead: (id) => {
-      const updated = get().notifications.map(n => 
+      const updated = get().notifications.map(n =>
         n.id === id ? { ...n, isRead: true } : n
       );
-      localStorage.setItem('indusmind_live_notifications', JSON.stringify(updated));
+      if (USE_MOCK) {
+        localStorage.setItem('indusmind_live_notifications', JSON.stringify(updated));
+      } else {
+        api.post('/notifications/mark-read', { ids: [id] }).catch(() => {});
+      }
       set({ notifications: updated });
     },
 
     markAllAsRead: () => {
       const updated = get().notifications.map(n => ({ ...n, isRead: true }));
-      localStorage.setItem('indusmind_live_notifications', JSON.stringify(updated));
+      if (USE_MOCK) {
+        localStorage.setItem('indusmind_live_notifications', JSON.stringify(updated));
+      } else {
+        api.post('/notifications/mark-read', { all: true }).catch(() => {});
+      }
       set({ notifications: updated });
     },
 
@@ -203,6 +261,40 @@ export const useNotificationStore = create<NotificationState>((set, get) => {
     simulateIncomingEvent: () => {
       const randomEvent = MOCK_SIMULATED_EVENTS[Math.floor(Math.random() * MOCK_SIMULATED_EVENTS.length)];
       get().addNotification(randomEvent);
+    },
+
+    initLive: () => {
+      if (USE_MOCK) return;
+
+      // 1. Hydrate the inbox from the server (runs on every mount → always fresh).
+      api.get<any>('/notifications')
+        .then((res) => {
+          const rows: any[] = Array.isArray(res) ? res : (res?.items ?? []);
+          set({ notifications: rows.map(mapServerNotification) });
+        })
+        .catch((e) => console.error('Failed to load notifications', e));
+
+      // 2. Attach the realtime listener exactly once (the socket is a singleton
+      //    that survives re-mounts). The backend WS frame is
+      //    { type: "notification.new", payload: {...} } (senders.py).
+      if (!liveListenerAttached) {
+        liveListenerAttached = true;
+        realtime.on('notification.new', (msg) => {
+          const payload = (msg as any).payload ?? msg;
+          const notif = mapServerNotification(payload);
+          const prefs = get().preferences;
+          const categoryPref = prefs[notif.category] || { inAppToast: true, email: false, sms: false, pushApi: false };
+          set((state) => {
+            if (state.notifications.some(n => n.id === notif.id)) return state; // de-dupe
+            return {
+              notifications: [notif, ...state.notifications],
+              activeToast: categoryPref.inAppToast ? notif : state.activeToast,
+            };
+          });
+        });
+      }
+      // 3. Open (or reuse) the tenant socket — connect() is idempotent.
+      realtime.connect();
     }
   };
 });

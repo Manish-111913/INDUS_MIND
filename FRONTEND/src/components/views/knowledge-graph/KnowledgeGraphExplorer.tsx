@@ -25,6 +25,11 @@ import {
 } from 'lucide-react';
 import { mockNodes, mockEdges, mockGraphStats, GraphNodeData, GraphEdgeData } from './mockData';
 import { computeLayout, PositionedNode } from './layout';
+import { api, USE_MOCK } from '../../../lib/api/client';
+import { fetchStats, searchNodes, nodeCluster, seedCanvas } from './live';
+
+// Seed node ids for the MOCK demo's focused view on P-101 (unchanged behavior).
+const SEED_IDS = ['P-101', 'P-101-MOTOR', 'P-101-SEAL', 'P-101-IMPELLER', 'P-102', 'DOC-OEM-P101', 'DOC-PID-992', 'EV-2026-06', 'MODE-SEAL-FAIL', 'REG-OISD-118-C64', 'USER-PRIYA', 'PAR-SEAL-PRESS', 'LES-MONSOON'];
 
 // Colors for node types (Colorblind-safe industrial theme palette)
 const NODE_COLORS: Record<string, { bg: string; border: string; text: string; accent: string; dot: string }> = {
@@ -137,31 +142,85 @@ function KnowledgeGraphContent() {
     ['MENTIONS', 'PART_OF', 'FAILED_WITH', 'HAS_MODE', 'GOVERNED_BY', 'PERFORMED_BY', 'REFERENCES', 'APPLIES_TO', 'DERIVED_FROM']
   );
 
-  // Active nodes & edges in the working canvas
+  // Active nodes & edges in the working canvas.
+  // MOCK: seed a focused subset on P-101 synchronously (unchanged).
+  // LIVE: start empty; the mount effect below fetches the seed cluster.
   const [currentNodes, setCurrentNodes] = useState<GraphNodeData[]>(() => {
-    // Default to a focused subset on P-101 (within depth 2)
-    const seedIds = ['P-101', 'P-101-MOTOR', 'P-101-SEAL', 'P-101-IMPELLER', 'P-102', 'DOC-OEM-P101', 'DOC-PID-992', 'EV-2026-06', 'MODE-SEAL-FAIL', 'REG-OISD-118-C64', 'USER-PRIYA', 'PAR-SEAL-PRESS', 'LES-MONSOON'];
-    return mockNodes.filter(n => seedIds.includes(n.id));
+    if (!USE_MOCK) return [];
+    return mockNodes.filter(n => SEED_IDS.includes(n.id));
   });
 
   const [currentEdges, setCurrentEdges] = useState<GraphEdgeData[]>(() => {
+    if (!USE_MOCK) return [];
     const ids = currentNodes.map(n => n.id);
     return mockEdges.filter(e => ids.includes(e.source) && ids.includes(e.target));
   });
+
+  // Stats strip + per-type filter counts. In MOCK this stays mockGraphStats
+  // (identical behavior); in LIVE the mount effect replaces it.
+  const [stats, setStats] = useState(mockGraphStats);
+
+  // Loading indicator for LIVE fetches.
+  const [loading, setLoading] = useState(false);
 
   // Selected state for drawers
   const [selectedNode, setSelectedNode] = useState<GraphNodeData | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Search Results computed dynamically
-  const filteredSearchSuggestions = useMemo(() => {
+  // Search suggestions. MOCK derives synchronously from the fixture; LIVE fills
+  // this from /graph/search as the query changes (effect below).
+  const [liveSuggestions, setLiveSuggestions] = useState<GraphNodeData[]>([]);
+  const mockSuggestions = useMemo(() => {
     if (!searchQuery) return [];
     const query = searchQuery.toLowerCase();
-    return mockNodes.filter(node => 
-      (node.label || '').toLowerCase().includes(query) || 
+    return mockNodes.filter(node =>
+      (node.label || '').toLowerCase().includes(query) ||
       (node.type || '').toLowerCase().includes(query) ||
       Object.values(node.properties || {}).some(val => (val || '').toLowerCase().includes(query))
     );
+  }, [searchQuery]);
+  const filteredSearchSuggestions = USE_MOCK ? mockSuggestions : liveSuggestions;
+
+  // LIVE only: seed the canvas + stats on mount.
+  useEffect(() => {
+    if (USE_MOCK) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const [liveStats, seed] = await Promise.all([fetchStats(), seedCanvas()]);
+        if (cancelled) return;
+        setStats(liveStats);
+        setCurrentNodes(seed.nodes);
+        setCurrentEdges(seed.edges);
+      } catch (err) {
+        console.error('[KnowledgeGraph] failed to seed live graph', err);
+        if (!cancelled) {
+          setCurrentNodes([]);
+          setCurrentEdges([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // LIVE only: fetch search suggestions as the query changes.
+  useEffect(() => {
+    if (USE_MOCK) return;
+    if (!searchQuery) { setLiveSuggestions([]); return; }
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      try {
+        const results = await searchNodes(searchQuery);
+        if (!cancelled) setLiveSuggestions(results);
+      } catch (err) {
+        console.error('[KnowledgeGraph] search failed', err);
+        if (!cancelled) setLiveSuggestions([]);
+      }
+    }, 200);
+    return () => { cancelled = true; clearTimeout(handle); };
   }, [searchQuery]);
 
   // Handle Mobile Width Detection
@@ -182,6 +241,22 @@ function KnowledgeGraphContent() {
       if (hash.includes('/node/')) {
         const parts = hash.split('/node/');
         const targetId = parts[1];
+
+        if (!USE_MOCK) {
+          // LIVE: load the node + its depth-1 neighbors from the backend.
+          setLoading(true);
+          nodeCluster(targetId)
+            .then(({ nodes, edges, center }) => {
+              setCurrentNodes(nodes);
+              setCurrentEdges(edges);
+              setSelectedNode(center);
+              setTimeout(() => { fitView({ padding: 0.3, duration: 800 }); }, 400);
+            })
+            .catch(err => console.error('[KnowledgeGraph] deep-link load failed', err))
+            .finally(() => setLoading(false));
+          return;
+        }
+
         const match = mockNodes.find(n => n.id === targetId);
         if (match) {
           // Found node deep link! Load node and its depth-1 neighbors
@@ -195,7 +270,7 @@ function KnowledgeGraphContent() {
           setCurrentNodes(nodesSubset);
           setCurrentEdges(connectedEdges);
           setSelectedNode(match);
-          
+
           // Smooth focus centering
           setTimeout(() => {
             fitView({ padding: 0.3, duration: 800 });
@@ -270,6 +345,31 @@ function KnowledgeGraphContent() {
 
   // Expand Neighbors Method (Merges connected graph pieces)
   const expandNeighbors = useCallback((nodeId: string) => {
+    if (!USE_MOCK) {
+      // LIVE: fetch the node's cluster from the backend and merge it in.
+      setLoading(true);
+      nodeCluster(nodeId)
+        .then(({ nodes: clusterNodes, edges: clusterEdges }) => {
+          setCurrentNodes(prev => {
+            const existing = new Set(prev.map(n => n.id));
+            const merged = [...prev, ...clusterNodes.filter(n => !existing.has(n.id))];
+            const activeIds = new Set(merged.map(n => n.id));
+            setCurrentEdges(prevEdges => {
+              const seenEdge = new Set(prevEdges.map(e => e.id));
+              const newEdges = clusterEdges.filter(
+                e => !seenEdge.has(e.id) && activeIds.has(e.source) && activeIds.has(e.target)
+              );
+              return [...prevEdges, ...newEdges];
+            });
+            return merged;
+          });
+          setTimeout(() => { fitView({ padding: 0.2, duration: 600 }); }, 100);
+        })
+        .catch(err => console.error('[KnowledgeGraph] expand failed', err))
+        .finally(() => setLoading(false));
+      return;
+    }
+
     // Find all edges connected to nodeId in complete database
     const relatedEdges = mockEdges.filter(e => e.source === nodeId || e.target === nodeId);
     const relatedNodeIds = new Set<string>();
@@ -302,6 +402,35 @@ function KnowledgeGraphContent() {
 
   // Search Suggestion Selected
   const handleSelectSuggestion = (node: GraphNodeData) => {
+    if (!USE_MOCK) {
+      // LIVE: pull the node's cluster (node + neighbors + edges) and merge it in.
+      setSelectedNode(node);
+      setSearchQuery('');
+      setShowSearchDropdown(false);
+      setLoading(true);
+      nodeCluster(node.id)
+        .then(({ nodes: clusterNodes, edges: clusterEdges, center }) => {
+          setCurrentNodes(prev => {
+            const existing = new Set(prev.map(n => n.id));
+            const merged = [...prev, ...clusterNodes.filter(n => !existing.has(n.id))];
+            const activeIds = new Set(merged.map(n => n.id));
+            setCurrentEdges(prevEdges => {
+              const seenEdge = new Set(prevEdges.map(e => e.id));
+              const newEdges = clusterEdges.filter(
+                e => !seenEdge.has(e.id) && activeIds.has(e.source) && activeIds.has(e.target)
+              );
+              return [...prevEdges, ...newEdges];
+            });
+            return merged;
+          });
+          setSelectedNode(center);
+          setTimeout(() => { fitView({ padding: 0.2, duration: 800 }); }, 200);
+        })
+        .catch(err => console.error('[KnowledgeGraph] suggestion load failed', err))
+        .finally(() => setLoading(false));
+      return;
+    }
+
     // Check if node is in current working canvas, if not add it
     const alreadyExists = currentNodes.some(n => n.id === node.id);
     if (!alreadyExists) {
@@ -325,11 +454,23 @@ function KnowledgeGraphContent() {
 
   // Reset Graph Canvas to Seed Elements
   const handleResetCanvas = () => {
-    const seedIds = ['P-101', 'P-101-MOTOR', 'P-101-SEAL', 'P-101-IMPELLER', 'P-102', 'DOC-OEM-P101', 'DOC-PID-992', 'EV-2026-06', 'MODE-SEAL-FAIL', 'REG-OISD-118-C64', 'USER-PRIYA', 'PAR-SEAL-PRESS', 'LES-MONSOON'];
-    const nodesSubset = mockNodes.filter(n => seedIds.includes(n.id));
-    setCurrentNodes(nodesSubset);
-    setCurrentEdges(mockEdges.filter(e => seedIds.includes(e.source) && seedIds.includes(e.target)));
     setSelectedNode(null);
+    if (!USE_MOCK) {
+      // LIVE: re-fetch the seed cluster from the backend.
+      setLoading(true);
+      seedCanvas()
+        .then(seed => {
+          setCurrentNodes(seed.nodes);
+          setCurrentEdges(seed.edges);
+          setTimeout(() => { fitView({ padding: 0.2, duration: 600 }); }, 100);
+        })
+        .catch(err => console.error('[KnowledgeGraph] reset failed', err))
+        .finally(() => setLoading(false));
+      return;
+    }
+    const nodesSubset = mockNodes.filter(n => SEED_IDS.includes(n.id));
+    setCurrentNodes(nodesSubset);
+    setCurrentEdges(mockEdges.filter(e => SEED_IDS.includes(e.source) && SEED_IDS.includes(e.target)));
   };
 
   // Export Canvas as PNG Function
@@ -419,15 +560,15 @@ function KnowledgeGraphContent() {
           <div className="mt-3 grid grid-cols-3 gap-2 py-2 px-3 bg-background-custom/80 border border-border-custom rounded font-mono text-[10px]">
             <div>
               <span className="text-text-muted block uppercase">Nodes</span>
-              <span className="text-text-primary font-bold text-xs">{formatNumber(mockGraphStats.totalNodes)}</span>
+              <span className="text-text-primary font-bold text-xs">{formatNumber(stats.totalNodes)}</span>
             </div>
             <div className="border-l border-border-custom/60 pl-2">
               <span className="text-text-muted block uppercase">Edges</span>
-              <span className="text-text-primary font-bold text-xs">{formatNumber(mockGraphStats.totalEdges)}</span>
+              <span className="text-text-primary font-bold text-xs">{formatNumber(stats.totalEdges)}</span>
             </div>
             <div className="border-l border-border-custom/60 pl-2">
               <span className="text-text-muted block uppercase">Types</span>
-              <span className="text-text-primary font-bold text-xs">{mockGraphStats.typesCount}</span>
+              <span className="text-text-primary font-bold text-xs">{stats.typesCount}</span>
             </div>
           </div>
         </div>
@@ -477,7 +618,7 @@ function KnowledgeGraphContent() {
             </div>
             <div className="grid grid-cols-1 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
               {Object.keys(NODE_COLORS).map(type => {
-                const count = mockGraphStats.typesBreakdown[type as keyof typeof mockGraphStats.typesBreakdown] || 0;
+                const count = stats.typesBreakdown[type as keyof typeof stats.typesBreakdown] || 0;
                 const active = selectedTypes.includes(type);
                 const colors = NODE_COLORS[type];
                 return (
@@ -647,6 +788,12 @@ function KnowledgeGraphContent() {
 
         {/* React Flow Core Engine */}
         <div className="flex-1 w-full h-full relative z-0">
+          {loading && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center space-x-2 bg-surface/90 backdrop-blur-md border border-border-custom px-3 py-1.5 rounded-lg shadow-2xl pointer-events-none">
+              <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+              <span className="text-[10px] font-mono font-bold text-text-secondary uppercase tracking-wider">Loading graph…</span>
+            </div>
+          )}
           <ReactFlow
             nodes={reactFlowNodes}
             edges={reactFlowEdges}

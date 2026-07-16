@@ -22,14 +22,18 @@ from app.modules.analytics import models as _analytics  # noqa: E402,F401
 from app.modules.auth import models as _auth  # noqa: E402,F401
 from app.modules.compliance import models as _compliance  # noqa: E402,F401
 from app.modules.dashboards import models as _dashboards  # noqa: E402,F401
+from app.modules.dataops import models as _dataops  # noqa: E402,F401
 from app.modules.documents import models as _documents  # noqa: E402,F401
 from app.modules.equipment import models as _equipment  # noqa: E402,F401
 from app.modules.ingestion import models as _ingestion  # noqa: E402,F401
 from app.modules.lessons import models as _lessons  # noqa: E402,F401
 from app.modules.lookups import models as _lookups  # noqa: E402,F401
 from app.modules.maintenance import models as _maintenance  # noqa: E402,F401
+from app.modules.meters import models as _meters  # noqa: E402,F401
 from app.modules.notifications import models as _notifications  # noqa: E402,F401
+from app.modules.preferences import models as _preferences  # noqa: E402,F401
 from app.modules.quality import models as _quality  # noqa: E402,F401
+from app.modules.settings import models as _settings  # noqa: E402,F401
 from app.modules.tenants import models as _tenants  # noqa: E402,F401
 from app.modules.users import models as _users  # noqa: E402,F401
 from app.workers.celery_app import celery
@@ -135,29 +139,42 @@ def detect_lessons() -> dict:
 
 
 async def _run_notification_digest() -> dict:
+    """Group each user's `digest=daily` events from the last 24h into one email (docs/05 S3)."""
+    from datetime import UTC, datetime, timedelta
+
     from app.core.database import SessionFactory
+    from app.modules.auth.models import User
     from app.modules.notifications import senders
-    from app.modules.notifications.repository import NotificationRepository
+    from app.modules.notifications.repository import (
+        EventPreferenceRepository,
+        NotificationRepository,
+    )
     from app.modules.tenants.models import Tenant
 
+    since = datetime.now(UTC) - timedelta(days=1)
     sent = 0
     async with SessionFactory() as session:
         tenants = list((await session.execute(
             select(Tenant).where(Tenant.deleted_at.is_(None)))).scalars())
         for tenant in tenants:
-            from app.modules.auth.models import User
-
+            notif_repo = NotificationRepository(session, tenant.id)
+            pref_repo = EventPreferenceRepository(session, tenant.id)
             users = list((await session.execute(select(User).where(
                 User.tenant_id == tenant.id, User.deleted_at.is_(None),
                 User.status == "active"))).scalars())
             for user in users:
-                repo = NotificationRepository(session, tenant.id)
-                count = await repo.unread_count(user.id)
-                if count:
-                    body = f"You have {count} unread notification(s) in IndusMind."
-                    if await senders.send_email(to_email=user.email,
-                                                subject="IndusMind daily digest", body=body):
-                        sent += 1
+                daily_codes = [p.event_code for p in await pref_repo.for_user(user.id)
+                               if p.digest == "daily"]
+                items = await notif_repo.since_for_events(user.id, daily_codes, since)
+                if not items:
+                    continue
+                lines = "\n".join(f"• {n.title}" for n in items)
+                body = (f"Your IndusMind daily digest — {len(items)} update(s):\n\n{lines}")
+                if await senders.send_email_logged(
+                    session, tenant.id, to_email=user.email,
+                    subject=f"IndusMind daily digest ({len(items)})", body=body):
+                    sent += 1
+        await session.commit()
     return {"digests_sent": sent}
 
 

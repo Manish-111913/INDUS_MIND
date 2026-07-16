@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { User, UserRole } from '../types';
 import { api, setTokens, USE_MOCK, mapMeToUser } from '../lib/api/client';
+import { realtime } from '../lib/api/ws';
 
 interface AuthState {
   user: User | null;
@@ -90,6 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       // Best-effort server-side revoke (clears the refresh cookie + session).
       if (!USE_MOCK) {
         api.post('/auth/logout').catch(() => {});
+        realtime.disconnect();
       }
       setTokens(null, null);
       set({ user: null, isAuthenticated: false, error: null });

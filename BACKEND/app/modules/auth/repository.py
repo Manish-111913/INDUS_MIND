@@ -7,7 +7,7 @@ import uuid
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.auth.models import RefreshToken, Session, User
+from app.modules.auth.models import PasswordResetToken, RefreshToken, Session, User
 
 
 class UserRepository:
@@ -117,4 +117,37 @@ class RefreshTokenRepository:
             update(RefreshToken)
             .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
             .values(revoked_at=func.now())
+        )
+
+
+class PasswordResetTokenRepository:
+    """Single-use, TTL-bounded reset tokens stored by SHA-256 hash (docs/08 N1)."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def add(self, *, user_id: uuid.UUID | str, token_hash: str, expires_at) -> PasswordResetToken:
+        row = PasswordResetToken(user_id=user_id, token_hash=token_hash, expires_at=expires_at)
+        self.session.add(row)
+        await self.session.flush()
+        return row
+
+    async def get_by_hash(self, token_hash: str) -> PasswordResetToken | None:
+        stmt = select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+        return (await self.session.execute(stmt)).scalar_one_or_none()
+
+    async def mark_used(self, token_id: uuid.UUID | str) -> None:
+        await self.session.execute(
+            update(PasswordResetToken)
+            .where(PasswordResetToken.id == token_id, PasswordResetToken.used_at.is_(None))
+            .values(used_at=func.now())
+        )
+
+    async def invalidate_user_tokens(self, user_id: uuid.UUID | str) -> None:
+        """Void any outstanding tokens for a user — issuing a new one, or a
+        successful reset, should leave no other live token to redeem."""
+        await self.session.execute(
+            update(PasswordResetToken)
+            .where(PasswordResetToken.user_id == user_id, PasswordResetToken.used_at.is_(None))
+            .values(used_at=func.now())
         )

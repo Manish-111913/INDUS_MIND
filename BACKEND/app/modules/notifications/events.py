@@ -27,6 +27,7 @@ _ROUTED = (
     EventType.LESSON_PUBLISHED,
     EventType.RCA_PUBLISHED,
     EventType.DOCUMENT_INGESTED,
+    EventType.PART_LOW_STOCK,       # docs/08 S12
 )
 
 

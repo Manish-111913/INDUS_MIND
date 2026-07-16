@@ -23,33 +23,45 @@ from app.modules.analytics import models as _analytics  # noqa: F401
 from app.modules.audit import models as _audit  # noqa: F401
 from app.modules.auth import models as _auth  # noqa: F401
 from app.modules.compliance import models as _compliance  # noqa: F401
+from app.modules.content import models as _content  # noqa: F401
 from app.modules.dashboards import models as _dashboards  # noqa: F401
+from app.modules.dataops import models as _dataops  # noqa: F401
 from app.modules.documents import models as _documents  # noqa: F401
 from app.modules.equipment import models as _equipment  # noqa: F401
+from app.modules.i18n import models as _i18n  # noqa: F401
 from app.modules.ingestion import models as _ingestion  # noqa: F401
+from app.modules.integrations import models as _integrations  # noqa: F401
 from app.modules.knowledge import models as _knowledge  # noqa: F401
 from app.modules.lessons import models as _lessons  # noqa: F401
+from app.modules.logbook import models as _logbook  # noqa: F401
 from app.modules.lookups import models as _lookups  # noqa: F401
 from app.modules.maintenance import models as _maintenance  # noqa: F401
+from app.modules.meters import models as _meters  # noqa: F401
 from app.modules.notifications import models as _notifications  # noqa: F401
+from app.modules.onboarding import models as _onboarding  # noqa: F401
+from app.modules.parts import models as _parts  # noqa: F401
+from app.modules.preferences import models as _preferences  # noqa: F401
 from app.modules.quality import models as _quality  # noqa: F401
+from app.modules.retention import models as _retention  # noqa: F401
+from app.modules.settings import models as _settings  # noqa: F401
 from app.modules.tenants import models as _tenants  # noqa: F401
 from app.modules.users import models as _users  # noqa: F401
 
-# Truncated between tests (CASCADE handles FK order).
-_TABLES = (
-    "audit_log, feature_flags, lookups, user_roles, role_permissions, permissions, roles, "
-    "scheduled_reports, report_definitions, dashboard_configs, widget_registry, "
-    "lessons, ncrs, notification_rules, notification_preferences, notifications, "
-    "evidence_packages, audits, compliance_gaps, compliance_mappings, regulation_clauses, "
-    "regulations, "
-    "rca_analyses, predictions, "
-    "maintenance_proposals, work_orders, failure_records, maintenance_schedules, "
-    "eval_runs, ai_insights, chat_messages, chat_sessions, "
-    "saved_searches, llm_usage, prompt_templates, ai_model_configs, extracted_entities, "
-    "document_chunks, ingestion_jobs, document_versions, documents, "
-    "equipment, areas, plants, refresh_tokens, sessions, users, tenants"
-)
+
+def _all_tables() -> str:
+    """Every mapped table, for the between-test TRUNCATE.
+
+    Derived from the metadata rather than hand-listed: a literal list silently
+    rots — a table nobody remembers to add is never truncated, so each test's seed
+    creates a fresh tenant while the previous run's rows linger, and the leak
+    compounds across runs. (Not hypothetical: extraction_rules stranded 454
+    orphaned rows across 65 dead tenants this way.) CASCADE handles FK order, so
+    ordering doesn't matter. alembic_version isn't mapped, so it's excluded — which
+    is what we want; dropping it would strip the migration state.
+    """
+    from app.common.base import Base
+
+    return ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
 
 
 @pytest.fixture
@@ -81,7 +93,7 @@ async def db():
             await conn.run_sync(Base.metadata.create_all)
             # audit_log has an append-only trigger (migration 0003); create_all
             # won't add it, but tests only INSERT into it, so that's fine.
-            await conn.execute(text(f"TRUNCATE {_TABLES} RESTART IDENTITY CASCADE"))
+            await conn.execute(text(f"TRUNCATE {_all_tables()} RESTART IDENTITY CASCADE"))
     except Exception as exc:  # noqa: BLE001
         pytest.skip(f"Postgres not available: {exc}")
 

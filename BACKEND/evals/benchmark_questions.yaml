@@ -102,3 +102,13 @@ questions:
     question: What did the CDU night shift log note about C-3 discharge temperature?
     expected_facts: ["6 C"]
     expected_doc: "Shift Log"
+  # docs/08 S13 — answerable ONLY from the seeded P-101 vibration shift log,
+  # proving knowledge written at the source becomes citable Copilot context.
+  - id: q26
+    question: What drive-end vibration reading did the night shift record on pump P-101?
+    expected_facts: ["9.4 mm/s"]
+    expected_doc: "Shift log"
+  - id: q27
+    question: What was P-101's bearing temperature during the night shift vibration event?
+    expected_facts: ["62 C"]
+    expected_doc: "Shift log"

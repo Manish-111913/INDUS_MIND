@@ -8,6 +8,8 @@ subscriber.
 
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,13 +20,25 @@ from app.modules.auth.dependencies import CurrentUser, get_current_user, require
 from app.modules.notifications import events as _events  # noqa: F401 — registers subscribers
 from app.modules.notifications.schemas import (
     BroadcastRequest,
+    EventPreferencesUpdate,
     MarkReadRequest,
     NotificationRead,
     PreferencesUpdate,
+    TemplateCreate,
+    TemplatePreviewRequest,
+    TemplateRead,
+    TemplateUpdate,
 )
-from app.modules.notifications.service import NotificationService
+from app.modules.notifications.service import (
+    EventPreferenceService,
+    NotificationService,
+    TemplateService,
+)
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+# Separate router for the /me and /admin surfaces (docs/05 S3), mounted alongside.
+me_router = APIRouter(tags=["notifications"])
+admin_router = APIRouter(prefix="/admin/notification-templates", tags=["notifications"])
 
 
 def _page(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)) -> PageParams:
@@ -78,3 +92,70 @@ async def broadcast(body: BroadcastRequest,
         category=body.category, priority=body.priority, title=body.title, body=body.body,
         audience=body.audience, actor=actor)
     return success({"delivered": n})
+
+
+# ── /me event-preference matrix (docs/05 S3) ──────────────────────────────────
+@me_router.get("/me/notification-preferences", summary="My event notification preferences")
+async def get_event_preferences(actor: CurrentUser = Depends(get_current_user),
+                                session: AsyncSession = Depends(get_session)) -> dict:
+    prefs = await EventPreferenceService(session, actor.tenant_id).matrix(actor.id)
+    return success({"preferences": prefs})
+
+
+@me_router.put("/me/notification-preferences", summary="Update my event notification preferences")
+async def put_event_preferences(body: EventPreferencesUpdate,
+                                actor: CurrentUser = Depends(get_current_user),
+                                session: AsyncSession = Depends(get_session)) -> dict:
+    prefs = await EventPreferenceService(session, actor.tenant_id).set(
+        actor.id, updates=body.preferences)
+    return success({"preferences": prefs})
+
+
+# ── /admin notification templates (docs/05 S3) ────────────────────────────────
+def _tpl(row) -> dict:
+    return TemplateRead.model_validate(row).model_dump()
+
+
+_TPL_PERM = "notifications.templates.manage"
+
+
+@admin_router.get("", summary="List notification templates (admin)")
+async def list_templates(event_code: str | None = Query(None),
+                         actor: CurrentUser = Depends(require(_TPL_PERM)),
+                         session: AsyncSession = Depends(get_session)) -> dict:
+    rows = await TemplateService(session, actor.tenant_id).list(event_code=event_code)
+    return success([_tpl(r) for r in rows])
+
+
+@admin_router.post("", status_code=201, summary="Create a tenant template override (admin)")
+async def create_template(body: TemplateCreate,
+                          actor: CurrentUser = Depends(require(_TPL_PERM)),
+                          session: AsyncSession = Depends(get_session)) -> dict:
+    row = await TemplateService(session, actor.tenant_id).create(data=body, actor=actor)
+    return success(_tpl(row))
+
+
+@admin_router.post("/preview", summary="Render a template against a sample payload (admin)")
+async def preview_template(body: TemplatePreviewRequest,
+                           actor: CurrentUser = Depends(require(_TPL_PERM)),
+                           session: AsyncSession = Depends(get_session)) -> dict:
+    result = await TemplateService(session, actor.tenant_id).preview(
+        template_id=body.template_id, subject_tpl=body.subject_tpl, body_tpl=body.body_tpl,
+        sample_payload=body.sample_payload)
+    return success(result)
+
+
+@admin_router.patch("/{template_id}", summary="Update a tenant template (admin)")
+async def update_template(template_id: uuid.UUID, body: TemplateUpdate,
+                          actor: CurrentUser = Depends(require(_TPL_PERM)),
+                          session: AsyncSession = Depends(get_session)) -> dict:
+    row = await TemplateService(session, actor.tenant_id).update(template_id, data=body, actor=actor)
+    return success(_tpl(row))
+
+
+@admin_router.delete("/{template_id}", summary="Delete a tenant template (admin)")
+async def delete_template(template_id: uuid.UUID,
+                          actor: CurrentUser = Depends(require(_TPL_PERM)),
+                          session: AsyncSession = Depends(get_session)) -> dict:
+    await TemplateService(session, actor.tenant_id).delete(template_id, actor=actor)
+    return success({"message": "Template deleted"})

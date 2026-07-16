@@ -8,6 +8,7 @@ and invalidated by those events (see events.py).
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import json
 import uuid
 from datetime import UTC, date, datetime
@@ -283,7 +284,7 @@ class EquipmentService:
             "id": str(equipment.id),
             "tag": equipment.tag,
             "name": equipment.name,
-            "type": type_labels.get(equipment.type_id),
+            "type": type_labels.get(equipment.type_id) if equipment.type_id else None,
             "criticality": equipment.criticality,
             "criticality_label": crit_labels.get(equipment.criticality),
             "status": equipment.status,
@@ -298,7 +299,7 @@ class EquipmentService:
             "specs": equipment.specs,
         }
 
-    async def history(self, equipment_id: uuid.UUID) -> list[TimelineEvent]:
+    async def history(self, equipment_id: uuid.UUID) -> builtins.list[TimelineEvent]:
         await self.get(equipment_id)  # 404 if missing / not in tenant
         return await history_registry.collect(self.session, self.tenant_id, equipment_id)
 
@@ -317,11 +318,11 @@ class EquipmentService:
         base.update(await metrics_registry.collect(self.session, self.tenant_id, equipment_id))
         return base
 
-    async def resolve(self, tag: str) -> list[dict]:
+    async def resolve(self, tag: str) -> builtins.list[dict]:
         return await self.repo.resolve(tag)
 
     # ── bulk CSV import (row-level report) ───────────────────────────────────
-    async def bulk_import(self, rows: list[dict], *, actor) -> ImportReport:
+    async def bulk_import(self, rows: builtins.list[dict], *, actor) -> ImportReport:
         results: list[ImportRowResult] = []
         plant_by_code: dict[str, Plant] = {}
         created = 0
@@ -387,6 +388,7 @@ class EquipmentService:
                 continue
 
             install = _parse_date(raw.get("install_date"))
+            assert plant is not None  # guaranteed: a missing plant added an error above
             equipment = await self.repo.add(Equipment(
                 plant_id=plant.id, area_id=area.id if area else None, tag=tag, name=name,
                 type_id=type_id, criticality=criticality, status=status,
@@ -421,7 +423,7 @@ def _node(row: dict) -> dict:
 
 def _build_tree(plant_id: str, rows: list[dict], areas: list[Area]) -> dict:
     nodes = {str(r["id"]): _node(r) for r in rows}
-    roots: list[dict] = []
+    roots: list[tuple[str | None, dict]] = []
     for r in rows:
         node = nodes[str(r["id"])]
         parent_id = str(r["parent_id"]) if r["parent_id"] else None

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import uuid
 
-from app.core.config import settings
 from app.core.logging import get_logger
 from app.ws import progress
 
@@ -42,33 +41,34 @@ async def send_in_app(notification) -> bool:
         return False
 
 
-async def send_email(*, to_email: str, subject: str, body: str) -> bool:
-    """Send via SMTP (mailhog on :1025 locally). Best-effort."""
-    import asyncio
-
-    def _send() -> None:
-        import smtplib
-        from email.message import EmailMessage
-
-        msg = EmailMessage()
-        msg["From"] = settings.smtp_from
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.set_content(body)
-        msg.add_alternative(
-            f"<html><body style='font-family:sans-serif'>"
-            f"<h3 style='color:#3E7BFA'>IndusMind</h3><p>{body}</p></body></html>",
-            subtype="html")
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=5) as smtp:
-            if settings.smtp_user:
-                smtp.login(settings.smtp_user, settings.smtp_password)
-            smtp.send_message(msg)
+async def send_email(*, to_email: str, subject: str, body: str, html: str | None = None) -> bool:
+    """Send via the configured MailProvider (SMTP/mailhog local, SES prod). Best-effort."""
+    from app.core.mail import send_mail
 
     try:
-        await asyncio.to_thread(_send)
+        await send_mail(to_email=to_email, subject=subject, body=body, html=html)
         return True
     except Exception as exc:  # noqa: BLE001 — mail outage must not fail the txn
         log.warning("notification_email_failed", to=to_email, error=str(exc))
+        return False
+
+
+async def send_email_logged(session, tenant_id, *, to_email: str, subject: str, body: str,
+                            html: str | None = None, template_id=None) -> bool:
+    """Send an email and record the attempt in outbound_email_log (docs/05 S3)."""
+    from app.core.mail import send_mail
+    from app.modules.notifications.repository import OutboundEmailRepository
+
+    repo = OutboundEmailRepository(session, tenant_id)
+    try:
+        result = await send_mail(to_email=to_email, subject=subject, body=body, html=html)
+        await repo.log(to_email=to_email, subject=subject, status="sent",
+                       template_id=template_id, provider_msg_id=result.provider_msg_id)
+        return True
+    except Exception as exc:  # noqa: BLE001 — mail outage must not fail the txn
+        log.warning("notification_email_failed", to=to_email, error=str(exc))
+        await repo.log(to_email=to_email, subject=subject, status="failed",
+                       template_id=template_id, error=str(exc))
         return False
 
 

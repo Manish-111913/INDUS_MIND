@@ -22,6 +22,11 @@ celery = Celery(
         "app.workers.tasks.ingestion_tasks",
         "app.workers.tasks.scheduler_tasks",
         "app.workers.tasks.compliance_tasks",
+        "app.workers.tasks.dataops_tasks",
+        "app.workers.tasks.integration_tasks",
+        "app.workers.tasks.onboarding_tasks",
+        "app.workers.tasks.equipment_tasks",
+        "app.workers.tasks.retention_tasks",
     ],
 )
 
@@ -47,6 +52,18 @@ celery.conf.update(
         "app.workers.tasks.agent_tasks.*": {"queue": "ai"},
         "app.workers.tasks.notify_tasks.*": {"queue": "notify"},
         "app.workers.tasks.scheduler_tasks.*": {"queue": "scheduled"},
+        # Import parsing / export rendering are CPU-ish file work (docs/05 S6).
+        "app.workers.tasks.dataops_tasks.validate_import": {"queue": "ingestion"},
+        "app.workers.tasks.dataops_tasks.apply_import": {"queue": "ingestion"},
+        "app.workers.tasks.dataops_tasks.render_export": {"queue": "ingestion"},
+        "app.workers.tasks.dataops_tasks.run_report_schedules": {"queue": "scheduled"},
+        # Webhook delivery is network-bound fan-out, not user-facing notification.
+        "app.workers.tasks.integration_tasks.deliver_webhook": {"queue": "notify"},
+        "app.workers.tasks.integration_tasks.sweep_webhook_retries": {"queue": "scheduled"},
+        # Seeding uploads + ingests the demo corpus — same work as any ingestion job.
+        "app.workers.tasks.onboarding_tasks.seed_demo_task": {"queue": "ingestion"},
+        "app.workers.tasks.equipment_tasks.render_label_sheet": {"queue": "ingestion"},
+        "app.workers.tasks.retention_tasks.run_retention_policies": {"queue": "scheduled"},
     },
     # Beat schedule (docs/02 §36). Domain PM schedules live in the DB `schedules`
     # table; these are the system beat entries that read it.
@@ -54,6 +71,19 @@ celery.conf.update(
         "pm-due-checker-hourly": {
             "task": "app.workers.tasks.scheduler_tasks.pm_due_checker",
             "schedule": crontab(minute=0),  # top of every hour
+            "options": {"queue": "scheduled"},
+        },
+        # Webhook retries (docs/05 S8). Every minute because the first backoff step
+        # is 1 min — a coarser tick would stretch the whole schedule.
+        "webhook-retry-sweep": {
+            "task": "app.workers.tasks.integration_tasks.sweep_webhook_retries",
+            "schedule": crontab(minute="*"),
+            "options": {"queue": "scheduled"},
+        },
+        # Data retention (docs/08 S14) — nightly at 01:15, before the daily reports.
+        "retention-nightly": {
+            "task": "app.workers.tasks.retention_tasks.run_retention_policies",
+            "schedule": crontab(minute=15, hour=1),
             "options": {"queue": "scheduled"},
         },
         # Predictive-maintenance refresh (docs/02 §36).
@@ -90,6 +120,14 @@ celery.conf.update(
         "scheduled-reports-daily": {
             "task": "app.workers.tasks.scheduler_tasks.run_scheduled_reports",
             "schedule": crontab(minute=0, hour=7),
+            "options": {"queue": "scheduled"},
+        },
+        # Report-template schedules (docs/05 S6). Ticks every 5 min; the cron on
+        # each `report_schedules` row (croniter) decides what actually runs, so
+        # admins can edit schedules in the DB without a redeploy (docs/02 §36).
+        "report-schedules-tick": {
+            "task": "app.workers.tasks.dataops_tasks.run_report_schedules",
+            "schedule": crontab(minute="*/5"),
             "options": {"queue": "scheduled"},
         },
     },

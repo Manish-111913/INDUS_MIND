@@ -10,6 +10,7 @@ graph projector and (future) notifications subscribe to.
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -228,6 +229,21 @@ class WorkOrderService(_LookupMixin):
         wo.updated_by = actor.id
         await self.session.flush()
 
+        # Consume planned spare parts in the SAME transaction as the close, so
+        # stock and the work order commit together or not at all (docs/08 S12).
+        crossed_low: list = []
+        try:
+            from app.modules.parts.service import PartService
+
+            parts_svc = PartService(self.session, self.tenant_id)
+            crossed_low = await parts_svc.consume_for_work_order(wo.id, actor.id)
+        except Exception as exc:  # noqa: BLE001 — a parts issue must not block closing
+            from app.core.logging import get_logger
+
+            get_logger("maintenance").warning("wo_part_consume_failed",
+                                               work_order_id=str(wo.id), error=str(exc))
+            parts_svc = None
+
         await self.audit.write(action="workorder.close", entity_type="work_order",
                                entity_id=wo.id, tenant_id=self.tenant_id, actor_id=actor.id,
                                after={"status": "closed", "failure_id": str(wo.failure_id)
@@ -237,6 +253,9 @@ class WorkOrderService(_LookupMixin):
                                 payload={"work_order_id": str(wo.id), "wo_number": wo.wo_number,
                                          "equipment_id": str(wo.equipment_id) if wo.equipment_id else None,
                                          "failure_id": str(wo.failure_id) if wo.failure_id else None}))
+        # part.low_stock for any part this WO drew below its minimum (docs/08 S12).
+        if crossed_low and parts_svc is not None:
+            await parts_svc.emit_low_stock_for(crossed_low, actor.id)
         if failure is not None:
             await self.audit.write(action="failure.record", entity_type="failure_record",
                                    entity_id=failure.id, tenant_id=self.tenant_id, actor_id=actor.id,
@@ -309,7 +328,7 @@ class ScheduleService(_LookupMixin):
                                entity_id=schedule.id, tenant_id=self.tenant_id, actor_id=actor.id)
 
     async def generate_due(self, *, actor_id: uuid.UUID | str | None = None,
-                           now: datetime | None = None) -> list[WorkOrder]:
+                           now: datetime | None = None) -> builtins.list[WorkOrder]:
         """Hourly beat body: due schedules → auto-create WOs (source=schedule) +
         a notification event. Advances `next_due_at` by `interval_days` and stamps
         `last_generated_at` so the same schedule doesn't fire twice per window."""

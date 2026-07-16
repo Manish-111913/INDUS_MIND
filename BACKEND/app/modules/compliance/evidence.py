@@ -18,6 +18,7 @@ import secrets
 import uuid
 import zipfile
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -196,7 +197,7 @@ class EvidenceService:
 
     async def _build_zip(self, pdf_bytes: bytes, data: dict) -> tuple[bytes, dict]:
         buf = io.BytesIO()
-        manifest = {"summary_pdf": "evidence-summary.pdf", "sources": []}
+        manifest: dict[str, Any] = {"summary_pdf": "evidence-summary.pdf", "sources": []}
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("evidence-summary.pdf", pdf_bytes)
             for doc in data["documents"]:

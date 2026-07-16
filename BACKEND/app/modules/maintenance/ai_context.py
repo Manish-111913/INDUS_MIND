@@ -23,6 +23,7 @@ from app.core.logging import get_logger
 from app.modules.equipment.repository import EquipmentRepository
 from app.modules.knowledge.retrieval import RetrievalScope, RetrievalService
 from app.modules.lookups.service import LookupService
+from app.modules.maintenance.models import WorkOrder
 from app.modules.maintenance.repository import FailureRepository, WorkOrderRepository
 from app.modules.maintenance.schemas import (
     AiContext,
@@ -81,7 +82,7 @@ class AiContextService:
         query_tokens = _tokens(wo.title) | _tokens(wo.description)
         from app.modules.auth.repository import UserRepository
 
-        scored: list[tuple[float, object]] = []
+        scored: list[tuple[float, WorkOrder]] = []
         for cand in candidates:
             cand_tokens = _tokens(cand.title) | _tokens(cand.closure_notes)
             overlap = len(query_tokens & cand_tokens)

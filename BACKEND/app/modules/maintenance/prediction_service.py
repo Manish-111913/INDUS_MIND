@@ -14,10 +14,12 @@ numbers stay the heuristic's. Accepting a prediction spawns a WO and links
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,10 +40,17 @@ from app.modules.maintenance.schemas import WorkOrderCreate
 
 log = get_logger("maintenance.predictions")
 
-W_FREQ, W_MOMENTUM, W_OVERDUE, W_CRIT = 0.30, 0.25, 0.30, 0.15
 CRIT_WEIGHT = {"A": 1.0, "B": 0.6, "C": 0.3}
 BAND_HIGH, BAND_MEDIUM = 55.0, 30.0
 WINDOW_DAYS = {"high": 30, "medium": 60, "low": 90}
+
+# Signal weights + reading window resolve from the settings service (docs/05 S5);
+# these are only the fallbacks used if a settings key is somehow absent.
+_WEIGHT_DEFAULTS = {
+    "trend": 0.20, "threshold": 0.15, "failure_freq": 0.20,
+    "repeat_mode": 0.15, "overdue": 0.20, "criticality": 0.10,
+}
+_WINDOW_DEFAULT = 20
 
 
 @dataclass(slots=True)
@@ -52,6 +61,14 @@ class _Score:
     drivers: list[dict]
     recommendation: str
     citations: list[dict]
+
+
+@dataclass(slots=True)
+class _Condition:
+    """Reading-derived signals for one piece of equipment (docs/05 S5)."""
+    trend: float = 0.0       # 0..1 — normalised worsening slope of the last-N readings
+    threshold: float = 0.0   # 0..1 — proximity of the latest reading to its normal-band edge
+    detail: str | None = None
 
 
 class PredictionService:
@@ -75,21 +92,24 @@ class PredictionService:
         return pred
 
     # ── engine ───────────────────────────────────────────────────────────────
-    async def refresh(self, *, criticality: str | None = None, actor=None) -> list[Prediction]:
+    async def refresh(self, *, criticality: str | None = None, actor=None) -> builtins.list[Prediction]:
         """Recompute predictions for the at-risk equipment set (idempotent upsert)."""
         from app.modules.lookups.service import LookupService
 
         now = datetime.now(UTC)
         mode_labels = {r.id: r.label for r in
                        await LookupService(self.session, self.tenant_id).by_category("failure_modes")}
+        weights, window_n = await self._load_weights()
         equipment = await self._at_risk_equipment(criticality)
         out: list[Prediction] = []
         for eq in equipment:
             failures = await self.failures.list_for_equipment(eq.id)
             schedules = await self.schedules.list_all(equipment_id=eq.id)
-            if not failures and not _has_overdue(schedules, now):
+            condition = await self._condition_signals(eq.id, window_n)
+            has_condition = condition.trend > 0 or condition.threshold > 0
+            if not failures and not _has_overdue(schedules, now) and not has_condition:
                 continue
-            score = self._score(eq, failures, schedules, mode_labels, now)
+            score = self._score(eq, failures, schedules, mode_labels, now, weights, condition)
             pred = await self._upsert(eq, score, now, actor)
             out.append(pred)
             if pred.risk_band == "high":
@@ -100,14 +120,59 @@ class PredictionService:
                              "notify": True}))
         return out
 
-    async def _at_risk_equipment(self, criticality: str | None) -> list[Equipment]:
+    async def _at_risk_equipment(self, criticality: str | None) -> builtins.list[Equipment]:
         stmt = select(Equipment).where(
             Equipment.tenant_id == self.tenant_id, Equipment.deleted_at.is_(None))
         if criticality:
             stmt = stmt.where(Equipment.criticality == criticality)
         return list((await self.session.execute(stmt)).scalars())
 
-    def _score(self, eq: Equipment, failures, schedules, mode_labels, now) -> _Score:
+    async def _load_weights(self) -> tuple[dict, int]:
+        """Resolve signal weights + reading window from the settings service (no constants)."""
+        from app.modules.settings.service import SettingsService
+
+        eff = await SettingsService(self.session, self.tenant_id).effective(user_id=None)
+        weights = {k: _as_float(eff.get(f"prediction.weight_{k}"), default)
+                   for k, default in _WEIGHT_DEFAULTS.items()}
+        window_n = int(_as_float(eff.get("prediction.reading_window_n"), _WINDOW_DEFAULT))
+        return weights, max(2, window_n)
+
+    async def _condition_signals(self, equipment_id, window_n: int) -> _Condition:
+        """Trend slope + threshold proximity from the last-N readings per meter (docs/05 S5)."""
+        from app.modules.meters.repository import (
+            EquipmentMeterRepository,
+            MeterDefinitionRepository,
+            MeterReadingRepository,
+        )
+
+        links = await EquipmentMeterRepository(
+            self.session, self.tenant_id).list_for_equipment(equipment_id)
+        if not links:
+            return _Condition()
+        defs = {d.id: d for d in await MeterDefinitionRepository(
+            self.session, self.tenant_id).list()}
+        readings_repo = MeterReadingRepository(self.session, self.tenant_id)
+        best = _Condition()
+        for link in links:
+            definition = defs.get(link.meter_definition_id)
+            if definition is None:
+                continue
+            readings = await readings_repo.last_n(link.id, window_n)
+            if len(readings) < 2:
+                continue
+            values = [float(r.value) for r in readings]
+            lo = float(definition.normal_min) if definition.normal_min is not None else None
+            hi = float(definition.normal_max) if definition.normal_max is not None else None
+            trend = _trend_signal(values, lo, hi)
+            threshold = _threshold_signal(values[-1], lo, hi)
+            if trend + threshold > best.trend + best.threshold:
+                best = _Condition(trend=trend, threshold=threshold,
+                                  detail=f"{definition.name}: latest {values[-1]:g}"
+                                         f"{(' ' + definition.unit) if definition.unit else ''}")
+        return best
+
+    def _score(self, eq: Equipment, failures, schedules, mode_labels, now,
+               weights: dict, condition: _Condition) -> _Score:
         n_fail = len(failures)
         freq = min(1.0, n_fail / 4.0)
 
@@ -121,8 +186,10 @@ class PredictionService:
         overdue = 1.0 if overdue_days > 0 else 0.0
         crit_weight = CRIT_WEIGHT.get(eq.criticality, 0.3)
 
-        risk = 100.0 * (W_FREQ * freq + W_MOMENTUM * momentum + W_OVERDUE * overdue
-                        + W_CRIT * crit_weight)
+        risk = 100.0 * (
+            weights["failure_freq"] * freq + weights["repeat_mode"] * momentum
+            + weights["overdue"] * overdue + weights["criticality"] * crit_weight
+            + weights["trend"] * condition.trend + weights["threshold"] * condition.threshold)
         band = "high" if risk >= BAND_HIGH else ("medium" if risk >= BAND_MEDIUM else "low")
 
         drivers: list[dict] = []
@@ -138,6 +205,14 @@ class PredictionService:
             drivers.append({"factor": "overdue_maintenance",
                             "detail": f"{overdue_days} days overdue: {overdue_sched}",
                             "weight": round(overdue, 2)})
+        if condition.trend > 0.05:
+            drivers.append({"factor": "reading_trend",
+                            "detail": f"Worsening trend — {condition.detail}",
+                            "weight": round(condition.trend, 2)})
+        if condition.threshold > 0.05:
+            drivers.append({"factor": "threshold_proximity",
+                            "detail": f"Near/over normal band — {condition.detail}",
+                            "weight": round(condition.threshold, 2)})
         drivers.append({"factor": "criticality",
                         "detail": f"Criticality {eq.criticality}", "weight": round(crit_weight, 2)})
 
@@ -145,10 +220,13 @@ class PredictionService:
                       "snippet": (f.description or "")[:160]} for f in recent[:4]]
         if overdue_sched:
             citations.append({"type": "schedule", "snippet": overdue_sched})
+        if condition.detail:
+            citations.append({"type": "reading", "snippet": condition.detail})
 
         recommendation = self._recommend(eq, dom_label, dom_count, overdue_days, overdue_sched)
-        return _Score(risk=round(risk, 1), band=band,
-                      mode=dom_label or ("overdue maintenance" if overdue_days else None),
+        mode = dom_label or ("overdue maintenance" if overdue_days else None) \
+            or ("condition trend" if condition.trend > 0.05 else None)
+        return _Score(risk=round(risk, 1), band=band, mode=mode,
                       drivers=drivers, recommendation=recommendation, citations=citations)
 
     @staticmethod
@@ -169,7 +247,7 @@ class PredictionService:
         existing = await self.repo.open_for_equipment(eq.id)
         actor_id = actor.id if actor else None
         if existing is not None:
-            existing.risk_score = score.risk
+            existing.risk_score = Decimal(str(score.risk))
             existing.risk_band = score.band
             existing.predicted_failure_mode = score.mode
             existing.window_start = now
@@ -224,6 +302,48 @@ class PredictionService:
                                entity_id=pred.id, tenant_id=self.tenant_id, actor_id=actor.id,
                                after={"reason": reason})
         return pred
+
+
+def _as_float(value, default: float) -> float:
+    try:
+        return float(value) if value is not None else default
+    except (ValueError, TypeError):
+        return default
+
+
+def _trend_signal(values: list[float], lo: float | None, hi: float | None) -> float:
+    """Normalised worsening slope over the reading window → 0..1.
+
+    Least-squares slope per step, scaled by the window length and the normal-band
+    width, so a rise that would traverse the whole band across the window ≈ 1.0.
+    Only *rising* trends count as risk (vibration/temperature go up as things fail).
+    """
+    n = len(values)
+    if n < 2:
+        return 0.0
+    xs = list(range(n))
+    mean_x = sum(xs) / n
+    mean_y = sum(values) / n
+    denom = sum((x - mean_x) ** 2 for x in xs)
+    if denom == 0:
+        return 0.0
+    slope = sum((xs[i] - mean_x) * (values[i] - mean_y) for i in range(n)) / denom
+    if slope <= 0:
+        return 0.0
+    band = (hi - lo) if (lo is not None and hi is not None and hi > lo) else (abs(mean_y) or 1.0)
+    return max(0.0, min(1.0, slope * (n - 1) / band))
+
+
+def _threshold_signal(latest: float, lo: float | None, hi: float | None) -> float:
+    """Proximity of the latest reading to (or past) its normal-band ceiling → 0..1."""
+    if hi is None:
+        return 0.0
+    if latest >= hi:
+        return 1.0
+    floor = lo if lo is not None else min(latest, hi)
+    if hi <= floor:
+        return 0.0
+    return max(0.0, min(1.0, (latest - floor) / (hi - floor)))
 
 
 def _has_overdue(schedules, now) -> bool:

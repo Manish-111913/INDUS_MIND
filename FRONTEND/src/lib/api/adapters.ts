@@ -172,47 +172,49 @@ export function adaptRequest(method: string, pathWithQuery: string): AdaptedRequ
   if (path === '/equipment' && m === 'GET') {
     return { path: pathWithQuery, adaptResponse: (d) => (Array.isArray(d) ? d.map(adaptEquipment) : []) };
   }
+  // /equipment/{id} detail — but NOT the sub-routes that share the prefix
+  // (/equipment/tree, /resolve, /import, /suggest, /labels), which have their own
+  // shapes and query params and must pass through unchanged (with their query).
+  const EQUIPMENT_SUBROUTES = new Set(['tree', 'resolve', 'import', 'suggest', 'labels']);
   const eqDetail = /^\/equipment\/([^/]+)$/.exec(path);
-  if (eqDetail && m === 'GET') {
+  if (eqDetail && m === 'GET' && !EQUIPMENT_SUBROUTES.has(eqDetail[1])) {
     return { path, adaptResponse: adaptEquipment };
   }
-  // frontend meters/readings → backend metrics
-  const eqMeters = /^\/equipment\/([^/]+)\/meters$/.exec(path);
-  if (eqMeters) return { path: `/equipment/${eqMeters[1]}/metrics` };
-  const eqReadings = /^\/equipment\/([^/]+)\/readings$/.exec(path);
-  if (eqReadings && m === 'GET') return { path: `/equipment/${eqReadings[1]}/metrics` };
+  // /equipment/{id}/readings is a real backend endpoint (B16) — pass through.
+  // The legacy /meters alias is remapped to it below.
 
-  // ── my sessions → auth sessions ─────────────────────────────────────────────
-  if (path === '/me/sessions') return { path: '/auth/sessions' };
-  const meSession = /^\/me\/sessions\/([^/]+)$/.exec(path);
-  if (meSession && m === 'DELETE') return { path: `/auth/sessions/${meSession[1]}` };
+  // ── admin settings: frontend split → backend's single /settings surface ──────
+  // Backend `GET /settings?scope=&scope_id=` returns {definitions, values}; the
+  // frontend fetches them as two calls. Map both onto the one endpoint and pick
+  // the half each caller wants.
+  if (path === '/admin/settings/definitions' && m === 'GET') {
+    return { path: '/settings', adaptResponse: (d) => d?.definitions ?? [] };
+  }
+  if (path === '/admin/settings/values' && m === 'GET') {
+    return { path: '/settings', adaptResponse: (d) => d?.values ?? {} };
+  }
+  if (path === '/admin/settings/values' && m === 'PUT') {
+    return { path: '/settings' };  // body already {key, scope, scope_id, value}
+  }
 
-  // ── notification preferences ─────────────────────────────────────────────────
-  if (path === '/me/notification-preferences') return { path: '/notifications/preferences' };
+  // ── meters: legacy alias → real readings endpoint (B16) ──────────────────────
+  const eqMetersLegacy = /^\/equipment\/([^/]+)\/meters$/.exec(path);
+  if (eqMetersLegacy) return { path: `/equipment/${eqMetersLegacy[1]}/readings` };
 
-  // ── saved views/searches ──────────────────────────────────────────────────────
-  if (path === '/saved-views') return { path: '/search/saved' };
-  const savedView = /^\/saved-views\/([^/]+)$/.exec(path);
-  if (savedView && m === 'DELETE') return { path: `/search/saved/${savedView[1]}` };
-
-  // ── paths with no backend home (fail loudly, callers can catch) ──────────────
+  // ── genuinely-absent backend routes (fail loudly, callers can catch) ─────────
+  // Everything else — /navigation, /parts, /shift-logs, /exports, /import/*,
+  // /content/*, /changelog, /tours/*, /settings/effective, /me/*, /saved-views,
+  // and the whole /admin/* surface — now exists on the backend (B15–B19) and
+  // passes through unchanged. Only these have no home:
   if (
-    path === '/navigation' ||
-    path.startsWith('/admin/') ||
-    path === '/parts' || path.startsWith('/parts/') ||
-    path.startsWith('/shift-logs') ||
-    path === '/exports' ||
-    path.startsWith('/import/') ||
-    path.startsWith('/content/') ||
-    path === '/changelog' ||
-    path.startsWith('/tours/') ||
-    path === '/documents/bulk-action' ||
-    path === '/settings/effective' ||
-    path === '/me/password' || path === '/me/preferences'
+    path === '/documents/bulk-action' ||   // superseded by POST /documents/bulk
+    path === '/me/password'                // use POST /me/change-password instead
   ) {
     throw new NoBackendRouteError(path);
   }
 
-  // default: pass through unchanged (auth/*, search, chat/*, compliance/*, …)
+  // default: pass through unchanged (auth/*, /navigation, /parts, /shift-logs,
+  // /admin/*, /settings/*, /me/*, /saved-views, /tours, /changelog, /content,
+  // /i18n, search, chat/*, compliance/*, …)
   return null;
 }

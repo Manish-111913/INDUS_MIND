@@ -82,6 +82,8 @@ async def run_pipeline(session: AsyncSession, tenant_id: uuid.UUID | str,
 
             # ── chunking ──
             async with _stage(session, job, tenant_id, "chunking", document):
+                if document.current_version_id is None:
+                    raise ValueError("document has no current version to chunk")
                 await chunks_repo.delete_for_version(document.current_version_id)
                 rows = [
                     DocumentChunk(
@@ -144,6 +146,43 @@ async def _extract(session, tenant_id, document, chunks) -> None:
     await repo.add_many(entities)
 
 
+async def ingest_text(session: AsyncSession, tenant_id, document, text_body: str) -> int:
+    """Run chunk → embed → extract → graph on already-plain text (docs/08 S13).
+
+    The shift logbook produces text directly, so there is nothing to OCR or parse;
+    this is the pipeline's back half, reusing `_embed_chunks` and `_extract` so a
+    submitted log becomes citable Copilot context exactly like an uploaded
+    document. The caller must have set `document.current_version_id`. Returns the
+    number of chunks created.
+    """
+    import hashlib
+
+    from app.modules.ingestion.chunking import chunk_text
+    from app.modules.ingestion.models import DocumentChunk
+    from app.modules.ingestion.repository import ChunkRepository
+
+    chunks_repo = ChunkRepository(session, tenant_id)
+    if document.current_version_id is not None:
+        await chunks_repo.delete_for_version(document.current_version_id)
+    rows = [
+        DocumentChunk(
+            document_id=document.id, version_id=document.current_version_id,
+            chunk_index=c.chunk_index, page_no=c.page_no, text=c.text,
+            token_count=c.token_count, section_path=c.section_path, bbox=c.bbox,
+            checksum=hashlib.sha256(c.text.encode()).hexdigest())
+        for c in chunk_text(text_body)
+    ]
+    await chunks_repo.add_many(rows)
+    await _embed_chunks(session, tenant_id, document.current_version_id)
+    chunks = await chunks_repo.list_for_document(document.id)
+    await _extract(session, tenant_id, document, chunks)
+    try:
+        await _graph_upsert(session, tenant_id, document)
+    except Exception as exc:  # noqa: BLE001 — graph is a projection; never fail the log submit
+        log.warning("logbook_graph_skipped", document_id=str(document.id), error=str(exc))
+    return len(rows)
+
+
 async def _graph_upsert(session, tenant_id, document) -> None:
     from app.core import graph
     from app.modules.ingestion.repository import EntityRepository
@@ -187,7 +226,7 @@ class _stage:
         if exc_type is not None:
             self._set(status="failed", detail=str(exc))
             await self.session.flush()
-            exc.stage = self.name  # type: ignore[attr-defined]
+            exc.stage = self.name
             return False
         duration = round(time.monotonic() - self._t0, 3)
         self._set(status="completed", finished=datetime.now(UTC).isoformat())

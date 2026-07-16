@@ -98,3 +98,43 @@ def chunk_document(parsed: ParsedDocument) -> list[Chunk]:
 
     flush(buffer)
     return chunks
+
+
+def chunk_text(text_body: str, *, target_tokens: int = TARGET_TOKENS) -> list[Chunk]:
+    """Chunk already-plain text (no parsing/pages) — docs/08 S13 shift logs.
+
+    Splits on blank-line paragraphs and packs them to ~target_tokens with the same
+    overlap ratio as `chunk_document`, so a shift log is retrieved on equal footing
+    with uploaded documents. All chunks are page_no=None (there are no pages).
+    """
+    paragraphs = [p.strip() for p in text_body.split("\n\n") if p.strip()]
+    if not paragraphs:
+        paragraphs = [text_body.strip()] if text_body.strip() else []
+
+    chunks: list[Chunk] = []
+    idx = 0
+    buffer: list[str] = []
+    buffer_tokens = 0
+
+    def flush() -> None:
+        nonlocal idx, buffer, buffer_tokens
+        if not buffer:
+            return
+        text = "\n\n".join(buffer).strip()
+        if text:
+            chunks.append(Chunk(chunk_index=idx, page_no=None, section_path=None,
+                                text=text, token_count=estimate_tokens(text)))
+            idx += 1
+        buffer, buffer_tokens = [], 0
+
+    overlap_budget = int(target_tokens * OVERLAP_RATIO)
+    for para in paragraphs:
+        buffer.append(para)
+        buffer_tokens += estimate_tokens(para)
+        if buffer_tokens >= target_tokens:
+            carry = buffer[-1] if buffer else None
+            flush()
+            if carry and estimate_tokens(carry) <= overlap_budget:
+                buffer, buffer_tokens = [carry], estimate_tokens(carry)
+    flush()
+    return chunks

@@ -7,6 +7,7 @@ by-id filter on user_roles.user_id (docs/02 §2 — no cross-module joins).
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 
 from sqlalchemy import delete, select
@@ -79,7 +80,7 @@ class RoleRepository:
         await self.session.flush()
         return role
 
-    async def permission_codes(self, role_id: uuid.UUID | str) -> list[str]:
+    async def permission_codes(self, role_id: uuid.UUID | str) -> builtins.list[str]:
         stmt = (
             select(Permission.code)
             .join(RolePermission, RolePermission.permission_id == Permission.id)
@@ -88,7 +89,7 @@ class RoleRepository:
         )
         return list((await self.session.execute(stmt)).scalars().all())
 
-    async def set_permissions(self, role_id: uuid.UUID | str, permission_ids: list[uuid.UUID]) -> None:
+    async def set_permissions(self, role_id: uuid.UUID | str, permission_ids: builtins.list[uuid.UUID]) -> None:
         await self.session.execute(
             delete(RolePermission).where(RolePermission.role_id == role_id)
         )
@@ -96,7 +97,7 @@ class RoleRepository:
             self.session.add(RolePermission(role_id=role_id, permission_id=pid))
         await self.session.flush()
 
-    async def user_ids_with_role(self, role_id: uuid.UUID | str) -> list[uuid.UUID]:
+    async def user_ids_with_role(self, role_id: uuid.UUID | str) -> builtins.list[uuid.UUID]:
         stmt = select(UserRole.user_id).where(UserRole.role_id == role_id)
         return list((await self.session.execute(stmt)).scalars().all())
 

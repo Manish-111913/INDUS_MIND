@@ -11,6 +11,7 @@ import sys
 from contextvars import ContextVar
 
 import structlog
+from structlog.typing import EventDict, WrappedLogger
 
 # Per-request context, bound by middleware and merged into every log line.
 request_id_ctx: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -18,7 +19,7 @@ tenant_id_ctx: ContextVar[str | None] = ContextVar("tenant_id", default=None)
 user_id_ctx: ContextVar[str | None] = ContextVar("user_id", default=None)
 
 
-def _merge_context(_logger, _method, event_dict: dict) -> dict:
+def _merge_context(_logger: WrappedLogger, _method: str, event_dict: EventDict) -> EventDict:
     if (rid := request_id_ctx.get()) is not None:
         event_dict.setdefault("request_id", rid)
     if (tid := tenant_id_ctx.get()) is not None:

@@ -9,6 +9,7 @@ regulation × area matrix that backs the heatmap.
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 from datetime import UTC, datetime
 
@@ -95,7 +96,7 @@ class RegulationService:
         await self.audit.write(action="compliance.regulation_delete", entity_type="regulation",
                                entity_id=reg.id, tenant_id=self.tenant_id, actor_id=actor.id)
 
-    async def clauses_for(self, regulation_id: uuid.UUID) -> list[RegulationClause]:
+    async def clauses_for(self, regulation_id: uuid.UUID) -> builtins.list[RegulationClause]:
         await self.get(regulation_id)
         return await self.clauses.list_for_regulation(regulation_id)
 

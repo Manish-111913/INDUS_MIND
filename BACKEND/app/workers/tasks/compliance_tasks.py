@@ -9,6 +9,7 @@ sources, stores them to S3 and flips the package to ready (publishing WS progres
 from __future__ import annotations
 
 import asyncio
+import uuid
 
 from app.core.logging import get_logger
 
@@ -31,7 +32,7 @@ async def _run_generate(tenant_id: str, package_id: str) -> dict:
     from app.modules.compliance.evidence import EvidenceService
 
     async with SessionFactory() as session:
-        package = await EvidenceService(session, tenant_id).generate(package_id)
+        package = await EvidenceService(session, tenant_id).generate(uuid.UUID(package_id))
         await session.commit()
         return {"package_id": package_id, "status": package.status}
 

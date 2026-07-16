@@ -1,8 +1,8 @@
 name: backend
 
 # Lint + type-check + full pytest against real Postgres(pgvector)/Redis/MinIO/Neo4j
-# service containers (docs/02 §45, §54). Ruff and pytest are the hard gates; mypy
-# runs informationally while the pre-existing type-annotation debt is paid down.
+# service containers (docs/02 §45, §54). All three are hard gates: ruff (E501
+# included), mypy (clean across the app), and the services-backed pytest suite.
 
 on:
   push:
@@ -92,11 +92,11 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
-      - name: Ruff (lint) — hard gate
+      - name: Ruff (lint, incl. E501) — hard gate
         run: ruff check .
 
-      - name: Mypy (type check) — informational
-        run: mypy app || true
+      - name: Mypy (type check) — hard gate
+        run: mypy app
 
       - name: Pytest (services-backed) — hard gate
         # Test fixtures provision the schema (create extensions + create_all) and

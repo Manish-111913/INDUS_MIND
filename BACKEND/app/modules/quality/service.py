@@ -127,7 +127,8 @@ class QualityTrendsService:
             cumulative += n
             pareto.append({
                 "defect_type_id": str(defect_id) if defect_id else None,
-                "defect_type": defect_labels.get(defect_id, "Unclassified"),
+                "defect_type": (defect_labels.get(defect_id, "Unclassified")
+                                if defect_id else "Unclassified"),
                 "count": n,
                 "pct": round(100.0 * n / total, 1) if total else 0.0,
                 "cumulative_pct": round(100.0 * cumulative / total, 1) if total else 0.0,

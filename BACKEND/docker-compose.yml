@@ -16,6 +16,13 @@ x-app-env: &app-env
   AWS_REGION: ${AWS_REGION:-us-east-1}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
   FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+  # AI providers — all optional; unset keys fall back to the offline mock provider.
+  LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GROK_API_KEY: ${GROK_API_KEY:-}
+  MAIL_PROVIDER: ${MAIL_PROVIDER:-smtp}
   SMTP_HOST: mailhog
   SMTP_PORT: "1025"
 

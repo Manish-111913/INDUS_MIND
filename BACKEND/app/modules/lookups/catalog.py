@@ -107,4 +107,48 @@ LOOKUP_SEED: dict[str, list[tuple[str, str, int, dict]]] = {
         ("contamination", "Contamination", 5, {}),
         ("weld_defect", "Weld Defect", 6, {}),
     ],
+    # Measurement units for meter definitions (docs/05 S5).
+    "units": [
+        ("mm_s", "mm/s (vibration velocity)", 1, {}),
+        ("um", "µm (displacement)", 2, {}),
+        ("celsius", "°C", 3, {}),
+        ("fahrenheit", "°F", 4, {}),
+        ("bar", "bar", 5, {}),
+        ("psi", "psi", 6, {}),
+        ("kpa", "kPa", 7, {}),
+        ("rpm", "rpm", 8, {}),
+        ("amp", "A (current)", 9, {}),
+        ("hours", "hours (runtime)", 10, {}),
+    ],
+    # Shift codes for the logbook (docs/08 S13).
+    "shifts": [
+        ("morning", "Morning", 1, {}),
+        ("evening", "Evening", 2, {}),
+        ("night", "Night", 3, {}),
+    ],
+    # Bulk-action menus per resource (docs/08 N4) — the frontend reads these so
+    # available actions aren't hardcoded in JSX.
+    "bulk_actions_work_orders": [
+        ("assign", "Assign to…", 1, {}),
+        ("status", "Change status", 2, {}),
+        ("export", "Export selected", 3, {}),
+    ],
+    "bulk_actions_documents": [
+        ("tag", "Add tag", 1, {}),
+        ("reingest", "Re-ingest", 2, {}),
+        ("delete", "Delete", 3, {}),
+    ],
+    "bulk_actions_notifications": [
+        ("mark_read", "Mark as read", 1, {}),
+    ],
+    # Reason codes for a 👎 on a copilot answer (docs/05 S4).
+    "ai_feedback_reason": [
+        ("incorrect", "Incorrect answer", 1, {}),
+        ("incomplete", "Incomplete answer", 2, {}),
+        ("irrelevant", "Not relevant", 3, {}),
+        ("outdated", "Outdated information", 4, {}),
+        ("no_citation", "Missing / wrong citation", 5, {}),
+        ("unsafe", "Unsafe recommendation", 6, {}),
+        ("other", "Other", 7, {}),
+    ],
 }

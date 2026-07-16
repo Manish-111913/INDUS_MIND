@@ -84,7 +84,7 @@ class FeatureFlag(Base, AuditFieldsMixin):
     tenant_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     key: Mapped[str] = mapped_column(String(128), nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
-    role_scope: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="[]")
+    role_scope: Mapped[list] = mapped_column(JSONB, nullable=False, server_default="[]")
     rollout_pct: Mapped[int] = mapped_column(Integer, nullable=False, server_default="100")
 
     __table_args__ = (

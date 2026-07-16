@@ -7,6 +7,7 @@ with real aggregate SQL over the scan output — no placeholder numbers.
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 
 from sqlalchemy import Select, func, select
@@ -51,7 +52,7 @@ class RegulationRepository:
             stmt = stmt.where(Regulation.title.ilike(like) | Regulation.code.ilike(like))
         return await paginate(self.session, stmt, params, Regulation)
 
-    async def list_all(self) -> list[Regulation]:
+    async def list_all(self) -> builtins.list[Regulation]:
         return list((await self.session.execute(self._base())).scalars().all())
 
     async def add(self, regulation: Regulation) -> Regulation:
@@ -128,7 +129,7 @@ class MappingRepository:
         stmt = stmt.order_by(ComplianceMapping.mapping_confidence.desc())
         return await paginate(self.session, stmt, params, ComplianceMapping)
 
-    async def list_all(self, *, status: str | None = None) -> list[ComplianceMapping]:
+    async def list_all(self, *, status: str | None = None) -> builtins.list[ComplianceMapping]:
         stmt = self._base()
         if status:
             stmt = stmt.where(ComplianceMapping.status == status)
@@ -186,7 +187,7 @@ class GapRepository:
         stmt = stmt.order_by(ComplianceGap.created_at.desc())
         return await paginate(self.session, stmt, params, ComplianceGap)
 
-    async def list_all(self, *, status: str | None = None) -> list[ComplianceGap]:
+    async def list_all(self, *, status: str | None = None) -> builtins.list[ComplianceGap]:
         stmt = self._base()
         if status:
             stmt = stmt.where(ComplianceGap.status == status)

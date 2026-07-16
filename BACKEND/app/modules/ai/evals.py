@@ -33,9 +33,20 @@ def load_questions() -> list[dict]:
     return data.get("questions", []) or []
 
 
+async def flagged_questions(session: AsyncSession, tenant_id: uuid.UUID | str) -> list[dict]:
+    """Down-voted copilot questions as extra eval cases (docs/05 S4 quality loop)."""
+    from app.modules.ai.repository import AIObservabilityRepository
+
+    texts = await AIObservabilityRepository(session, tenant_id).flagged_questions()
+    return [{"id": f"flag-{i + 1}", "question": q, "expected_facts": [], "expected_doc": None,
+             "flagged": True} for i, q in enumerate(texts)]
+
+
 async def run_evals(session: AsyncSession, tenant_id: uuid.UUID | str, *,
-                    persist: bool = True) -> dict:
+                    persist: bool = True, include_flagged: bool = False) -> dict:
     questions = load_questions()
+    if include_flagged:
+        questions = questions + await flagged_questions(session, tenant_id)
     copilot = CopilotService(session, tenant_id)
     retrieval = RetrievalService(session, tenant_id)
     results: list[dict] = []
@@ -61,7 +72,7 @@ async def run_evals(session: AsyncSession, tenant_id: uuid.UUID | str, *,
             "id": q.get("id"), "question": question,
             "fact_coverage": fact_coverage, "citation_correct": citation_correct,
             "citations": len(result.citations), "latency_ms": result.latency_ms,
-            "confidence": result.confidence["score"],
+            "confidence": result.confidence["score"], "flagged": bool(q.get("flagged", False)),
         })
 
     n = len(results) or 1

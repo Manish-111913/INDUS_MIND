@@ -11,7 +11,7 @@ import uuid
 from collections.abc import Iterable
 from datetime import datetime
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, false, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.pagination import PageParams, PageResult, paginate
@@ -56,7 +56,7 @@ class DocumentRepository:
             )
         if restrict_ids is not None:
             ids = list(restrict_ids)
-            stmt = stmt.where(Document.id.in_(ids) if ids else False)
+            stmt = stmt.where(Document.id.in_(ids) if ids else false())
         return await paginate(self.session, stmt, params, Document)
 
     async def add(self, document: Document) -> Document:

@@ -12,6 +12,7 @@ import uuid
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
+    Boolean,
     Computed,
     ForeignKey,
     Index,
@@ -20,6 +21,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -86,8 +88,51 @@ class ExtractedEntity(Base, TenantMixin, AuditFieldsMixin, VersionMixin):
     status: Mapped[str] = mapped_column(String(16), nullable=False, server_default="auto")
     linked_record_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
     linked_record_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    # Provenance (docs/05 S7): which extraction_rule produced this row, at which
+    # version. Nullable because the LLM pass yields entities no single rule owns.
+    # rule_version is a snapshot, not an FK — the rule may be edited (and its
+    # version bumped) after this row was written, and we must still be able to say
+    # which text of the rule matched.
+    rule_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("extraction_rules.id", ondelete="SET NULL"),
+        nullable=True, index=True
+    )
+    rule_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # document_id is indexed via index=True on the column above.
     __table_args__ = (
         Index("ix_extracted_entities_type_norm", "entity_type", "normalized_value"),
+    )
+
+
+class ExtractionRule(Base, TenantMixin, AuditFieldsMixin, VersionMixin):
+    """A tenant-authored entity-extraction rule (docs/05 S7).
+
+    Replaces the regexes that used to be literals in `extraction.py`: every plant
+    has its own tag convention, so the patterns are data. `version` (VersionMixin)
+    doubles as the rule version stamped onto `extracted_entities.rule_version` —
+    bumping it on edit is what makes re-ingestion produce a new entity generation.
+
+    `method`:
+      · regex   — `pattern` is a Python regex; each match is a candidate
+      · keyword — `pattern` is a newline/comma-separated gazetteer of literals
+      · llm     — contributes `llm_hint` to the extraction prompt instead of matching
+    """
+
+    __tablename__ = "extraction_rules"
+
+    # Free text rather than an FK: entity_type is a lookups(type='entity_types')
+    # code, and lookups are tenant-editable rows, not an enum.
+    entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    method: Mapped[str] = mapped_column(String(16), nullable=False)  # regex|keyword|llm
+    pattern: Mapped[str | None] = mapped_column(Text, nullable=True)
+    llm_hint: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Lower runs first; ties broken by created_at so ordering is deterministic.
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("100"))
+    confidence: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False, server_default=text("0.7"))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("true"))
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("ix_extraction_rules_tenant_active", "tenant_id", "is_active", "priority"),
     )

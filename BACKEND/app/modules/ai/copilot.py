@@ -158,11 +158,7 @@ class CopilotService:
 
     @staticmethod
     def _llm_configured() -> bool:
-        return {
-            "anthropic": bool(settings.anthropic_api_key),
-            "openai": bool(settings.openai_api_key),
-            "ollama": bool(settings.ollama_url),
-        }.get(settings.llm_provider, False)
+        return llm.provider_key_present(settings.llm_provider)
 
 
 def _first_sentence(text: str, limit: int = 220) -> str:

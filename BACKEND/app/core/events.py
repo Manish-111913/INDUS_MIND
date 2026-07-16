@@ -53,7 +53,13 @@ class EventType(StrEnum):
     REFRESH_REUSE_DETECTED = "auth.refresh_reuse_detected"
     PASSWORD_RESET_REQUESTED = "auth.password_reset_requested"
     PASSWORD_RESET_COMPLETED = "auth.password_reset_completed"
+    PASSWORD_CHANGED = "auth.password_changed"
     MFA_ENABLED = "auth.mfa_enabled"
+    # B19 (docs/08)
+    PART_LOW_STOCK = "part.low_stock"
+    EXPORT_COMPLETED = "export.completed"
+    SHIFT_LOG_SUBMITTED = "shift_log.submitted"
+    RETENTION_RUN = "retention.run"
 
 
 @dataclass(slots=True)

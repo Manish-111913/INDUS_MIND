@@ -158,15 +158,31 @@ class ChatService:
                             "latency_ms": latency_ms, "cached": cached})
 
     # ── feedback + save-to-kb ────────────────────────────────────────────────
-    async def feedback(self, message_id: uuid.UUID, *, value: str, reason: str | None,
+    async def feedback(self, message_id: uuid.UUID, *, value: str, reason: str | None = None,
+                       reason_code: str | None = None, comment: str | None = None,
                        actor) -> ChatMessage:
-        msg = await self._message(message_id)
+        from app.core.exceptions import ValidationFailed
+        from app.modules.ai.models import AIFeedback
+        from app.modules.lookups.service import LookupService
+
+        msg = await self._message(message_id)  # also enforces tenant ownership
+        comment = comment or reason
+        if reason_code is not None:
+            valid = {r.code for r in await LookupService(
+                self.session, self.tenant_id).by_category("ai_feedback_reason")}
+            if reason_code not in valid:
+                raise ValidationFailed(f"Unknown feedback reason_code '{reason_code}'",
+                                       code="FEEDBACK_REASON_INVALID")
+        # Fast-display flag on the message + the durable ai_feedback row (docs/05 S4).
         msg.feedback = value
-        msg.feedback_reason = reason
+        msg.feedback_reason = comment
+        self.session.add(AIFeedback(
+            tenant_id=self.tenant_id, message_id=msg.id, user_id=actor.id, rating=value,
+            reason_code=reason_code, comment=comment, created_by=actor.id, updated_by=actor.id))
         await self.session.flush()
         await self.audit.write(action="chat.feedback", entity_type="chat_message",
                                entity_id=msg.id, tenant_id=self.tenant_id, actor_id=actor.id,
-                               after={"value": value})
+                               after={"value": value, "reason_code": reason_code})
         return msg
 
     async def save_to_kb(self, message_id: uuid.UUID, *, actor) -> AIInsight:

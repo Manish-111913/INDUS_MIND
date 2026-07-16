@@ -11,7 +11,8 @@ import {
   ChevronRight, Menu, CheckSquare, Search, SlidersHorizontal, Info, Play
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { api } from '../../lib/api/client';
+import { api, USE_MOCK } from '../../lib/api/client';
+import { streamChatMessage, ChatCitation, ChatDone } from '../../lib/api/stream';
 import { ConfidenceBadge, Select } from '../shared';
 
 // ============================================================================
@@ -28,6 +29,8 @@ interface Message {
   confidencePct?: number;
   timeToAnswer?: string;
   suggestions?: string[];
+  /** Live mode: the backend ChatMessage UUID, used to target feedback/save-to-kb. */
+  backendMessageId?: string;
 }
 
 interface ChatSession {
@@ -36,6 +39,8 @@ interface ChatSession {
   createdTime: number; // Timestamp
   messages: Message[];
   pinned?: boolean;
+  /** Live mode: the backend chat-session UUID (lazily created on first send). */
+  backendId?: string;
 }
 
 interface ScopeFilters {
@@ -798,6 +803,115 @@ export function ExpertCopilot() {
   }, [filters]);
 
   // ============================================================================
+  // Live copilot streaming (SSE) — used when VITE_API_MODE=live
+  // ============================================================================
+  // Backend citation shape → the frontend Message.citations shape.
+  const mapLiveCitation = (c: ChatCitation): { title: string; page: number; link: string } => ({
+    title: c.title || 'Source',
+    page: typeof c.page === 'number' ? c.page : 0,
+    link: c.document_id ? `#documents/${c.document_id}` : '#documents',
+  });
+
+  const mapConfidenceLevel = (level?: string): 'High' | 'Med' | 'Low' => {
+    const l = (level || '').toLowerCase();
+    if (l === 'high') return 'High';
+    if (l === 'low') return 'Low';
+    return 'Med';
+  };
+
+  // Patch the streaming bot message in the active session and persist on finalize.
+  const patchBotMessage = (
+    localSessionId: string,
+    botMsgId: string,
+    patch: Partial<Message>,
+    persist = false,
+  ) => {
+    setSessions(prev => {
+      const updated = prev.map(s =>
+        s.id === localSessionId
+          ? { ...s, messages: (s.messages || []).map(m => (m.id === botMsgId ? { ...m, ...patch } : m)) }
+          : s,
+      );
+      if (persist) localStorage.setItem('indusmind_chat_sessions', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const streamLiveAnswer = async (content: string, baseSessions: ChatSession[]) => {
+    const localSessionId = activeSessionId;
+    const active = baseSessions.find(s => s.id === localSessionId);
+    if (!active) return;
+
+    // Add an empty, streaming bot placeholder.
+    const botMsgId = `bot-${Date.now()}`;
+    const botPlaceholder: Message = {
+      id: botMsgId,
+      sender: 'system',
+      text: '',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isStreaming: true,
+      citations: [],
+    };
+    setSessions(prev =>
+      prev.map(s => (s.id === localSessionId ? { ...s, messages: [...s.messages, botPlaceholder] } : s)),
+    );
+
+    let backendId = active.backendId;
+    try {
+      // Lazily create the backend chat session for this local session.
+      if (!backendId) {
+        const created = await api.post<any>('/chat/sessions', { title: active.name });
+        backendId = created?.id;
+        if (!backendId) throw new Error('No session id returned');
+        setSessions(prev => prev.map(s => (s.id === localSessionId ? { ...s, backendId } : s)));
+      }
+    } catch (err) {
+      console.error('Failed to create chat session', err);
+      patchBotMessage(localSessionId, botMsgId, {
+        text: 'The copilot service is unavailable right now. Please try again shortly.',
+        isStreaming: false,
+        confidence: 'Low',
+        confidencePct: 0,
+      }, true);
+      return;
+    }
+
+    let acc = '';
+    const citations: { title: string; page: number; link: string }[] = [];
+
+    streamChatMessage(backendId, content, {
+      onToken: (t) => {
+        acc += t; // backend tokens already carry their trailing whitespace
+        patchBotMessage(localSessionId, botMsgId, { text: acc });
+      },
+      onCitation: (c) => {
+        citations.push(mapLiveCitation(c));
+        patchBotMessage(localSessionId, botMsgId, { citations: [...citations] });
+      },
+      onDone: (d: ChatDone) => {
+        const pct = d.confidence?.score != null ? Math.round(d.confidence.score * 100) : undefined;
+        patchBotMessage(localSessionId, botMsgId, {
+          isStreaming: false,
+          citations: [...citations],
+          confidence: mapConfidenceLevel(d.confidence?.level),
+          confidencePct: pct,
+          timeToAnswer: d.latency_ms != null ? `${(d.latency_ms / 1000).toFixed(1)}s` : undefined,
+          // Carry the backend message id so feedback posts to the real message.
+          id: botMsgId,
+          backendMessageId: d.message_id,
+        } as Partial<Message>, true);
+      },
+      onError: (err) => {
+        console.error('Copilot stream error', err);
+        patchBotMessage(localSessionId, botMsgId, {
+          text: acc || 'Sorry — I could not complete that answer. Please try again.',
+          isStreaming: false,
+        }, true);
+      },
+    });
+  };
+
+  // ============================================================================
   // Message transmission & token-by-token streaming
   // ============================================================================
   const handleSend = (textToSend: string) => {
@@ -839,6 +953,14 @@ export function ExpertCopilot() {
     });
     saveSessions(updatedSessionsWithUser);
     setInput('');
+
+    // Live mode: stream the real copilot answer over SSE (the backend runs
+    // retrieval + produces cited answers). Mock mode keeps the offline
+    // MOCK_ANSWERS simulator below.
+    if (!USE_MOCK) {
+      void streamLiveAnswer(cleanedText, updatedSessionsWithUser);
+      return;
+    }
 
     // 2. Select matched high-fidelity answer template, or generate smart custom response
     const queryLower = cleanedText.toLowerCase();
@@ -996,25 +1118,31 @@ export function ExpertCopilot() {
     if (!feedbackDialog) return;
     
     let msgText = "AI Response";
+    let targetMsg: Message | undefined;
     if (activeSession) {
-      const msg = activeSession.messages.find(m => m.id === feedbackDialog.msgId);
-      if (msg) msgText = msg.text;
+      targetMsg = activeSession.messages.find(m => m.id === feedbackDialog.msgId);
+      if (targetMsg) msgText = targetMsg.text;
     }
 
-    const payload = {
-      score: -1,
-      reason: selectedReasons[0] || 'other',
-      comment: feedbackReason.trim(),
-      messageText: msgText
-    };
+    const reasonCode = selectedReasons[0] || 'other';
+    const comment = feedbackReason.trim();
 
     try {
-      await api.post(`/chat/messages/${feedbackDialog.msgId}/feedback`, payload);
+      if (USE_MOCK) {
+        await api.post(`/chat/messages/${feedbackDialog.msgId}/feedback`, {
+          score: -1, reason: reasonCode, comment, messageText: msgText,
+        });
+      } else if (targetMsg?.backendMessageId) {
+        // Live backend contract: {value, reason_code, comment} on the message UUID.
+        await api.post(`/chat/messages/${targetMsg.backendMessageId}/feedback`, {
+          value: 'down', reason_code: reasonCode, comment: comment || null,
+        });
+      }
       triggerToast("Feedback logged to RLHF alignment registry.");
-      
+
       setMessageFeedback(prev => ({
         ...prev,
-        [feedbackDialog.msgId]: { score: -1, reason: payload.reason, comment: payload.comment }
+        [feedbackDialog.msgId]: { score: -1, reason: reasonCode, comment }
       }));
     } catch (err) {
       console.error("Failed to save feedback:", err);
@@ -1026,14 +1154,17 @@ export function ExpertCopilot() {
   };
 
   const handleThumbsUp = async (msgId: string, msgText: string) => {
-    const payload = {
-      score: 1,
-      reason: null,
-      comment: 'Thumbs up positive feedback',
-      messageText: msgText
-    };
+    const targetMsg = activeSession?.messages.find(m => m.id === msgId);
     try {
-      await api.post(`/chat/messages/${msgId}/feedback`, payload);
+      if (USE_MOCK) {
+        await api.post(`/chat/messages/${msgId}/feedback`, {
+          score: 1, reason: null, comment: 'Thumbs up positive feedback', messageText: msgText,
+        });
+      } else if (targetMsg?.backendMessageId) {
+        await api.post(`/chat/messages/${targetMsg.backendMessageId}/feedback`, {
+          value: 'up', comment: null,
+        });
+      }
       triggerToast("Accurate directive logged. Model alignment weights strengthened.");
       setMessageFeedback(prev => ({
         ...prev,

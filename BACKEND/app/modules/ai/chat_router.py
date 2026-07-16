@@ -80,7 +80,8 @@ async def feedback(message_id: uuid.UUID, body: FeedbackRequest,
                    actor: CurrentUser = Depends(require("copilot.use")),
                    session: AsyncSession = Depends(get_session)) -> dict:
     await ChatService(session, actor.tenant_id).feedback(
-        message_id, value=body.value, reason=body.reason, actor=actor)
+        message_id, value=body.value, reason=body.reason, reason_code=body.reason_code,
+        comment=body.comment, actor=actor)
     return success({"message": "Feedback recorded"})
 
 

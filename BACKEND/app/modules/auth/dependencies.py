@@ -23,6 +23,8 @@ from app.core.security import decode_jwt
 from app.modules.auth import permissions
 from app.modules.auth.repository import SessionRepository, UserRepository
 
+API_KEY_HEADER = "X-API-Key"
+
 
 @dataclass(slots=True)
 class CurrentUser:
@@ -33,6 +35,14 @@ class CurrentUser:
     session_id: uuid.UUID | None = None
     token_version: int = 0
     perms: frozenset[str] = frozenset()
+    # Set when the caller authenticated with an API key rather than a JWT
+    # (docs/05 S8). `id` then carries the key's creator, so audit still names a
+    # human, while this says which machine credential acted.
+    api_key_id: uuid.UUID | None = None
+
+    @property
+    def is_api_key(self) -> bool:
+        return self.api_key_id is not None
 
 
 def _bearer(request: Request) -> str:
@@ -43,9 +53,45 @@ def _bearer(request: Request) -> str:
     return token
 
 
+async def _api_key_principal(session: AsyncSession, presented: str) -> CurrentUser:
+    """Authenticate an X-API-Key caller (docs/05 S8).
+
+    The key's `scopes` become the permission set verbatim, so `require(...)`
+    gates machine callers through exactly the same path as human ones. There is
+    no perm_hash/token_version dance: a key has no session to go stale, and
+    revocation is immediate because every request re-reads the row.
+    """
+    from app.modules.integrations.keys_service import authenticate, touch_last_used
+
+    key = await authenticate(session, presented)
+    if key is None:
+        raise Unauthenticated("Invalid API key", code="INVALID_API_KEY")
+    await touch_last_used(session, key)
+
+    tenant_id_ctx.set(str(key.tenant_id))
+    if key.created_by:
+        user_id_ctx.set(str(key.created_by))
+
+    return CurrentUser(
+        # Attribute actions to the human who minted the key; api_key_id records
+        # which credential was used.
+        id=key.created_by or key.id,
+        tenant_id=key.tenant_id,
+        roles=[],
+        perms=frozenset(key.scopes or []),
+        api_key_id=key.id,
+    )
+
+
 async def get_current_user(
     request: Request, session: AsyncSession = Depends(get_session)
 ) -> CurrentUser:
+    # An API key is an alternative principal; checked first so a machine caller
+    # never needs to also present a bearer token.
+    presented = request.headers.get(API_KEY_HEADER)
+    if presented:
+        return await _api_key_principal(session, presented)
+
     token = _bearer(request)
     try:
         claims = decode_jwt(token)

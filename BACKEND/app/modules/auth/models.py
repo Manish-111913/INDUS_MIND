@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -86,3 +86,25 @@ class RefreshToken(Base, TenantMixin, AuditFieldsMixin):
     session: Mapped[Session | None] = relationship(back_populates="tokens")
 
     __table_args__ = (Index("ix_refresh_tokens_token_hash", "token_hash"),)
+
+
+class PasswordResetToken(Base):
+    """Single-use, TTL-bounded password reset token (docs/08 N1).
+
+    Only the SHA-256 of the token is stored (`token_hash`); the plaintext lives
+    only in the emailed link. `used_at` enforces single-use — a redeemed token is
+    marked rather than deleted so a replay is distinguishable from an unknown
+    token in the audit trail. Plain `Base` (no tenant/audit mixins): it's an
+    identity-flow artifact keyed by user, not a tenant business row.
+    """
+
+    __tablename__ = "password_reset_tokens"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False)

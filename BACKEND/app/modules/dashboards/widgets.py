@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from sqlalchemy import func, select, text
 
-from app.modules.ai.models import AIInsight, LLMUsage
+from app.modules.ai.models import AIInsight, AIUsage
 from app.modules.compliance.models import Audit, ComplianceGap, Regulation, RegulationClause
 from app.modules.documents.models import Document, IngestionJob
 from app.modules.equipment.models import Area, Equipment
@@ -188,15 +188,18 @@ async def chart_ingestion_throughput(session, tenant_id, user_id, params) -> dic
 
 
 async def chart_llm_spend(session, tenant_id, user_id, params) -> dict:
+    tokens = AIUsage.prompt_tokens + AIUsage.completion_tokens
     rows = (await session.execute(select(
-        LLMUsage.capability, func.sum(LLMUsage.total_tokens).label("tokens"),
-        func.count().label("calls")).where(LLMUsage.tenant_id == tenant_id)
-        .group_by(LLMUsage.capability).order_by(func.sum(LLMUsage.total_tokens).desc()))).all()
+        AIUsage.feature, func.sum(tokens).label("tokens"),
+        func.sum(AIUsage.cost_usd).label("cost"), func.count().label("calls"))
+        .where(AIUsage.tenant_id == tenant_id)
+        .group_by(AIUsage.feature).order_by(func.sum(tokens).desc()))).all()
     total_tokens = sum(int(r.tokens or 0) for r in rows)
-    # Rough cost proxy at $3 / 1M tokens (display only).
-    return {"type": "bar", "x_label": "Capability", "y_label": "Tokens",
-            "total_tokens": total_tokens, "est_cost_usd": round(total_tokens / 1_000_000 * 3, 4),
-            "series": [{"x": r.capability, "y": int(r.tokens or 0), "calls": r.calls} for r in rows]}
+    total_cost = round(sum(float(r.cost or 0) for r in rows), 4)
+    return {"type": "bar", "x_label": "Feature", "y_label": "Tokens",
+            "total_tokens": total_tokens, "est_cost_usd": total_cost,
+            "series": [{"x": r.feature, "y": int(r.tokens or 0), "calls": r.calls,
+                        "cost_usd": round(float(r.cost or 0), 4)} for r in rows]}
 
 
 async def chart_area_health(session, tenant_id, user_id, params) -> dict:

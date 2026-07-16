@@ -6,19 +6,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml ./
 RUN pip install --upgrade pip setuptools wheel \
-    && pip wheel --wheel-dir /wheels .[dev,ml]
+    && pip wheel --wheel-dir /wheels .[dev,ml,native]
 
 FROM python:3.11-slim AS runtime
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 # System deps for OCR / PDF / image processing land here (skeleton keeps it lean).
+# The cairo/pango/gdk-pixbuf set backs WeasyPrint (report rendering runs on the
+# worker); without it reports silently fall back to the ReportLab layout.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 curl poppler-utils libgl1 libglib2.0-0 libmagic1 \
+        libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 appuser
 COPY --from=builder /wheels /wheels
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir --no-index --find-links=/wheels .[dev,ml] && rm -rf /wheels
+RUN pip install --no-cache-dir --no-index --find-links=/wheels .[dev,ml,native] && rm -rf /wheels
 COPY . .
 USER appuser
 CMD ["celery", "-A", "app.workers.celery_app.celery", "worker", "--loglevel=INFO"]

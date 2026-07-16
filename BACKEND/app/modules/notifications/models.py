@@ -13,7 +13,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Index, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -21,6 +21,25 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.common.base import AuditFieldsMixin, Base, SoftDeleteMixin, TenantMixin
 
 CHANNELS = ("in_app", "email", "push")
+DIGEST_MODES = ("instant", "daily", "off")
+
+# Canonical event codes that carry user-facing notifications (docs/05 S3). Every
+# code has a seeded system template + is a row in the notification-preference
+# matrix. Tenants may override templates per code.
+EVENT_CODES = (
+    "workorder.assigned",
+    "workorder.created",
+    "prediction.created",
+    "rca.published",
+    "lesson.published",
+    "document.ingested",
+    "gap.detected",
+    "ncr.created",
+    "maintenance.schedule_due",
+    "notification.broadcast",
+    "export.completed",
+    "report.ready",
+)
 
 
 class Notification(Base, TenantMixin, AuditFieldsMixin):
@@ -28,6 +47,7 @@ class Notification(Base, TenantMixin, AuditFieldsMixin):
 
     user_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False, index=True)
     category: Mapped[str] = mapped_column(String(48), nullable=False)  # → lookups(notification_categories)
+    event_code: Mapped[str | None] = mapped_column(String(64), nullable=True)  # source event (S3 digest)
     priority: Mapped[str] = mapped_column(String(16), nullable=False, server_default="normal")
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     body: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -52,6 +72,72 @@ class NotificationPreference(Base, TenantMixin, AuditFieldsMixin):
 
     __table_args__ = (
         UniqueConstraint("user_id", "category", "channel", name="uq_notif_pref_user_cat_channel"),
+    )
+
+
+class NotificationEventPreference(Base, TenantMixin, AuditFieldsMixin):
+    """Per-user, per-event delivery preference (docs/05 S3).
+
+    Distinct from the category×channel `notification_preferences` table (02 §20):
+    this is the event-code matrix the S3 frontend renders — In-app / Email toggles
+    plus a digest mode (instant | daily | off).
+    """
+
+    __tablename__ = "notification_event_preferences"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    event_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    in_app: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    email: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+    digest: Mapped[str] = mapped_column(String(16), nullable=False, server_default="instant")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "event_code", name="uq_notif_event_pref_user_event"),
+    )
+
+
+class NotificationTemplate(Base, AuditFieldsMixin, SoftDeleteMixin):
+    """Jinja2-rendered message template per (event_code, channel, locale).
+
+    tenant_id NULL = system template; a tenant row with the same key overrides it.
+    """
+
+    __tablename__ = "notification_templates"
+
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True, index=True)
+    event_code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    channel: Mapped[str] = mapped_column(String(16), nullable=False)  # in_app | email | webhook
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, server_default="en")
+    subject_tpl: Mapped[str | None] = mapped_column(Text, nullable=True)
+    body_tpl: Mapped[str] = mapped_column(Text, nullable=False)
+    sample_payload: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "event_code", "channel", "locale",
+                         name="uq_notif_template_scope"),
+    )
+
+
+class OutboundEmailLog(Base, TenantMixin, AuditFieldsMixin):
+    """Audit of every email dispatch attempt (docs/05 S3)."""
+
+    __tablename__ = "outbound_email_log"
+
+    to_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    template_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("notification_templates.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    subject: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)  # sent | failed
+    provider_msg_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("ix_outbound_email_tenant_created", "tenant_id", "created_at"),
     )
 
 

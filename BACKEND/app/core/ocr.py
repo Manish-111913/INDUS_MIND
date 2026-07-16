@@ -84,7 +84,7 @@ def _ocr_local(data: bytes, page_no: int) -> OCRPage:
         import io
 
         import numpy as np
-        from paddleocr import PaddleOCR  # type: ignore  # noqa: F401  (availability probe)
+        from paddleocr import PaddleOCR  # noqa: F401  (availability probe)
         from PIL import Image
 
         engine = _paddle()
@@ -125,7 +125,7 @@ _PADDLE = None
 def _paddle():  # pragma: no cover — needs the heavy model
     global _PADDLE
     if _PADDLE is None:
-        from paddleocr import PaddleOCR  # type: ignore
+        from paddleocr import PaddleOCR
 
         _PADDLE = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
     return _PADDLE

@@ -6,6 +6,7 @@ line/area) run real GROUP BY SQL over the seeded NCRs — no placeholder numbers
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 
 from sqlalchemy import Integer, Select, cast, func, select
@@ -46,7 +47,7 @@ class NCRRepository:
         return await paginate(self.session, stmt, params, NCR)
 
     async def recent_for_equipment(self, equipment_id: uuid.UUID | str, *,
-                                   defect_type_id: uuid.UUID | None = None) -> list[NCR]:
+                                   defect_type_id: uuid.UUID | None = None) -> builtins.list[NCR]:
         stmt = self._base().where(NCR.equipment_id == equipment_id)
         if defect_type_id is not None:
             stmt = stmt.where(NCR.defect_type_id == defect_type_id)
@@ -65,13 +66,13 @@ class NCRRepository:
         return ncr
 
     # ── trends ────────────────────────────────────────────────────────────────
-    async def defect_counts(self) -> list[tuple[uuid.UUID | None, int]]:
+    async def defect_counts(self) -> builtins.list[tuple[uuid.UUID | None, int]]:
         stmt = (select(NCR.defect_type_id, func.count().label("n"))
                 .where(NCR.tenant_id == self.tenant_id, NCR.deleted_at.is_(None))
                 .group_by(NCR.defect_type_id).order_by(func.count().desc()))
         return [(r[0], r[1]) for r in (await self.session.execute(stmt)).all()]
 
-    async def counts_by(self, column) -> list[tuple]:
+    async def counts_by(self, column) -> builtins.list[tuple]:
         stmt = (select(column, func.count().label("n"))
                 .where(NCR.tenant_id == self.tenant_id, NCR.deleted_at.is_(None))
                 .group_by(column).order_by(func.count().desc()))

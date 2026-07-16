@@ -7,6 +7,7 @@ a recursive CTE; resolve uses pg_trgm similarity for fuzzy tag matching
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import re
 import uuid
 
@@ -70,7 +71,7 @@ class AreaRepository:
             stmt = stmt.where(Area.plant_id == plant_id)
         return await paginate(self.session, stmt, params, Area)
 
-    async def list_for_plant(self, plant_id: uuid.UUID | str) -> list[Area]:
+    async def list_for_plant(self, plant_id: uuid.UUID | str) -> builtins.list[Area]:
         stmt = self._base().where(Area.plant_id == plant_id).order_by(Area.code)
         return list((await self.session.execute(stmt)).scalars().all())
 
@@ -129,7 +130,7 @@ class EquipmentRepository:
         await self.session.flush()
         return equipment
 
-    async def tree_rows(self, plant_id: uuid.UUID | str) -> list[dict]:
+    async def tree_rows(self, plant_id: uuid.UUID | str) -> builtins.list[dict]:
         """Recursive CTE: every equipment node under a plant, with hierarchy depth."""
         sql = text(
             """
@@ -155,7 +156,7 @@ class EquipmentRepository:
         result = await self.session.execute(sql, {"tenant": str(self.tenant_id), "plant": str(plant_id)})
         return [dict(r._mapping) for r in result]
 
-    async def resolve(self, query: str, *, limit: int = 10, threshold: float = 0.3) -> list[dict]:
+    async def resolve(self, query: str, *, limit: int = 10, threshold: float = 0.3) -> builtins.list[dict]:
         """Fuzzy tag→equipment via pg_trgm similarity on normalized tag + name."""
         nq = normalize_tag(query)
         sql = text(

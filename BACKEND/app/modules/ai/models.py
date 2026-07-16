@@ -44,13 +44,18 @@ class AIModelConfig(Base, AuditFieldsMixin, SoftDeleteMixin, VersionMixin):
 
     tenant_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True, index=True)
     capability: Mapped[str] = mapped_column(String(32), nullable=False)
-    provider: Mapped[str] = mapped_column(String(32), nullable=False)  # anthropic|openai|ollama
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)  # anthropic|openai|gemini|grok|ollama
     model_name: Mapped[str] = mapped_column(String(128), nullable=False)
     params: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default="{}")
     confidence_threshold: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False,
                                                         server_default="0.700")
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     fallback_config_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    # USD price per 1M tokens — the source of truth for cost metering (docs/05 S4).
+    price_input_usd: Mapped[float] = mapped_column(Numeric(10, 4), nullable=False,
+                                                   server_default="0")
+    price_output_usd: Mapped[float] = mapped_column(Numeric(10, 4), nullable=False,
+                                                    server_default="0")
 
 
 class PromptTemplate(Base, AuditFieldsMixin, SoftDeleteMixin, VersionMixin):
@@ -83,6 +88,45 @@ class LLMUsage(Base, AuditFieldsMixin):
     latency_ms: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     logged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
                                                 nullable=False)
+
+
+class AIUsage(Base, AuditFieldsMixin):
+    """Per-call AI usage + cost meter (docs/05 S4).
+
+    Written once in the LLM adapter layer for every completion/embedding call.
+    `cost_usd` is computed from the resolving `ai_model_configs` row's DB prices —
+    never a code constant. Supersedes the token-only `llm_usage` table.
+    """
+
+    __tablename__ = "ai_usage"
+
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True, index=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    feature: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # capability/feature
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    model_config_id: Mapped[uuid.UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
+    model_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    prompt_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    completion_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    cost_usd: Mapped[float] = mapped_column(Numeric(12, 6), nullable=False, server_default="0")
+    latency_ms: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    cache_hit: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
+
+    __table_args__ = (Index("ix_ai_usage_tenant_feature_created", "tenant_id", "feature", "created_at"),)
+
+
+class AIFeedback(Base, TenantMixin, AuditFieldsMixin):
+    """👍/👎 on a copilot answer (docs/05 S4). Feeds the eval loop (down-votes)."""
+
+    __tablename__ = "ai_feedback"
+
+    message_id: Mapped[uuid.UUID] = mapped_column(
+        PG_UUID(as_uuid=True), ForeignKey("chat_messages.id", ondelete="CASCADE"),
+        nullable=False, index=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), nullable=False, index=True)
+    rating: Mapped[str] = mapped_column(String(8), nullable=False)  # up | down
+    reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)  # lookups(ai_feedback_reason)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class ChatSession(Base, TenantMixin, AuditFieldsMixin, SoftDeleteMixin):

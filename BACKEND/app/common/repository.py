@@ -30,11 +30,13 @@ class BaseRepository(Generic[M]):
 
     # ── query builders ───────────────────────────────────────────────────────
     def _base_select(self, *, include_deleted: bool = False) -> Select:
+        # tenant_id / deleted_at come from mixins that aren't part of `Base`, so
+        # they're invisible on `type[M]` — the hasattr guards are the real check.
         stmt: Select = select(self.model)
         if hasattr(self.model, "tenant_id"):
-            stmt = stmt.where(self.model.tenant_id == self.tenant_id)
+            stmt = stmt.where(self.model.tenant_id == self.tenant_id)  # type: ignore[attr-defined]
         if not include_deleted and hasattr(self.model, "deleted_at"):
-            stmt = stmt.where(self.model.deleted_at.is_(None))
+            stmt = stmt.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
         return stmt
 
     async def get(self, id_: uuid.UUID | str, *, include_deleted: bool = False) -> M | None:
@@ -47,7 +49,7 @@ class BaseRepository(Generic[M]):
     # ── mutations ──────────────────────────────────────────────────────────
     async def add(self, entity: M) -> M:
         if hasattr(entity, "tenant_id") and getattr(entity, "tenant_id", None) is None:
-            entity.tenant_id = self.tenant_id  # type: ignore[attr-defined]
+            entity.tenant_id = self.tenant_id
         self.session.add(entity)
         await self.session.flush()
         return entity
@@ -57,7 +59,7 @@ class BaseRepository(Generic[M]):
             raise TypeError(f"{self.model.__name__} is not soft-deletable")
         from sqlalchemy import func
 
-        entity.deleted_at = func.now()  # type: ignore[attr-defined]
+        entity.deleted_at = func.now()
         await self.session.flush()
 
     def check_version(self, entity: M, expected: int | None) -> None:

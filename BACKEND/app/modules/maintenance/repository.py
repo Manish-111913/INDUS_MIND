@@ -8,6 +8,7 @@ seeded corpus (MTBF/MTTR/PM-compliance/backlog) — no placeholder numbers.
 
 from __future__ import annotations
 
+import builtins  # `list` is shadowed by a `list()` method below
 import uuid
 from datetime import datetime
 
@@ -84,7 +85,7 @@ class WorkOrderRepository:
             stmt = stmt.where(WorkOrder.title.ilike(like) | WorkOrder.wo_number.ilike(like))
         return await paginate(self.session, stmt, params, WorkOrder)
 
-    async def list_for_equipment(self, equipment_id: uuid.UUID | str) -> list[WorkOrder]:
+    async def list_for_equipment(self, equipment_id: uuid.UUID | str) -> builtins.list[WorkOrder]:
         stmt = (
             self._base()
             .where(WorkOrder.equipment_id == equipment_id)
@@ -110,7 +111,7 @@ class WorkOrderRepository:
 
     async def similar_closed(
         self, equipment_id: uuid.UUID | str, *, limit: int = 5
-    ) -> list[WorkOrder]:
+    ) -> builtins.list[WorkOrder]:
         """Past closed WOs on the same equipment (base for FTS/vector similarity)."""
         stmt = (
             self._base()
@@ -151,13 +152,13 @@ class ScheduleRepository:
             stmt = stmt.where(MaintenanceSchedule.active.is_(active))
         return await paginate(self.session, stmt, params, MaintenanceSchedule)
 
-    async def list_all(self, *, equipment_id: uuid.UUID | None = None) -> list[MaintenanceSchedule]:
+    async def list_all(self, *, equipment_id: uuid.UUID | None = None) -> builtins.list[MaintenanceSchedule]:
         stmt = self._base()
         if equipment_id:
             stmt = stmt.where(MaintenanceSchedule.equipment_id == equipment_id)
         return list((await self.session.execute(stmt)).scalars().all())
 
-    async def due(self, *, now: datetime) -> list[MaintenanceSchedule]:
+    async def due(self, *, now: datetime) -> builtins.list[MaintenanceSchedule]:
         stmt = self._base().where(
             MaintenanceSchedule.active.is_(True),
             MaintenanceSchedule.next_due_at.is_not(None),
@@ -198,7 +199,7 @@ class FailureRepository:
             stmt = stmt.where(FailureRecord.failure_mode_id == failure_mode_id)
         return await paginate(self.session, stmt, params, FailureRecord)
 
-    async def list_for_equipment(self, equipment_id: uuid.UUID | str) -> list[FailureRecord]:
+    async def list_for_equipment(self, equipment_id: uuid.UUID | str) -> builtins.list[FailureRecord]:
         stmt = (
             self._base()
             .where(FailureRecord.equipment_id == equipment_id)
@@ -214,7 +215,7 @@ class FailureRepository:
 
     async def mode_frequencies(
         self, equipment_id: uuid.UUID | str
-    ) -> list[tuple[uuid.UUID | None, int]]:
+    ) -> builtins.list[tuple[uuid.UUID | None, int]]:
         stmt = (
             select(FailureRecord.failure_mode_id, func.count().label("n"))
             .where(

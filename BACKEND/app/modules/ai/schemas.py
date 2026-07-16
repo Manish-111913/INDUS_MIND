@@ -70,7 +70,9 @@ class ChatMessageRead(BaseModel):
 
 class FeedbackRequest(StrictModel):
     value: str = Field(pattern=r"^(up|down)$")
-    reason: str | None = Field(default=None, max_length=1024)
+    reason: str | None = Field(default=None, max_length=1024)  # legacy free-text (→ comment)
+    reason_code: str | None = Field(default=None, max_length=64)  # lookups(ai_feedback_reason)
+    comment: str | None = Field(default=None, max_length=1024)
 
 
 # ── insights / evals ─────────────────────────────────────────────────────────

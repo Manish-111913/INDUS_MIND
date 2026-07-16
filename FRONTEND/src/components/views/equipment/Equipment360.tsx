@@ -12,20 +12,30 @@ import {
 } from 'lucide-react';
 import { StatusChip, ConfidenceBadge, SkeletonLoader, Select } from '../../shared';
 import { useAuthStore } from '../../../stores/authStore';
-import { api } from '../../../lib/api/client';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer, ReferenceArea, ReferenceLine 
+import { api, USE_MOCK } from '../../../lib/api/client';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, ReferenceArea, ReferenceLine
 } from 'recharts';
-import { 
-  mockEquipmentAssets, 
-  mockEquipmentTree, 
-  EquipmentAsset, 
-  TreeNode, 
-  EventLog, 
+import {
+  mockEquipmentAssets,
+  mockEquipmentTree,
+  EquipmentAsset,
+  TreeNode,
+  EventLog,
   ClauseStatus,
   ScheduledWo
 } from './mockEquipmentData';
+import {
+  listItemToAsset,
+  summaryToPartial,
+  mapHistory,
+  mapMetrics,
+  openWosFromMetrics,
+  lastMaintFromHistory,
+  buildTree,
+  type AdaptedEquipment,
+} from './live';
 
 // Custom mini sparkline component drawing SVG lines
 function Sparkline({ data, color = '#0E7C86' }: { data: number[]; color?: string }) {
@@ -94,6 +104,72 @@ export function Equipment360() {
     'area-1': true,
   });
   const [selectedTreeNodeId, setSelectedTreeNodeId] = useState<string | null>(null);
+
+  // ------------------------------------------------------------
+  // DATA SOURCE (MOCK: fixtures verbatim | LIVE: backend-reshaped)
+  // ------------------------------------------------------------
+  const [assets, setAssets] = useState<EquipmentAsset[]>(USE_MOCK ? mockEquipmentAssets : []);
+  const [tree, setTree] = useState<Record<string, TreeNode>>(USE_MOCK ? mockEquipmentTree : {});
+  const [loading, setLoading] = useState<boolean>(!USE_MOCK);
+  // Rich detail merged onto the selected asset once fetched (LIVE only).
+  const [assetDetails, setAssetDetails] = useState<Record<string, Partial<EquipmentAsset>>>({});
+
+  // Fetch the registry list + hierarchy tree on mount (LIVE only). MOCK mode
+  // keeps the fixtures untouched above.
+  useEffect(() => {
+    if (USE_MOCK) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      // Plants (for names + which trees to fetch). Non-fatal on failure.
+      let plants: any[] = [];
+      try {
+        plants = (await api.get<any[]>('/plants')) || [];
+      } catch (err) {
+        console.error('Equipment360: failed to load plants', err);
+      }
+      const plantNameById: Record<string, string> = {};
+      for (const p of plants) plantNameById[String(p.id)] = p.name;
+
+      // Hierarchy trees (one per plant). Fall back to empty on failure.
+      let treeResult = { tree: {} as Record<string, TreeNode>, areaNameById: {} as Record<string, string>, plantNameByAreaId: {} as Record<string, string> };
+      try {
+        const treeResponses = await Promise.all(
+          plants.map((p) =>
+            api.get<any>(`/equipment/tree?plant_id=${encodeURIComponent(p.id)}`).catch((e) => {
+              console.error('Equipment360: failed to load tree for plant', p.id, e);
+              return null;
+            }),
+          ),
+        );
+        treeResult = buildTree(treeResponses, plantNameById);
+      } catch (err) {
+        console.error('Equipment360: failed to build equipment tree', err);
+      }
+
+      // Registry list.
+      let list: AdaptedEquipment[] = [];
+      try {
+        list = (await api.get<AdaptedEquipment[]>('/equipment?page=1&page_size=100')) || [];
+      } catch (err) {
+        console.error('Equipment360: failed to load equipment list', err);
+      }
+      const rows = (Array.isArray(list) ? list : []).map((item) =>
+        listItemToAsset(item, {
+          plantName: item.plantId ? treeResult.plantNameByAreaId[String(item.areaId ?? '')] || plantNameById[String(item.plantId)] : undefined,
+          areaName: item.areaId ? treeResult.areaNameById[String(item.areaId)] : undefined,
+        }),
+      );
+
+      if (cancelled) return;
+      setTree(treeResult.tree);
+      setAssets(rows);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // DataTable Filters
   const [filterArea, setFilterArea] = useState<string>('All');
@@ -188,14 +264,44 @@ export function Equipment360() {
   // ------------------------------------------------------------
   // DATA FILTERING LOGIC
   // ------------------------------------------------------------
-  const activeAsset = mockEquipmentAssets.find(a => a.id === activeId);
+  const baseActiveAsset = assets.find(a => a.id === activeId);
+  const activeAsset = baseActiveAsset
+    ? ({ ...baseActiveAsset, ...(activeId ? assetDetails[activeId] : undefined) } as EquipmentAsset)
+    : undefined;
+
+  // When an asset is selected, fetch its detail bundle (summary + metrics +
+  // history) and merge into the row so the detail tabs populate (LIVE only).
+  useEffect(() => {
+    if (USE_MOCK || !activeId) return;
+    if (assetDetails[activeId] || !assets.some(a => a.id === activeId)) return;
+    let cancelled = false;
+    (async () => {
+      const [summary, metrics, history] = await Promise.all([
+        api.get<any>(`/equipment/${activeId}/summary`).catch((e) => { console.error('Equipment360: summary failed', e); return null; }),
+        api.get<any>(`/equipment/${activeId}/metrics`).catch((e) => { console.error('Equipment360: metrics failed', e); return null; }),
+        api.get<any[]>(`/equipment/${activeId}/history`).catch((e) => { console.error('Equipment360: history failed', e); return []; }),
+      ]);
+      if (cancelled) return;
+      const mappedHistory = mapHistory(history || []);
+      const detail: Partial<EquipmentAsset> = {
+        ...summaryToPartial(summary),
+        metrics: mapMetrics(metrics),
+        openWos: openWosFromMetrics(metrics),
+        history: mappedHistory,
+      };
+      const lastMaint = lastMaintFromHistory(mappedHistory);
+      if (lastMaint) detail.lastMaint = lastMaint;
+      setAssetDetails(prev => ({ ...prev, [activeId]: detail }));
+    })();
+    return () => { cancelled = true; };
+  }, [activeId, assets]);
 
   const getFilteredAssets = () => {
-    let list = mockEquipmentAssets;
+    let list = assets;
 
     // 1. Hierarchy Filter (Tree node selection)
     if (selectedTreeNodeId) {
-      const selectedNode = mockEquipmentTree[selectedTreeNodeId];
+      const selectedNode = tree[selectedTreeNodeId];
       if (selectedNode) {
         if (selectedNode.type === 'plant') {
           // No filtering, shows all
@@ -1704,7 +1810,7 @@ export function Equipment360() {
 
           {/* Root Plant Node */}
           <div className="space-y-2 select-none">
-            {Object.values(mockEquipmentTree).filter(n => n.type === 'plant').map((plantNode) => (
+            {Object.values(tree).filter(n => n.type === 'plant').map((plantNode) => (
               <div key={plantNode.id} className="space-y-1.5">
                 
                 {/* Node Line Header */}
@@ -1725,7 +1831,7 @@ export function Equipment360() {
                 {treeExpanded[plantNode.id] && plantNode.childrenIds && (
                   <div className="pl-4 border-l border-border-custom/50 ml-3 space-y-1.5 mt-1">
                     {plantNode.childrenIds.map(areaId => {
-                      const areaNode = mockEquipmentTree[areaId];
+                      const areaNode = tree[areaId];
                       if (!areaNode) return null;
 
                       return (
@@ -1752,7 +1858,7 @@ export function Equipment360() {
                           {treeExpanded[areaId] && areaNode.childrenIds && (
                             <div className="pl-4 border-l border-border-custom/50 ml-2 space-y-1.5 mt-1">
                               {areaNode.childrenIds.map(unitId => {
-                                const unitNode = mockEquipmentTree[unitId];
+                                const unitNode = tree[unitId];
                                 if (!unitNode) return null;
 
                                 return (
@@ -1779,7 +1885,7 @@ export function Equipment360() {
                                     {treeExpanded[unitId] && unitNode.childrenIds && (
                                       <div className="pl-3 border-l border-border-custom/30 ml-2.5 space-y-1 mt-1">
                                         {unitNode.childrenIds.map(equipId => {
-                                          const equipNode = mockEquipmentTree[equipId];
+                                          const equipNode = tree[equipId];
                                           if (!equipNode) return null;
 
                                           return (
@@ -1926,7 +2032,14 @@ export function Equipment360() {
           </div>
 
           {/* Actual DataTable */}
-          {filteredAssets.length > 0 ? (
+          {loading ? (
+            <div className="p-6 space-y-3 border border-border-custom/40 rounded-lg">
+              <SkeletonLoader className="h-8 w-full" />
+              <SkeletonLoader className="h-8 w-full" />
+              <SkeletonLoader className="h-8 w-full" />
+              <SkeletonLoader className="h-8 w-full" />
+            </div>
+          ) : filteredAssets.length > 0 ? (
             <div className="overflow-x-auto border border-border-custom/40 rounded-lg">
               <table className="w-full text-left text-xs border-collapse font-sans">
                 <thead>
@@ -2141,7 +2254,7 @@ export function Equipment360() {
               Simulate Barcode Hardware Signals:
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {mockEquipmentAssets.map((asset) => (
+              {assets.map((asset) => (
                 <button
                   key={asset.id}
                   disabled={qrScanStep === 'success'}

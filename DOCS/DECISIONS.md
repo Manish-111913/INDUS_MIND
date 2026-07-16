@@ -155,17 +155,36 @@ dynamic enum-from-lookup path) for no security gain.
 **Trade-off.** A client sending an extra field now gets a 422 instead of a silent
 drop — intended, and surfaced early rather than in production.
 
-## 10. Line-length is advisory; mypy is informational (for now)
+## 10. Everything CI checks is a hard gate — and the type debt is paid off
 
-**Decision.** CI hard-gates on `ruff` (minus `E501`) and the full services-backed
-`pytest`; `mypy` runs but is non-blocking.
+**Decision.** `ruff` (with `E501` enforced), `mypy` (clean across all 224 modules)
+and the services-backed `pytest` suite all **fail the build**. Nothing in CI is
+advisory. `mypy` is pinned `<2` so a new major release can't break CI overnight.
 
-**Why.** Honesty over green-theatre. The codebase carries pre-existing long lines
-and ~120 type-annotation gaps (largely SQLAlchemy async inference); blocking on
-them would either stall the pass or force risky mass reformatting. Ruff's real
-checks (unused imports, bare-except, bugbear) and the behavioural test suite are the
-gates that catch actual defects. Type debt is visible in every CI run and paid down
-incrementally.
+**Why the 143 mypy errors were worth fixing, not suppressing.** They weren't noise
+— the dominant cause was a **real latent bug**: repositories define `async def
+list(...)`, which binds `list` in the class namespace, so every *later* annotation
+in that class (`-> list[str]`) silently resolved to **the method instead of the
+builtin**. Harmless today only because `from __future__ import annotations` keeps
+annotations as strings; it would bite the moment anything called
+`typing.get_type_hints()` (Pydantic, FastAPI response models). Those sites now say
+`builtins.list[...]` explicitly. The rest were genuine: a nullable FK passed where
+a non-null UUID was required, `Result.rowcount` on a type that lacks it,
+`where(False)` instead of `false()`, `FeatureFlag.role_scope` annotated `dict`
+while storing a JSON array, and a `roots: list[dict]` that actually held tuples.
 
-**Trade-off.** mypy won't fail a build yet. Accepted as explicit, tracked debt
-rather than hidden by loosening the config.
+**Why line-length is 120, not the 100 originally declared.** The declared 100 never
+matched the code — 282 lines sat over it, with an actual maximum of 115. The fix
+had to make E501 *enforceable*, and there were three routes: hand-wrap 282 lines
+(pure churn — the offenders are ternaries and Cypher literals that read *worse*
+split, for the sake of 1–15 characters), adopt `ruff format` (rejected: it reflows
+161 files and explodes the compact prompt/seed tables one-field-per-line, *and*
+still leaves 54 unsplittable lines), or set the limit where the code actually lives
+and enforce it strictly. We took the third. A gate at 120 fails a genuinely
+unreadable line; a gate nobody can pass just gets switched off — which is exactly
+how it ended up ignored in the first place.
+
+**Trade-off.** 120 is looser than the aspirational 100, and `builtins.list[...]` is
+unusual to read. Both are deliberate: the limit is now real rather than decorative,
+and the qualified annotations document a shadowing hazard that would otherwise be
+re-introduced silently the next time someone adds a method after `list()`.

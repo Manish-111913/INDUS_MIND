@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../../stores/authStore';
-import { 
-  INITIAL_WORK_ORDERS, 
-  WorkOrder, 
+import {
+  INITIAL_WORK_ORDERS,
+  WorkOrder,
   MOCK_ASSIGNEES,
   FailureRecord,
   RiskPrediction,
@@ -16,6 +16,20 @@ import {
   MOCK_PREDICTIONS,
   INITIAL_SCHEDULED_PMS
 } from './mockMaintData';
+import { USE_MOCK } from '../../../lib/api/client';
+import {
+  loadMaintenanceData,
+  loadWorkOrderDetail,
+  createWorkOrder,
+  syncWorkOrderEdit,
+  deleteWorkOrder,
+  syncFailureEdit,
+  syncPredictionAction,
+  createSchedule,
+  syncScheduleEdit,
+  deleteSchedule,
+  type RefMaps,
+} from './live';
 import { WorkOrdersList } from './WorkOrdersList';
 import { WorkOrderDetail } from './WorkOrderDetail';
 import { FailuresRegistry } from './FailuresRegistry';
@@ -45,8 +59,15 @@ export function MaintenanceHub() {
   // Track active failure ID for RCA drilldowns
   const [activeFailureId, setActiveFailureId] = useState<string | null>(null);
 
+  // ── DATA SOURCING ──────────────────────────────────────────────────────────
+  // MOCK mode (USE_MOCK===true): unchanged — seed from localStorage/fixtures and
+  // persist edits back to localStorage (offline demo).
+  // LIVE mode: start empty + `loading`, then hydrate from the real backend in the
+  // effect below, reshaping each read model into these exact fixture types.
+
   // 1. STATE: Work Orders List
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>(() => {
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_work_orders');
     if (stored) {
       try { return JSON.parse(stored); } catch (e) {}
@@ -56,6 +77,7 @@ export function MaintenanceHub() {
 
   // 2. STATE: Failures Record List
   const [failures, setFailures] = useState<FailureRecord[]>(() => {
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_failures');
     if (stored) {
       try { return JSON.parse(stored); } catch (e) {}
@@ -65,6 +87,7 @@ export function MaintenanceHub() {
 
   // 3. STATE: Predictions list
   const [predictions, setPredictions] = useState<RiskPrediction[]>(() => {
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_predictions');
     if (stored) {
       try { return JSON.parse(stored); } catch (e) {}
@@ -74,12 +97,57 @@ export function MaintenanceHub() {
 
   // 4. STATE: Schedule list
   const [schedule, setSchedule] = useState<ScheduledPm[]>(() => {
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_schedule');
     if (stored) {
       try { return JSON.parse(stored); } catch (e) {}
     }
     return INITIAL_SCHEDULED_PMS;
   });
+
+  // Live-only: loading flag + backend reference maps (uuid→tag/name/assignee) +
+  // the assignee roster used by new-WO creation. In MOCK mode these are inert.
+  const [loading, setLoading] = useState<boolean>(!USE_MOCK);
+  const [assignees, setAssignees] = useState(MOCK_ASSIGNEES);
+  const mapsRef = useRef<RefMaps | null>(null);
+  const detailLoadedRef = useRef<Set<string>>(new Set());
+
+  // LIVE bootstrap: fetch all four lists + reference maps once on mount. On any
+  // failure loadMaintenanceData already logs + returns empty arrays, so the UI
+  // renders an empty (never crashed) hub.
+  useEffect(() => {
+    if (USE_MOCK) return;
+    let cancelled = false;
+    setLoading(true);
+    loadMaintenanceData()
+      .then((data) => {
+        if (cancelled) return;
+        mapsRef.current = data.maps;
+        setWorkOrders(data.workOrders);
+        setFailures(data.failures);
+        setPredictions(data.predictions);
+        setSchedule(data.schedule);
+        setAssignees(data.assignees);
+      })
+      .catch((e) => console.error('[MaintenanceHub] live load failed', e))
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // LIVE lazy-detail: when a WO detail opens, fetch GET /work-orders/{uuid} to
+  // expand the nested checklist/parts (list rows carry empty defaults), then
+  // merge the richer object back into the list. Fetched at most once per WO.
+  useEffect(() => {
+    if (USE_MOCK || !activeWorkOrderId || !mapsRef.current) return;
+    const target = workOrders.find((wo) => wo.id === activeWorkOrderId);
+    const uuid = (target as any)?._uuid;
+    if (!uuid || detailLoadedRef.current.has(uuid)) return;
+    detailLoadedRef.current.add(uuid);
+    loadWorkOrderDetail(uuid, mapsRef.current).then((full) => {
+      if (!full) return;
+      setWorkOrders((prev) => prev.map((wo) => (wo.id === full.id ? full : wo)));
+    });
+  }, [activeWorkOrderId, workOrders]);
 
   // SUB-ROUTING SYNC via window location hashes
   useEffect(() => {
@@ -153,11 +221,43 @@ export function MaintenanceHub() {
     return () => window.removeEventListener('hashchange', parseHashRoute);
   }, []);
 
-  // PERSISTENCE WRAPPER SYNC
+  // ── PERSISTENCE / MUTATION WRAPPERS ────────────────────────────────────────
+  // MOCK mode: setState + localStorage (unchanged offline demo).
+  // LIVE mode: optimistically setState, then reconcile the change against the
+  // backend by diffing prev↔next and firing the matching api.* mutation(s).
+  // Every live mutation swallows-and-logs, so a failed sync never crashes the UI.
+  const sameData = (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b);
 
   const handleUpdateWorkOrders = (updated: WorkOrder[]) => {
-    setWorkOrders(updated);
-    localStorage.setItem('indusmind_work_orders', JSON.stringify(updated));
+    if (USE_MOCK) {
+      setWorkOrders(updated);
+      localStorage.setItem('indusmind_work_orders', JSON.stringify(updated));
+      return;
+    }
+    const prev = workOrders;
+    setWorkOrders(updated); // optimistic
+    const maps = mapsRef.current;
+    if (!maps) return;
+    const nextIds = new Set(updated.map(w => w.id));
+    const prevById = new Map(prev.map(w => [w.id, w] as const));
+    // deletions
+    prev.forEach(w => { if (!nextIds.has(w.id)) deleteWorkOrder(w); });
+    // additions + edits
+    (async () => {
+      let changed = false;
+      const resolved = await Promise.all(updated.map(async (w) => {
+        const p = prevById.get(w.id);
+        if (!p) {
+          if ((w as any)._uuid) return w; // already backend-backed
+          const created = await createWorkOrder(w, maps);
+          if (created) { changed = true; return created; }
+          return w;
+        }
+        if (!sameData(p, w)) await syncWorkOrderEdit(p, w, maps);
+        return w;
+      }));
+      if (changed) setWorkOrders(resolved);
+    })();
   };
 
   const handleUpdateSingleWorkOrder = (updatedWo: WorkOrder) => {
@@ -170,8 +270,17 @@ export function MaintenanceHub() {
   };
 
   const handleUpdateFailures = (updated: FailureRecord[]) => {
-    setFailures(updated);
-    localStorage.setItem('indusmind_failures', JSON.stringify(updated));
+    if (USE_MOCK) {
+      setFailures(updated);
+      localStorage.setItem('indusmind_failures', JSON.stringify(updated));
+      return;
+    }
+    const prevById = new Map(failures.map(f => [f.id, f] as const));
+    setFailures(updated); // optimistic
+    updated.forEach(f => {
+      const p = prevById.get(f.id);
+      if (p && !sameData(p, f)) syncFailureEdit(f);
+    });
   };
 
   const handleUpdateSingleFailure = (updatedFail: FailureRecord) => {
@@ -180,13 +289,47 @@ export function MaintenanceHub() {
   };
 
   const handleUpdatePredictions = (updated: RiskPrediction[]) => {
-    setPredictions(updated);
-    localStorage.setItem('indusmind_predictions', JSON.stringify(updated));
+    if (USE_MOCK) {
+      setPredictions(updated);
+      localStorage.setItem('indusmind_predictions', JSON.stringify(updated));
+      return;
+    }
+    const prevById = new Map(predictions.map(p => [p.id, p] as const));
+    setPredictions(updated); // optimistic
+    updated.forEach(p => {
+      const prev = prevById.get(p.id);
+      if (prev && prev.status !== p.status) syncPredictionAction(p);
+    });
   };
 
   const handleUpdateSchedule = (updated: ScheduledPm[]) => {
-    setSchedule(updated);
-    localStorage.setItem('indusmind_schedule', JSON.stringify(updated));
+    if (USE_MOCK) {
+      setSchedule(updated);
+      localStorage.setItem('indusmind_schedule', JSON.stringify(updated));
+      return;
+    }
+    const prev = schedule;
+    setSchedule(updated); // optimistic
+    const maps = mapsRef.current;
+    if (!maps) return;
+    const nextIds = new Set(updated.map(s => s.id));
+    const prevById = new Map(prev.map(s => [s.id, s] as const));
+    prev.forEach(s => { if (!nextIds.has(s.id)) deleteSchedule(s); });
+    (async () => {
+      let changed = false;
+      const resolved = await Promise.all(updated.map(async (s) => {
+        const p = prevById.get(s.id);
+        if (!p) {
+          if ((s as any)._uuid) return s;
+          const created = await createSchedule(s, maps);
+          if (created) { changed = true; return created; }
+          return s;
+        }
+        if (!sameData(p, s)) await syncScheduleEdit(s, maps);
+        return s;
+      }));
+      if (changed) setSchedule(resolved);
+    })();
   };
 
   // Helper to add a manual Work Order from the Registry button
@@ -199,7 +342,7 @@ export function MaintenanceHub() {
       equipmentName: 'Centrifugal Crude Feed Pump',
       type: 'PM',
       priority: 'Medium',
-      assignee: MOCK_ASSIGNEES[0],
+      assignee: assignees[0] || MOCK_ASSIGNEES[0],
       dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'Open',
       sla: 'MET',
@@ -219,8 +362,19 @@ export function MaintenanceHub() {
       ]
     };
 
-    handleUpdateWorkOrders([newWo, ...workOrders]);
-    window.location.hash = `#maintenance/${newId}`;
+    if (USE_MOCK) {
+      handleUpdateWorkOrders([newWo, ...workOrders]);
+      window.location.hash = `#maintenance/${newId}`;
+      return;
+    }
+    // LIVE: create on the backend first so we navigate to the real WO number.
+    const maps = mapsRef.current;
+    if (!maps) return;
+    createWorkOrder(newWo, maps).then((created) => {
+      const final = created || newWo;
+      setWorkOrders((prev) => [final, ...prev]);
+      window.location.hash = `#maintenance/${final.id}`;
+    });
   };
 
   // Start RCA callback
@@ -342,6 +496,14 @@ export function MaintenanceHub() {
       )}
 
       {/* ----------------- CORE MODULE ROUTING ROUTER ----------------- */}
+
+      {/* LIVE loading banner (MOCK mode never sets loading). */}
+      {loading && (
+        <div className="flex items-center justify-center gap-2 py-10 text-text-secondary text-xs font-mono">
+          <span className="w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <span>Loading maintenance data from backend…</span>
+        </div>
+      )}
 
       {/* 1. TAB: WORK ORDERS REGISTER */}
       {activeTab === 'wos' && (

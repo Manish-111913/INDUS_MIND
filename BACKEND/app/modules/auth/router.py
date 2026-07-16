@@ -15,10 +15,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.responses import success
 from app.core.config import settings
 from app.core.database import get_session
+from app.core.exceptions import Unauthenticated
 from app.modules.auth import oauth
 from app.modules.auth.dependencies import CurrentUser, get_current_user
+from app.modules.auth.models import User
 from app.modules.auth.repository import UserRepository
 from app.modules.auth.schemas import (
+    ChangePasswordRequest,
     ForgotPasswordRequest,
     LoginRequest,
     LoginResponse,
@@ -33,6 +36,65 @@ from app.modules.auth.schemas import (
 from app.modules.auth.service import AuthService, RequestMeta
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Session/security management under /me (docs/08 S11). The frontend security
+# screen calls these paths; they mirror the /auth/sessions endpoints and add
+# revoke-all-others + change-password.
+me_router = APIRouter(prefix="/me", tags=["auth"])
+
+
+@me_router.get("/sessions", summary="My active sessions/devices")
+async def my_sessions(
+    current: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    rows = await AuthService(session).list_sessions(
+        user_id=current.id, current_session_id=current.session_id)
+    items = []
+    for s, is_current in rows:
+        read = SessionRead.model_validate(s)
+        read.current = is_current
+        items.append(read.model_dump())
+    return success(items)
+
+
+@me_router.delete("/sessions/{session_id}", summary="Revoke one of my sessions")
+async def revoke_my_session(
+    session_id: uuid.UUID, request: Request,
+    current: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    await AuthService(session).revoke_session(
+        user_id=current.id, tenant_id=current.tenant_id, session_id=session_id, meta=_meta(request))
+    await session.commit()
+    return success(MessageResponse(message="Session revoked").model_dump())
+
+
+@me_router.post("/sessions/revoke-all-others", summary="Sign out everywhere else")
+async def revoke_all_others(
+    request: Request,
+    current: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    n = await AuthService(session).revoke_other_sessions(
+        user_id=current.id, tenant_id=current.tenant_id,
+        keep_session_id=current.session_id, meta=_meta(request))
+    await session.commit()
+    return success({"revoked": n})
+
+
+@me_router.post("/change-password", summary="Change my password")
+async def change_password(
+    body: ChangePasswordRequest, request: Request,
+    current: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    await AuthService(session).change_password(
+        user_id=current.id, tenant_id=current.tenant_id,
+        current_password=body.current_password, new_password=body.new_password,
+        keep_session_id=current.session_id, meta=_meta(request))
+    await session.commit()
+    return success(MessageResponse(message="Password changed").model_dump())
 
 REFRESH_COOKIE = "refresh_token"
 COOKIE_PATH = "/api/v1/auth"
@@ -87,8 +149,6 @@ async def refresh(
 ) -> dict:
     raw = request.cookies.get(REFRESH_COOKIE)
     if not raw:
-        from app.core.exceptions import Unauthenticated
-
         raise Unauthenticated("Missing refresh token", code="INVALID_REFRESH")
     svc = AuthService(session)
     access, new_raw = await svc.refresh(refresh_raw=raw, meta=_meta(request))
@@ -111,6 +171,18 @@ async def logout(
     return success(MessageResponse(message="Logged out").model_dump())
 
 
+async def _load_user(session: AsyncSession, current: CurrentUser) -> User:
+    """The token's user row, or 401 if it vanished (deleted mid-session).
+
+    The token can outlive the row it names, so every caller that needs the real
+    User must handle its absence rather than pass None downstream.
+    """
+    user = await UserRepository(session).get(current.id)
+    if user is None:
+        raise Unauthenticated("User no longer exists", code="USER_NOT_FOUND")
+    return user
+
+
 # ── profile bootstrap ─────────────────────────────────────────────────────────
 @router.get("/me", summary="Profile + roles + permissions + flags (frontend bootstrap)")
 async def me(
@@ -119,7 +191,7 @@ async def me(
 ) -> dict:
     from app.modules.users.service import me_context
 
-    user = await UserRepository(session).get(current.id)
+    user = await _load_user(session, current)
     ctx = await me_context(session, user)
     return success({
         "user": UserRead.model_validate(user).model_dump(),
@@ -187,7 +259,7 @@ async def mfa_setup(
     current: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    user = await UserRepository(session).get(current.id)
+    user = await _load_user(session, current)
     secret, uri = await AuthService(session).mfa_setup(user=user)
     return success(MfaSetupResponse(secret=secret, otpauth_uri=uri).model_dump())
 
@@ -198,7 +270,7 @@ async def mfa_verify(
     current: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    user = await UserRepository(session).get(current.id)
+    user = await _load_user(session, current)
     await AuthService(session).mfa_verify(user=user, code=body.code, meta=_meta(request))
     return success(MessageResponse(message="MFA enabled").model_dump())
 

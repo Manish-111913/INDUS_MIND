@@ -21,6 +21,34 @@ from app.modules.auth.dependencies import CurrentUser, require
 
 router = APIRouter(prefix="/audit-log", tags=["audit"])
 
+# The admin audit-log viewer (docs/08 N3). Same data as /audit-log, gated by the
+# dedicated `audit.view` permission and mounted where the admin UI expects it.
+# before/after JSONB diffs already exist on every row (migration 0002), so the
+# viewer's row-expand diff needs no schema change.
+admin_router = APIRouter(prefix="/admin/audit-log", tags=["audit"])
+
+
+@admin_router.get("", summary="Audit-log viewer (filters + pagination)")
+async def admin_audit_log(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort: str | None = Query("-created_at"),
+    actor_id: uuid.UUID | None = Query(None),
+    action: str | None = Query(None),
+    entity_type: str | None = Query(None),
+    entity_id: str | None = Query(None),
+    date_from: datetime | None = Query(None, alias="from"),
+    date_to: datetime | None = Query(None, alias="to"),
+    actor: CurrentUser = Depends(require("audit.view")),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    params = PageParams(page=page, page_size=page_size, sort=sort)
+    result = await AuditService(session).query(
+        tenant_id=actor.tenant_id, params=params, actor_id=actor_id, action=action,
+        entity_type=entity_type, entity_id=entity_id, date_from=date_from, date_to=date_to)
+    return success([AuditLogRead.model_validate(r).model_dump() for r in result.items],
+                   meta=result.meta)
+
 
 def _page(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
           sort: str | None = Query("-created_at")) -> PageParams:

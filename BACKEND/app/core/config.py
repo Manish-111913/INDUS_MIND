@@ -48,9 +48,14 @@ class Settings(BaseSettings):
     aws_region: str = "us-east-1"
 
     # ── Provider adapters ────────────────────────────────────────────────────
-    llm_provider: Literal["anthropic", "openai", "ollama"] = "anthropic"
+    llm_provider: Literal["anthropic", "openai", "gemini", "grok", "ollama"] = "anthropic"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    gemini_api_key: str = ""
+    grok_api_key: str = ""
+    # xAI speaks the OpenAI chat-completions dialect, so GrokProvider subclasses
+    # OpenAIProvider and only swaps the key + base URL.
+    grok_base_url: str = "https://api.x.ai/v1"
     ollama_url: str = "http://localhost:11434"
     embedding_provider: Literal["local", "openai"] = "local"
     embedding_model: str = "bge-large-en-v1.5"
@@ -68,6 +73,7 @@ class Settings(BaseSettings):
     oauth_google_client_secret: str = ""
 
     # ── Mail ─────────────────────────────────────────────────────────────────
+    mail_provider: Literal["smtp", "ses"] = "smtp"  # smtp (mailhog/real) | ses (prod)
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_user: str = ""

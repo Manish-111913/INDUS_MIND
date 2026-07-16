@@ -3038,5 +3038,7 @@ export const api = {
     apiRequest<T>(path, { ...options, method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body?: any, options?: RequestInit) =>
     apiRequest<T>(path, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  patch: <T>(path: string, body?: any, options?: RequestInit) =>
+    apiRequest<T>(path, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string, options?: RequestInit) => apiRequest<T>(path, { ...options, method: 'DELETE' }),
 };

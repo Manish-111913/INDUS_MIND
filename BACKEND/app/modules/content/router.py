@@ -106,7 +106,7 @@ async def delete_content(
     page_id: uuid.UUID,
     actor: CurrentUser = Depends(require(PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     row = (await session.execute(
         select(ContentPage).where(ContentPage.id == page_id,
                                   ContentPage.tenant_id == actor.tenant_id))).scalars().first()

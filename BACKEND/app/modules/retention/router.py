@@ -60,7 +60,7 @@ async def delete_policy(
     policy_id: uuid.UUID,
     actor: CurrentUser = Depends(require(PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     await RetentionService(session, actor.tenant_id).delete(policy_id)
     await session.commit()
 

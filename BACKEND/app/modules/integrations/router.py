@@ -74,7 +74,7 @@ async def revoke_key(
     key_id: uuid.UUID,
     actor: CurrentUser = Depends(require(PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     await ApiKeyService(session, actor.tenant_id).revoke(key_id, actor.id)
     await session.commit()
 
@@ -124,7 +124,7 @@ async def delete_endpoint(
     endpoint_id: uuid.UUID,
     actor: CurrentUser = Depends(require(PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     await WebhookService(session, actor.tenant_id).delete_endpoint(endpoint_id)
     await session.commit()
 

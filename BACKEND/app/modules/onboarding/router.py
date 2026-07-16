@@ -88,7 +88,7 @@ async def delete_tour(
     tour_id: uuid.UUID,
     actor: CurrentUser = Depends(require(TOURS_PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     await TourService(session, actor.tenant_id).delete(tour_id)
     await session.commit()
 
@@ -133,7 +133,7 @@ async def delete_changelog(
     entry_id: uuid.UUID,
     actor: CurrentUser = Depends(require(TOURS_PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     await ChangelogService(session, actor.tenant_id).delete(entry_id)
     await session.commit()
 

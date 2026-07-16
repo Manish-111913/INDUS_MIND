@@ -163,6 +163,6 @@ async def delete_wo_part(
     wo_part_id: uuid.UUID,
     actor: CurrentUser = Depends(require("wo.close")),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     await PartService(session, actor.tenant_id).delete_wo_part(wo_part_id)
     await session.commit()

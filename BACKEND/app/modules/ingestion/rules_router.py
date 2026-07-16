@@ -107,7 +107,7 @@ async def delete_rule(
     rule_id: uuid.UUID,
     actor: CurrentUser = Depends(require(PERM)),
     session: AsyncSession = Depends(get_session),
-) -> None:
+):
     svc = ExtractionRuleService(session, actor.tenant_id)
     await svc.delete(rule_id)
     await session.commit()

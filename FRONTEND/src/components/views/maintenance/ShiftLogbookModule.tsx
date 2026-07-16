@@ -24,11 +24,31 @@ export function ShiftLogbookModule() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [handoverSummary, setHandoverSummary] = useState<string | null>(null);
 
+  // The live API returns { content, author_name, plant_name, submitted_at,
+  // created_at, shift, tags }. This maps those onto the field names the card
+  // renders (text/operator/timestamp/plantName) so nothing shows up blank.
+  const normalizeLog = (l: any) => {
+    if (!l) return l;
+    const ts = l.timestamp ?? l.submitted_at ?? l.created_at ?? null;
+    let timestamp = l.timestamp ?? '';
+    if (ts && !l.timestamp) {
+      const d = new Date(ts);
+      timestamp = isNaN(d.getTime()) ? String(ts) : d.toLocaleString();
+    }
+    return {
+      ...l,
+      text: l.text ?? l.content ?? '',
+      operator: l.operator ?? l.author_name ?? 'Shift Operator',
+      timestamp,
+      plantName: l.plantName ?? l.plant_name ?? null,
+    };
+  };
+
   const loadLogs = async () => {
     setLoading(true);
     try {
       const res = await api.get<any[]>('/shift-logs');
-      setLogs(res || []);
+      setLogs((res || []).map(normalizeLog));
     } catch (err) {
       console.error('Failed to load shift logbook:', err);
     } finally {
@@ -69,7 +89,7 @@ export function ShiftLogbookModule() {
       };
 
       const res = await api.post<any>('/shift-logs', body);
-      setLogs(prev => [res || res.data, ...prev]);
+      setLogs(prev => [normalizeLog(res || {}), ...prev]);
 
       // Reset
       setNewLogText('');
@@ -315,10 +335,10 @@ export function ShiftLogbookModule() {
 
                 <div className="flex flex-wrap items-center gap-1.5 font-mono text-[9px] font-bold">
                   <span className="bg-primary/10 text-primary border border-primary/15 px-2 py-0.5 rounded">
-                    {log.shift.toUpperCase()}
+                    {(log.shift || '').toUpperCase()}
                   </span>
                   <span className="bg-surface-muted border border-border-custom text-text-secondary px-2 py-0.5 rounded">
-                    {log.plant === 'jam-a' ? 'CDU SECTOR-A' : log.plant === 'jam-b' ? 'CDU SECTOR-B' : 'HAZIRA UNIT-4'}
+                    {log.plantName || (log.plant === 'jam-a' ? 'CDU SECTOR-A' : log.plant === 'jam-b' ? 'CDU SECTOR-B' : 'HAZIRA UNIT-4')}
                   </span>
                 </div>
               </div>

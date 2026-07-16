@@ -37,3 +37,7 @@ class ShiftLogRead(BaseModel):
     ai_summary: str | None
     document_id: uuid.UUID | None
     created_at: datetime
+    # Resolved display names (attached by the service) so the UI can show the
+    # operator and plant without a second round-trip. Null if the row is gone.
+    author_name: str | None = None
+    plant_name: str | None = None

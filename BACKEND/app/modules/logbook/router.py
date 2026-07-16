@@ -39,8 +39,10 @@ async def create_log(
     actor: CurrentUser = Depends(require(PERM)),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    row = await ShiftLogService(session, actor.tenant_id).create(body, actor.id)
+    svc = ShiftLogService(session, actor.tenant_id)
+    row = await svc.create(body, actor.id)
     await session.commit()
+    await svc._attach_names([row])  # re-resolve after commit expires the row
     return success(ShiftLogRead.model_validate(row).model_dump())
 
 
@@ -64,6 +66,7 @@ async def update_log(
     svc = ShiftLogService(session, actor.tenant_id)
     row = await svc.update(log_id, body, actor.id)
     await session.commit()
+    await svc._attach_names([row])  # re-resolve after commit expires the row
     return success(ShiftLogRead.model_validate(row).model_dump())
 
 
@@ -77,6 +80,7 @@ async def submit_log(
     row = await svc.submit(log_id, actor.id)
     await session.commit()
     await session.refresh(row)
+    await svc._attach_names([row])
     return success(ShiftLogRead.model_validate(row).model_dump())
 
 
@@ -90,4 +94,5 @@ async def summarize_log(
     row = await svc.summarize(log_id, actor.id)
     await session.commit()
     await session.refresh(row)
+    await svc._attach_names([row])
     return success(ShiftLogRead.model_validate(row).model_dump())

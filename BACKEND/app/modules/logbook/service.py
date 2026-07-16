@@ -44,7 +44,33 @@ class ShiftLogService:
         if status:
             stmt = stmt.where(ShiftLog.status == status)
         stmt = stmt.order_by(ShiftLog.log_date.desc(), ShiftLog.created_at.desc())
-        return list((await self.session.execute(stmt)).scalars().all())
+        rows = list((await self.session.execute(stmt)).scalars().all())
+        return await self._attach_names(rows)
+
+    async def _attach_names(self, rows: list[ShiftLog]) -> list[ShiftLog]:
+        """Resolve author + plant display names in two batched queries and pin
+        them onto each row (read by ShiftLogRead) — avoids N+1 and a UI round-trip."""
+        from app.modules.auth.models import User
+        from app.modules.equipment.models import Plant
+
+        if not rows:
+            return rows
+        author_ids = {r.author_id for r in rows if r.author_id}
+        plant_ids = {r.plant_id for r in rows if r.plant_id}
+        authors: dict = {}
+        if author_ids:
+            res = await self.session.execute(
+                select(User.id, User.full_name).where(User.id.in_(author_ids)))
+            authors = dict(res.all())
+        plants: dict = {}
+        if plant_ids:
+            res = await self.session.execute(
+                select(Plant.id, Plant.name).where(Plant.id.in_(plant_ids)))
+            plants = dict(res.all())
+        for r in rows:
+            r.author_name = authors.get(r.author_id)
+            r.plant_name = plants.get(r.plant_id)
+        return rows
 
     async def get(self, log_id: uuid.UUID) -> ShiftLog:
         row = (await self.session.execute(
@@ -52,6 +78,7 @@ class ShiftLogService:
         )).scalar_one_or_none()
         if row is None:
             raise NotFound("Shift log not found", code="SHIFT_LOG_NOT_FOUND")
+        await self._attach_names([row])
         return row
 
     async def create(self, data, actor_id: uuid.UUID) -> ShiftLog:

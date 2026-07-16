@@ -766,7 +766,10 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
       <div className="flex-1 flex pt-14 pb-16 md:pb-0 min-h-0">
 
         {/* 2. DYNAMIC COLLAPSIBLE LEFT SIDEBAR */}
-        <aside className={`tour-step-menu hidden md:flex flex-col bg-surface border-r border-border-custom transition-all duration-200 z-30 overflow-hidden ${
+        {/* bg-surface-2 (not bg-surface): surface is barely lighter than the page
+            bg in dark mode, so the sidebar read as having no background — especially
+            on pages like Admin where the content is also a surface panel. */}
+        <aside className={`tour-step-menu hidden md:flex flex-col bg-surface-2 border-r border-border-custom transition-all duration-200 z-30 overflow-hidden ${
           isSidebarCollapsed ? 'w-16' : 'w-60'
         }`}>
           {/* Collapse toggle */}
@@ -795,7 +798,8 @@ export function AppShell({ currentRoute, onRouteChange, children }: AppShellProp
                   (item.id === 'documents' && currentRoute.startsWith('#documents')) ||
                   (item.id === 'maintenance' && currentRoute.startsWith('#maintenance')) ||
                   (item.id === 'compliance' && currentRoute.startsWith('#compliance')) ||
-                  (item.id === 'audit-log' && currentRoute.startsWith('#admin/audit-log'));
+                  (item.id === 'admin' && currentRoute.startsWith('#admin')) ||
+                  (item.id === 'audit-log' && currentRoute === '#audit-log');
 
                 return (
                   <button

@@ -282,14 +282,18 @@ export function WorkOrderDetail({
 
         {/* 4-Step Lifespan Stepper */}
         <div className="relative pt-4">
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-surface-muted -translate-y-1/2 z-0 rounded" />
-          <div 
-            className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 z-0 rounded transition-all duration-300" 
+          {/* Track + fill run from the centre of the first circle to the centre
+              of the last (each column is 25% wide, so centres sit at 12.5% and
+              87.5%). Insetting both ends keeps the line from sticking out past
+              the end circles, and the fill stops exactly on the active step. */}
+          <div className="absolute top-[calc(1rem+16px)] left-[12.5%] right-[12.5%] h-1 bg-surface-muted -translate-y-1/2 z-0 rounded" />
+          <div
+            className="absolute top-[calc(1rem+16px)] left-[12.5%] h-1 bg-primary -translate-y-1/2 z-0 rounded transition-all duration-300"
             style={{
-              width: 
-                workOrder.status === 'Open' ? '12%' :
-                workOrder.status === 'In Progress' ? '50%' :
-                workOrder.status === 'Review' ? '82%' : '100%'
+              width:
+                workOrder.status === 'Open' ? '0%' :
+                workOrder.status === 'In Progress' ? '25%' :
+                workOrder.status === 'Review' ? '50%' : '75%'
             }}
           />
 

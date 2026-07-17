@@ -27,6 +27,10 @@ EMBED_BATCH = 64  # docs/02 §50
 class EmbeddingProvider(ABC):
     name: str
     dim: int = EMBEDDING_DIM
+    # True when cosine distance between two vectors actually reflects meaning.
+    # False for hash embeddings, whose distances are noise — callers must not
+    # threshold relevance on them (see RetrievalService.retrieve).
+    semantic: bool = True
 
     @abstractmethod
     def embed(self, texts: list[str]) -> list[list[float]]: ...
@@ -69,6 +73,7 @@ class DeterministicEmbedding(EmbeddingProvider):
     """Stable 1024-dim unit vector from the text hash — no model, fully offline."""
 
     name = "deterministic"
+    semantic = False  # sha256 output: near-orthogonal for every pair of texts
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         return [self._vector(t) for t in texts]

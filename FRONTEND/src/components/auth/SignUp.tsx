@@ -11,12 +11,20 @@ import { Bot, Shield, Cpu, ArrowRight, UserPlus } from 'lucide-react';
 import { useRegisterMutation } from '../../lib/api/auth';
 import { useState } from 'react';
 
-// Validation Schema using Zod
+// Validation Schema using Zod.
+// The password rules mirror the backend's default tenant policy (AuthService
+// ._password_policy: 10 chars + a number + a symbol). A tenant can override the
+// policy server-side, so the server stays the source of truth — these rules only
+// exist to fail fast with a useful message instead of a round-trip 422.
 const signUpSchema = z
   .object({
     name: z.string().min(2, { message: 'Enter your full name (min. 2 characters)' }),
     email: z.string().email({ message: 'Enter a valid enterprise email address' }),
-    password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+    password: z
+      .string()
+      .min(10, { message: 'Password must be at least 10 characters' })
+      .regex(/\d/, { message: 'Password must contain at least one number' })
+      .regex(/[^a-zA-Z0-9]/, { message: 'Password must contain at least one symbol' }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

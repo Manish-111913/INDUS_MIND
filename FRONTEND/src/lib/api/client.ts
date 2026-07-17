@@ -444,7 +444,7 @@ async function simulateNetworkCall<T>(
 
   // 0. Auth Register (create a new account + auto-login)
   if (path === '/auth/register' && method === 'POST') {
-    const { name, email, password } = JSON.parse(options.body as string);
+    const { full_name: name, email, password } = JSON.parse(options.body as string);
     if (!name || !email || !password) {
       throw {
         error: {

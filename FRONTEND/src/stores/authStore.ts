@@ -66,11 +66,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
       try {
         // Live backend (docs/02 §24): open sign-up returns { access_token,
         // expires_in, user } + an httpOnly refresh cookie and logs the user in.
-        // Mock backend: { token, refreshToken, user }. Note the field name:
-        // the live API expects `full_name`.
+        // Mock backend: { token, refreshToken, user }. The register schema is
+        // extra="forbid" — sending any key beyond these three is a 422.
         const data = await api.post<any>('/auth/register', {
           full_name: name,
-          name,
           email,
           password,
         });

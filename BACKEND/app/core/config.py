@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     ollama_url: str = "http://localhost:11434"
     embedding_provider: Literal["local", "openai"] = "local"
     embedding_model: str = "bge-large-en-v1.5"
+    # Cosine-similarity floor for a chunk to count as evidence. Only applied when
+    # the embedding provider is semantic; the hash fallback's distances are noise.
+    retrieval_min_similarity: float = 0.45
     ocr_provider: Literal["paddle", "textract"] = "paddle"
 
     # ── HTTP / CORS ──────────────────────────────────────────────────────────

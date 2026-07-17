@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import llm
 from app.core.config import settings
+from app.core.embeddings import get_embedding_provider
 from app.core.logging import get_logger
 from app.modules.ai.repository import PromptRepository
 from app.modules.documents.models import Document
@@ -31,6 +32,20 @@ log = get_logger("ai.copilot")
 
 _CITE = re.compile(r"\[(\d+)\]")
 _SENT = re.compile(r"(?<=[.!?])\s+")
+
+_GREETINGS = {"hi", "hey", "hello", "yo", "thanks", "thank you", "ok", "okay", "bye", "test"}
+
+_SMALLTALK_REPLY = (
+    "Hello — I answer questions grounded in your plant's documents (OEM manuals, SOPs, "
+    "inspection reports, work orders, shift logs). Ask me something like “what is the "
+    "seal flush plan for P-101?” and I'll cite the sources I used."
+)
+
+_NO_EVIDENCE_REPLY = (
+    "I could not find supporting information in the corpus for that question. Nothing in "
+    "the indexed documents is a close enough match to answer it, and I won't guess. Try "
+    "naming a specific equipment tag, procedure, or document."
+)
 
 
 @dataclass(slots=True)
@@ -53,6 +68,12 @@ class CopilotService:
     async def run(self, query: str, *, scope: RetrievalScope | None = None) -> CopilotResult:
         t0 = time.monotonic()
         intent = self._classify(query)
+        if intent == "smalltalk":
+            # A greeting has no answer in the corpus. Retrieving anyway is what
+            # made "hi" come back cited to a random OEM manual.
+            return CopilotResult(
+                answer=_SMALLTALK_REPLY, citations=[], confidence={"level": "Low", "score": 0.0},
+                latency_ms=int((time.monotonic() - t0) * 1000), intent=intent)
         chunks = await RetrievalService(self.session, self.tenant_id).retrieve(
             query, scope=scope, top_k=8)
         titles = await self._titles(chunks)
@@ -69,7 +90,7 @@ class CopilotService:
         q = query.strip().lower()
         if q.split(" ", 1)[0] in {"create", "open", "run", "generate", "assign", "close"}:
             return "command"
-        if len(q) < 4:
+        if q.strip(" .!?") in _GREETINGS or len(q) < 4:
             return "smalltalk"
         return "question"
 
@@ -79,8 +100,7 @@ class CopilotService:
         template = await PromptRepository(self.session).active(self.tenant_id, "copilot.answer")
         prompt_version = template.version if template else None
         if not chunks:
-            return ("I could not find supporting information in the corpus. A relevant OEM manual, "
-                    "SOP, or inspection report would help answer this."), {}, prompt_version
+            return _NO_EVIDENCE_REPLY, {}, prompt_version
 
         context = "\n\n".join(
             f"[{i}] {titles.get(c.document_id, 'Document')} (p.{c.page_no or '-'}): {c.text[:600]}"
@@ -137,14 +157,35 @@ class CopilotService:
         config = await llm.resolve_config(self.session, self.tenant_id, "chat")
         threshold = config.confidence_threshold
 
-        top = chunks[0].score if chunks else 0.0
-        retrieval_signal = (sum(c.score / top for c in chunks) / len(chunks)) if chunks and top else 0.0
+        if not chunks or not citations:
+            return {"level": "Low", "score": 0.0}
+
+        # Grounding must come from how well the cited chunks match the *query*.
+        # The old formula divided each chunk's score by the top score, which
+        # measures spread within the result set — always ~0.9 whether or not the
+        # chunks had anything to do with the question. Use absolute similarity;
+        # when the provider can't produce it, fall back to keyword-match rate,
+        # which is real evidence (the query's terms are literally in the chunk).
+        cited_chunks = [chunks[c["n"] - 1] for c in citations if 0 < c["n"] <= len(chunks)]
+        if not cited_chunks:
+            return {"level": "Low", "score": 0.0}
+        if get_embedding_provider().semantic:
+            grounding = sum(max(0.0, c.similarity) for c in cited_chunks) / len(cited_chunks)
+        else:
+            # Hash-embedding deployments have no semantic signal to measure, so the
+            # only honest evidence is lexical overlap. This caps such deployments
+            # well below "High" — correct: retrieval really is weaker without a
+            # model, and overstating it is the bug this replaced.
+            grounding = sum(1.0 for c in cited_chunks if c.match_kind == "keyword") / len(cited_chunks)
+
         sentences = [s for s in _SENT.split(answer) if s.strip()]
         cited = sum(1 for s in sentences if _CITE.search(s))
         coverage = (cited / len(sentences)) if sentences else 0.0
-        llm_self = 0.7 if citations else 0.3
 
-        score = round(0.4 * retrieval_signal + 0.4 * coverage + 0.2 * llm_self, 3)
+        # Coverage is near-1.0 by construction in the extractive path (the template
+        # cites every sentence it emits), so it can only ever confirm formatting —
+        # grounding carries the weight.
+        score = round(0.75 * grounding + 0.25 * coverage, 3)
         level = "High" if score >= threshold else ("Medium" if score >= threshold * 0.6 else "Low")
         return {"level": level, "score": score}
 

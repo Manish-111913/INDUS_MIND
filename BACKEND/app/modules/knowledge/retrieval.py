@@ -17,6 +17,7 @@ from datetime import datetime
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.embeddings import get_embedding_provider
 from app.core.logging import get_logger
 from app.modules.documents.models import Document
@@ -47,8 +48,9 @@ class RetrievedChunk:
     bbox: dict | None
     section_path: str | None
     text: str
-    score: float
-    match_kind: str  # keyword | semantic
+    score: float          # fused rank score — ordering only, not relevance
+    match_kind: str       # keyword | semantic
+    similarity: float = 0.0  # absolute cosine similarity; 0.0 if not in the ANN arm
 
 
 class RetrievalService:
@@ -57,7 +59,16 @@ class RetrievalService:
         self.tenant_id = tenant_id
 
     async def retrieve(self, query: str, *, scope: RetrievalScope | None = None,
-                       top_k: int = 8) -> list[RetrievedChunk]:
+                       top_k: int = 8, filter_irrelevant: bool = True) -> list[RetrievedChunk]:
+        """Fuse the two arms and drop chunks that are not evidence for `query`.
+
+        The ANN arm is an unbounded nearest-neighbour scan: it returns its 40
+        closest chunks for *any* input, including gibberish. RRF scores are
+        rank-derived (1/(k+rank)), so they look identical whether the top hit is
+        a perfect match or the least-bad of 40 unrelated chunks. Ranking alone
+        therefore cannot answer "is any of this relevant?" — only the absolute
+        cosine similarity can, so we carry it through fusion and gate on it here.
+        """
         scope = scope or RetrievalScope()
         equip_doc_ids = await self._graph_expand(query, scope)
 
@@ -66,12 +77,13 @@ class RetrievalService:
 
         # Reciprocal Rank Fusion over the two ranked lists.
         fused: dict[uuid.UUID, dict] = {}
-        for rank, chunk in enumerate(vector_rows):
-            fused.setdefault(chunk.id, {"chunk": chunk, "score": 0.0, "kinds": set()})
+        for rank, (chunk, similarity) in enumerate(vector_rows):
+            fused.setdefault(chunk.id, {"chunk": chunk, "score": 0.0, "kinds": set(), "sim": 0.0})
             fused[chunk.id]["score"] += 1.0 / (RRF_K + rank)
             fused[chunk.id]["kinds"].add("semantic")
+            fused[chunk.id]["sim"] = similarity
         for rank, chunk in enumerate(fts_rows):
-            fused.setdefault(chunk.id, {"chunk": chunk, "score": 0.0, "kinds": set()})
+            fused.setdefault(chunk.id, {"chunk": chunk, "score": 0.0, "kinds": set(), "sim": 0.0})
             fused[chunk.id]["score"] += 1.0 / (RRF_K + rank)
             fused[chunk.id]["kinds"].add("keyword")
 
@@ -80,16 +92,40 @@ class RetrievalService:
             if entry["chunk"].document_id in equip_doc_ids:
                 entry["score"] += 1.0 / RRF_K
 
-        ranked = sorted(fused.values(), key=lambda e: e["score"], reverse=True)[:top_k]
+        if filter_irrelevant:
+            candidates = [e for e in fused.values() if self._is_evidence(e, equip_doc_ids)]
+            if not candidates and fused:
+                log.info("retrieval_no_relevant_chunks", query=query[:80], pool=len(fused))
+        else:
+            candidates = list(fused.values())
+
+        ranked = sorted(candidates, key=lambda e: e["score"], reverse=True)[:top_k]
         return [
             RetrievedChunk(
                 chunk_id=e["chunk"].id, document_id=e["chunk"].document_id,
                 version_id=e["chunk"].version_id, page_no=e["chunk"].page_no,
                 bbox=e["chunk"].bbox, section_path=e["chunk"].section_path,
                 text=e["chunk"].text, score=round(e["score"], 5),
-                match_kind="keyword" if "keyword" in e["kinds"] else "semantic")
+                match_kind="keyword" if "keyword" in e["kinds"] else "semantic",
+                similarity=round(e["sim"], 4))
             for e in ranked
         ]
+
+    def _is_evidence(self, entry: dict, equip_doc_ids: set[uuid.UUID]) -> bool:
+        """Does this chunk actually support the query, or is it just ANN filler?
+
+        Keyword (FTS) and graph hits are positive evidence on their own — the
+        query's own terms or equipment tags are in the document. A semantic-only
+        hit counts only when the provider produces real embeddings AND the
+        similarity clears the floor. The hash fallback is deliberately treated as
+        no evidence: its distances are noise, so trusting them would let gibberish
+        through exactly as before.
+        """
+        if "keyword" in entry["kinds"] or entry["chunk"].document_id in equip_doc_ids:
+            return True
+        if not get_embedding_provider().semantic:
+            return False
+        return entry["sim"] >= settings.retrieval_min_similarity
 
     # ── arms ─────────────────────────────────────────────────────────────────
     def _base(self, scope: RetrievalScope, equip_doc_ids: set[uuid.UUID]) -> Select:
@@ -112,15 +148,20 @@ class RetrievalService:
         return stmt
 
     async def _vector_search(self, query: str, scope: RetrievalScope,
-                             equip_doc_ids: set[uuid.UUID]) -> list[DocumentChunk]:
+                             equip_doc_ids: set[uuid.UUID]
+                             ) -> list[tuple[DocumentChunk, float]]:
+        """Top-N nearest chunks paired with absolute cosine similarity (1 - distance)."""
         qvec = (await self._embed(query))
+        distance = DocumentChunk.embedding.cosine_distance(qvec).label("distance")
         stmt = (
             self._base(scope, equip_doc_ids)
+            .add_columns(distance)
             .where(DocumentChunk.embedding.is_not(None))
-            .order_by(DocumentChunk.embedding.cosine_distance(qvec))
+            .order_by(distance)
             .limit(CANDIDATES)
         )
-        return list((await self.session.execute(stmt)).scalars().all())
+        rows = (await self.session.execute(stmt)).all()
+        return [(row[0], 1.0 - float(row.distance)) for row in rows]
 
     async def _fts_search(self, query: str, scope: RetrievalScope,
                           equip_doc_ids: set[uuid.UUID]) -> list[DocumentChunk]:

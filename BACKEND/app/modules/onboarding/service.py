@@ -175,7 +175,7 @@ async def run_seed_demo(tenant_id: uuid.UUID | str) -> dict:
             log.info("seed_demo_already_running", tenant_id=str(tenant_id))
             return {"status": "already_running", "tenant_id": str(tenant_id)}
         try:
-            await seed_run(with_documents=True)
+            await seed_run(with_documents=True, tenant_id=tenant_id)
             log.info("seed_demo_done", tenant_id=str(tenant_id))
             return {"status": "completed", "tenant_id": str(tenant_id)}
         finally:

@@ -126,12 +126,17 @@ class AuthService:
         if await self.users.get_by_email(None, email) is not None:
             raise ConflictError("Email already in use", code="EMAIL_TAKEN")
 
-        from app.modules.tenants.repository import TenantRepository
+        import re
+        import uuid
+        from app.modules.tenants.service import TenantService
 
-        tenant = await TenantRepository(self.session).get_by_slug(settings.default_tenant_slug)
-        if tenant is None:
-            raise ValidationFailed("Registration is not configured (no default tenant). "
-                                   "Seed the database first.", code="SIGNUP_NO_TENANT")
+        # Generate a unique slug for the user's workspace
+        prefix = email.split("@")[0].lower()
+        prefix = re.sub(r"[^a-z0-9]", "", prefix)
+        slug = f"{prefix}-{str(uuid.uuid4())[:8]}"
+        name = f"{full_name}'s Node"
+
+        tenant = await TenantService(self.session).create_and_initialize_tenant(name=name, slug=slug)
 
         self._enforce_password_policy(await self._password_policy(tenant.id), password)
 

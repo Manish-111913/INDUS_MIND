@@ -6,8 +6,130 @@
 import { useAuthStore } from '../../stores/authStore';
 import { StatusChip, ConfidenceBadge, SkeletonLoader } from '../shared';
 import { Bot, Wrench, AlertTriangle, ShieldCheck, Cpu, Users, History, FileText, Calendar, Plus, RefreshCw, Sparkles, Download, CheckCircle, ArrowRight, Check, Play, X, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../lib/api/client';
+
+// ── Admin KPI hook — fetches live data from the backend ───────────────────────
+interface AdminKPIs {
+  docsIngested: string;
+  aiSuccess: string;
+  activeWOs: string;
+  docsSubLabel: string;
+  aiSubLabel: string;
+  woSubLabel: string;
+  loading: boolean;
+}
+
+function useAdminKPIs(): AdminKPIs {
+  const [kpis, setKpis] = useState<AdminKPIs>({
+    docsIngested: '—',
+    aiSuccess: '—',
+    activeWOs: '—',
+    docsSubLabel: '',
+    aiSubLabel: '',
+    woSubLabel: '',
+    loading: true,
+  });
+
+  const fetchKPIs = useCallback(async () => {
+    try {
+      const data = await api.get<any>(
+        '/analytics/kpis?keys=documents_ingested,ai_pipeline_success,active_work_orders'
+      );
+      const d = data?.data ?? data;
+      const docs = d?.documents_ingested;
+      const ai = d?.ai_pipeline_success;
+      const wos = d?.active_work_orders;
+      setKpis({
+        docsIngested: docs != null ? `${docs.value} ${docs.unit ?? 'files'}` : '0 files',
+        aiSuccess: ai != null ? `${ai.value}${ai.unit ?? '%'}` : '—',
+        activeWOs: wos != null ? `${wos.value}` : '0',
+        docsSubLabel: docs?.sublabel ?? '',
+        aiSubLabel: ai?.sublabel ?? '',
+        woSubLabel: wos?.sublabel ?? '',
+        loading: false,
+      });
+    } catch {
+      setKpis(prev => ({ ...prev, loading: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchKPIs();
+    // Refresh every 60 s so numbers stay current
+    const timer = setInterval(fetchKPIs, 60_000);
+    return () => clearInterval(timer);
+  }, [fetchKPIs]);
+
+  return kpis;
+}
+
+// ── Live ingestion jobs hook ───────────────────────────────────────
+interface IngestionJob {
+  id: string;
+  document_id: string;
+  status: string;
+  current_stage: string | null;
+  stages: any[];
+  created_at: string;
+}
+
+function useIngestionJobs() {
+  const [jobs, setJobs] = useState<IngestionJob[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(true);
+
+  const fetchJobs = useCallback(async () => {
+    try {
+      const data = await api.get<any>('/ingestion/jobs?page_size=5&sort=-created_at');
+      const items = data?.data ?? data?.items ?? data ?? [];
+      setJobs(Array.isArray(items) ? items : []);
+    } catch {
+      setJobs([]);
+    } finally {
+      setLoadingJobs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+    const t = setInterval(fetchJobs, 30_000);
+    return () => clearInterval(t);
+  }, [fetchJobs]);
+
+  return { jobs, loadingJobs };
+}
+
+// ── Node settings hook ─────────────────────────────────────────────────
+interface NodeSettings {
+  activeLlm: string;
+  embeddings: string;
+  vectorStore: string;
+  graphStore: string;
+  loading: boolean;
+}
+
+function useNodeSettings(): NodeSettings {
+  const [ns, setNs] = useState<NodeSettings>({
+    activeLlm: '—', embeddings: '—', vectorStore: '—', graphStore: '—', loading: true,
+  });
+
+  useEffect(() => {
+    api.get<any>('/settings/effective')
+      .then((data: any) => {
+        const d = data?.data ?? data ?? {};
+        setNs({
+          activeLlm: d.llm_provider ?? d.active_llm ?? 'Anthropic Claude',
+          embeddings: d.embedding_model ?? 'bge-large-en-v1.5',
+          vectorStore: d.vector_store ?? 'Postgres pgvector',
+          graphStore: d.graph_store ?? 'Neo4j Community',
+          loading: false,
+        });
+      })
+      .catch(() => setNs(prev => ({ ...prev, loading: false })));
+  }, []);
+
+  return ns;
+}
 
 function OnboardingChecklist() {
   const [dismissed, setDismissed] = useState(() => {
@@ -274,6 +396,10 @@ function OnboardingChecklist() {
 export function RoleDashboard() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  // All hooks called unconditionally at top level — React hooks rule
+  const adminKPIs = useAdminKPIs();
+  const { jobs: ingestionJobs, loadingJobs } = useIngestionJobs();
+  const nodeSettings = useNodeSettings();
 
   const triggerRefresh = () => {
     setLoading(true);
@@ -617,26 +743,39 @@ export function RoleDashboard() {
           </div>
         </div>
 
-        {/* Admin KPI Matrix */}
+        {/* Admin KPI Matrix — live data from /api/v1/analytics/kpis */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Active Work Orders — live */}
           <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Active Console Connections</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">5 / 12</p>
-            <span className="text-[10px] font-mono text-status-ok mt-2 block">● 5 OPERATIONS WORKSTATIONS ONLINE</span>
+            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Active Work Orders</span>
+            {adminKPIs.loading
+              ? <div className="h-9 w-16 bg-surface-muted rounded animate-pulse mt-1" />
+              : <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">{adminKPIs.activeWOs}</p>
+            }
+            <span className="text-[10px] font-mono text-text-secondary mt-2 block">{adminKPIs.woSubLabel || 'OPEN ACROSS TENANT'}</span>
           </div>
 
+          {/* Documents Ingested — live */}
           <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Documents Ingested (24h)</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">412 files</p>
-            <span className="text-[10px] font-mono text-text-secondary mt-2 block">OCR EXTRACT: 12,941 ENTITIES</span>
+            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Documents Ingested</span>
+            {adminKPIs.loading
+              ? <div className="h-9 w-24 bg-surface-muted rounded animate-pulse mt-1" />
+              : <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">{adminKPIs.docsIngested}</p>
+            }
+            <span className="text-[10px] font-mono text-text-secondary mt-2 block">{adminKPIs.docsSubLabel || 'INGESTION PIPELINE'}</span>
           </div>
 
+          {/* AI Pipeline Success — live */}
           <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">AI Pipeline Success %</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">99.8%</p>
-            <span className="text-[10px] font-mono text-status-ok mt-2 block">GRAPH SYNCHRONIZATION: SECURED</span>
+            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">AI Pipeline Success</span>
+            {adminKPIs.loading
+              ? <div className="h-9 w-20 bg-surface-muted rounded animate-pulse mt-1" />
+              : <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">{adminKPIs.aiSuccess}</p>
+            }
+            <span className="text-[10px] font-mono text-status-ok mt-2 block">{adminKPIs.aiSubLabel || 'GRAPH SYNCHRONIZATION: SECURED'}</span>
           </div>
 
+          {/* Console API Latency — static system metric, no DB equivalent */}
           <div className="bg-surface border border-border-custom p-4 rounded-lg">
             <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Console API Latency (Avg)</span>
             <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">42 ms</p>
@@ -652,27 +791,51 @@ export function RoleDashboard() {
               <StatusChip label="Streaming" type="ok" />
             </div>
             
-            {/* mock pipelines */}
-            <div className="space-y-4 text-xs font-sans">
-              <div className="p-3 bg-background-custom/40 rounded border border-border-custom/50">
-                <div className="flex justify-between items-center mb-2 font-mono">
-                  <span className="font-bold text-text-primary text-[11px] truncate max-w-[240px]">PID-992-SECTOR-A-REFINERY.DWG.PDF</span>
-                  <span className="text-[10px] text-primary">STAGE: ENTITY EXTRACT (82%)</span>
-                </div>
-                <div className="w-full bg-surface-muted h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-primary h-full rounded-full" style={{ width: '82%' }} />
-                </div>
-              </div>
-
-              <div className="p-3 bg-background-custom/40 rounded border border-border-custom/50">
-                <div className="flex justify-between items-center mb-2 font-mono">
-                  <span className="font-bold text-text-primary text-[11px] truncate max-w-[240px]">SOP-CRUDE-SHUTDOWN-PROCEDURE.DOCX</span>
-                  <span className="text-[10px] text-status-ok">STAGE: COMPLETED (100%)</span>
-                </div>
-                <div className="w-full bg-surface-muted h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-status-ok h-full rounded-full" style={{ width: '100%' }} />
-                </div>
-              </div>
+            {/* Live ingestion jobs from /api/v1/ingestion/jobs */}
+            <div className="space-y-3 text-xs font-sans">
+              {loadingJobs ? (
+                <>
+                  <div className="h-12 bg-surface-muted rounded animate-pulse" />
+                  <div className="h-12 bg-surface-muted rounded animate-pulse" />
+                </>
+              ) : ingestionJobs.length === 0 ? (
+                <p className="text-[11px] font-mono text-text-muted text-center py-4">
+                  NO ACTIVE INGESTION JOBS
+                </p>
+              ) : (
+                ingestionJobs.map((job) => {
+                  const stagePct =
+                    job.status === 'completed' ? 100
+                    : job.status === 'failed' ? 0
+                    : job.stages?.length
+                      ? Math.round((job.stages.filter((s: any) => s.status === 'done').length / job.stages.length) * 100)
+                      : 50;
+                  const stageLabel = job.current_stage
+                    ? `STAGE: ${job.current_stage.toUpperCase().replace('_', ' ')} (${stagePct}%)`
+                    : job.status.toUpperCase();
+                  const color =
+                    job.status === 'completed' ? 'bg-status-ok'
+                    : job.status === 'failed' ? 'bg-status-critical'
+                    : 'bg-primary';
+                  const textColor =
+                    job.status === 'completed' ? 'text-status-ok'
+                    : job.status === 'failed' ? 'text-status-critical'
+                    : 'text-primary';
+                  return (
+                    <div key={job.id} className="p-3 bg-background-custom/40 rounded border border-border-custom/50">
+                      <div className="flex justify-between items-center mb-2 font-mono">
+                        <span className="font-bold text-text-primary text-[11px] truncate max-w-[220px]">
+                          {job.document_id.slice(0, 8).toUpperCase()}...{job.id.slice(-6).toUpperCase()}
+                        </span>
+                        <span className={`text-[10px] ${textColor}`}>{stageLabel}</span>
+                      </div>
+                      <div className="w-full bg-surface-muted h-1.5 rounded-full overflow-hidden">
+                        <div className={`${color} h-full rounded-full transition-all`} style={{ width: `${stagePct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -682,22 +845,33 @@ export function RoleDashboard() {
                 Node Settings Overview
               </h3>
               <div className="space-y-3 font-mono text-[11px] text-text-secondary">
-                <div className="flex justify-between">
-                  <span>ACTIVE LLM:</span>
-                  <span className="text-text-primary">Gemini 1.5 Pro</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>EMBEDDINGS:</span>
-                  <span className="text-text-primary">bge-large-en-v1.5</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>VECTOR STORE:</span>
-                  <span className="text-text-primary">Postgres pgvector</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>GRAPH STORE:</span>
-                  <span className="text-text-primary">Neo4j Community</span>
-                </div>
+                {nodeSettings.loading ? (
+                  <>
+                    <div className="h-4 bg-surface-muted rounded animate-pulse" />
+                    <div className="h-4 bg-surface-muted rounded animate-pulse" />
+                    <div className="h-4 bg-surface-muted rounded animate-pulse" />
+                    <div className="h-4 bg-surface-muted rounded animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span>ACTIVE LLM:</span>
+                      <span className="text-text-primary capitalize">{nodeSettings.activeLlm}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>EMBEDDINGS:</span>
+                      <span className="text-text-primary">{nodeSettings.embeddings}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>VECTOR STORE:</span>
+                      <span className="text-text-primary">{nodeSettings.vectorStore}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>GRAPH STORE:</span>
+                      <span className="text-text-primary">{nodeSettings.graphStore}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

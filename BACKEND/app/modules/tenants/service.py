@@ -28,3 +28,28 @@ class TenantService:
         if await self.repo.get_by_slug(slug) is not None:
             raise ConflictError("Tenant slug already exists", code="TENANT_SLUG_TAKEN")
         return await self.repo.add(Tenant(name=name, slug=slug, plan=plan))
+
+    async def create_and_initialize_tenant(self, *, name: str, slug: str, plan: str = "free") -> Tenant:
+        """Create a new tenant and initialize it with system-only roles/configs, leaving data empty."""
+        if await self.repo.get_by_slug(slug) is not None:
+            raise ConflictError("Tenant slug already exists", code="TENANT_SLUG_TAKEN")
+        tenant = await self.repo.add(Tenant(name=name, slug=slug, plan=plan))
+
+        from seeds.seed import (
+            _seed_roles,
+            _seed_flags,
+            _seed_dashboards,
+            _seed_retention,
+            _seed_permissions,
+            _seed_extraction_rules,
+        )
+
+        perms = await _seed_permissions(self.session)
+        roles = await _seed_roles(self.session, tenant, perms)
+        await _seed_flags(self.session, tenant)
+        await _seed_dashboards(self.session, tenant, roles)
+        await _seed_retention(self.session, tenant)
+        await _seed_extraction_rules(self.session, tenant)
+
+        return tenant
+

@@ -214,7 +214,13 @@ async def _seed_permissions(session) -> dict[str, Permission]:
     return existing
 
 
-async def _seed_tenant(session) -> Tenant:
+async def _seed_tenant(session, tenant_id: uuid.UUID | str | None = None) -> Tenant:
+    if tenant_id:
+        from app.modules.tenants.repository import TenantRepository
+        tenant = await TenantRepository(session).get(tenant_id)
+        if tenant is None:
+            raise ValueError(f"Tenant {tenant_id} not found")
+        return tenant
     tenant = (
         await session.execute(select(Tenant).where(Tenant.slug == TENANT_SLUG))
     ).scalar_one_or_none()
@@ -1517,15 +1523,15 @@ async def _seed_report_templates(session, tenant) -> tuple[int, int]:
     return added_t, added_s
 
 
-async def run(*, with_documents: bool = False) -> None:
+async def run(*, with_documents: bool = False, tenant_id: uuid.UUID | str | None = None) -> None:
     # Document ingestion (needs MinIO + pipeline deps) is opt-in so unit tests that
     # only need the config/asset seed stay fast; `make seed` enables it below.
     from app.core.database import SessionFactory
 
-    log.info("seed_start")
+    log.info("seed_start", tenant_id=str(tenant_id) if tenant_id else None)
     async with SessionFactory() as session:
         perms = await _seed_permissions(session)
-        tenant = await _seed_tenant(session)
+        tenant = await _seed_tenant(session, tenant_id=tenant_id)
         roles = await _seed_roles(session, tenant, perms)
         added_lookups = await _seed_lookups(session)
         await _seed_flags(session, tenant)

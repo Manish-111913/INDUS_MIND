@@ -27,7 +27,7 @@ import {
   TrendingUp,
   FileCheck
 } from 'lucide-react';
-import { FailureRecord, MOCK_PARETO_DATA } from './mockMaintData';
+import { FailureRecord } from './mockMaintData';
 import { Select } from '../../shared';
 
 interface FailuresRegistryProps {
@@ -70,6 +70,24 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
         return 0;
       });
   }, [failures, searchTerm, severityFilter, rcaFilter, sortField, sortOrder]);
+
+  // Pareto derived from the real failure records (empty for a new tenant).
+  const paretoData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const f of failures) {
+      const mode = f.failureMode || 'Unclassified';
+      counts[mode] = (counts[mode] || 0) + 1;
+    }
+    const sorted = Object.entries(counts)
+      .map(([mode, count]) => ({ mode, count }))
+      .sort((a, b) => b.count - a.count);
+    const total = sorted.reduce((s, r) => s + r.count, 0) || 1;
+    let cum = 0;
+    return sorted.map(r => {
+      cum += r.count;
+      return { ...r, cumulativePercent: Math.round((cum / total) * 100) };
+    });
+  }, [failures]);
 
   const handleSort = (field: keyof FailureRecord) => {
     if (sortField === field) {
@@ -140,9 +158,14 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
           </h3>
           
           <div className="h-64 w-full">
+            {paretoData.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-[11px] font-mono text-text-muted uppercase">
+                No failure records yet
+              </div>
+            ) : (
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
-                data={MOCK_PARETO_DATA}
+                data={paretoData}
                 margin={{ top: 10, right: 10, left: -10, bottom: 5 }}
               >
                 <defs>
@@ -188,6 +211,7 @@ export function FailuresRegistry({ failures, onStartRca }: FailuresRegistryProps
                 <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
               </ComposedChart>
             </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

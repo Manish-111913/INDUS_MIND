@@ -108,7 +108,9 @@ export function MaintenanceHub() {
   // Live-only: loading flag + backend reference maps (uuid→tag/name/assignee) +
   // the assignee roster used by new-WO creation. In MOCK mode these are inert.
   const [loading, setLoading] = useState<boolean>(!USE_MOCK);
-  const [assignees, setAssignees] = useState(MOCK_ASSIGNEES);
+  // LIVE starts with an empty roster (hydrated from the backend on mount); only
+  // MOCK mode seeds the fixture assignees.
+  const [assignees, setAssignees] = useState(USE_MOCK ? MOCK_ASSIGNEES : []);
   const mapsRef = useRef<RefMaps | null>(null);
   const detailLoadedRef = useRef<Set<string>>(new Set());
 

@@ -29,7 +29,6 @@ import {
   ScheduledPm,
   AiContext,
   Assignee,
-  MOCK_ASSIGNEES,
 } from './mockMaintData';
 
 // PATCH is a real backend verb but the shared `api` object only exposes
@@ -137,11 +136,9 @@ export async function loadRefMaps(): Promise<RefMaps> {
       maps.assigneeById[String(u.id)] = assignee;
       if (assignee.name) maps.nameToId[assignee.name] = String(u.id);
     }
-  } else {
-    // No /users access — surface the fixture assignees so new-WO creation still
-    // has a roster; existing WOs show their assignee id can't be resolved.
-    for (const a of MOCK_ASSIGNEES) maps.nameToId[a.name] = '';
   }
+  // No /users access (non-admin 403) → leave the roster empty rather than seeding
+  // fixture names; a real tenant must never see demo operators like "Priya Sharma".
   return maps;
 }
 
@@ -397,9 +394,8 @@ export async function loadMaintenanceData(): Promise<MaintenanceData> {
       safeGet<any[]>('/maintenance/predictions?page_size=100', []),
       safeGet<any[]>('/maintenance/schedules?page_size=100', []),
     ]);
-    const assignees = Object.keys(maps.assigneeById).length
-      ? Object.values(maps.assigneeById)
-      : MOCK_ASSIGNEES;
+    // Real roster only (empty for a new tenant); never fall back to fixtures.
+    const assignees = Object.values(maps.assigneeById);
     return {
       workOrders: (wos || []).map((w) => adaptWorkOrder(w, maps)),
       failures: (failures || []).map((f) => adaptFailure(f, maps)),
@@ -410,7 +406,7 @@ export async function loadMaintenanceData(): Promise<MaintenanceData> {
     };
   } catch (e) {
     console.error('[maintenance:live] loadMaintenanceData failed', e);
-    return { workOrders: [], failures: [], predictions: [], schedule: [], assignees: MOCK_ASSIGNEES, maps: EMPTY_MAPS };
+    return { workOrders: [], failures: [], predictions: [], schedule: [], assignees: [], maps: EMPTY_MAPS };
   }
 }
 

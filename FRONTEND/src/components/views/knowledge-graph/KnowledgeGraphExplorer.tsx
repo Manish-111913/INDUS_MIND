@@ -156,9 +156,10 @@ function KnowledgeGraphContent() {
     return mockEdges.filter(e => ids.includes(e.source) && ids.includes(e.target));
   });
 
-  // Stats strip + per-type filter counts. In MOCK this stays mockGraphStats
-  // (identical behavior); in LIVE the mount effect replaces it.
-  const [stats, setStats] = useState(mockGraphStats);
+  // Stats strip + per-type filter counts. MOCK uses the fixture; LIVE starts
+  // zeroed (real for a new tenant) and the mount effect fills it from the backend.
+  const EMPTY_GRAPH_STATS = { totalNodes: 0, totalEdges: 0, typesCount: 0, typesBreakdown: {} } as typeof mockGraphStats;
+  const [stats, setStats] = useState(USE_MOCK ? mockGraphStats : EMPTY_GRAPH_STATS);
 
   // Loading indicator for LIVE fetches.
   const [loading, setLoading] = useState(false);
@@ -198,6 +199,7 @@ function KnowledgeGraphContent() {
         if (!cancelled) {
           setCurrentNodes([]);
           setCurrentEdges([]);
+          setStats(EMPTY_GRAPH_STATS);
         }
       } finally {
         if (!cancelled) setLoading(false);

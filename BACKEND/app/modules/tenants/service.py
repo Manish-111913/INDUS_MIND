@@ -13,6 +13,7 @@ from app.modules.tenants.repository import TenantRepository
 
 class TenantService:
     def __init__(self, session: AsyncSession) -> None:
+        self.session = session
         self.repo = TenantRepository(session)
 
     async def get(self, tenant_id: uuid.UUID | str) -> Tenant:

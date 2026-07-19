@@ -6,7 +6,7 @@
 import { useAuthStore } from '../../stores/authStore';
 import { StatusChip, ConfidenceBadge, SkeletonLoader } from '../shared';
 import { Bot, Wrench, AlertTriangle, ShieldCheck, Cpu, Users, History, FileText, Calendar, Plus, RefreshCw, Sparkles, Download, CheckCircle, ArrowRight, Check, Play, X, Loader2 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { api } from '../../lib/api/client';
 
 // ── Admin KPI hook — fetches live data from the backend ───────────────────────
@@ -393,6 +393,267 @@ function OnboardingChecklist() {
   );
 }
 
+// ── Generic live widget hook ──────────────────────────────────────────────────
+// Permission-safe: hits GET /dashboards/widgets/{key}/data, which filters per the
+// caller's role. Returns real tenant data — 0/empty for a brand-new tenant, so no
+// seeded/demo numbers ever leak here. apiRequest already unwraps the response
+// envelope's `data`, leaving { widget_key, type, data: <payload>, cached }.
+function useWidget<T = any>(key: string, params?: Record<string, string>) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const paramKey = params ? JSON.stringify(params) : '';
+
+  const fetchData = useCallback(async () => {
+    try {
+      const qs = params && Object.keys(params).length
+        ? '?' + new URLSearchParams(params).toString() : '';
+      const resp = await api.get<any>(`/dashboards/widgets/${key}/data${qs}`);
+      const payload = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+      setData(payload as T);
+    } catch {
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, paramKey]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+  return { data, loading };
+}
+
+function fmtKpi(p: any): string {
+  if (!p || p.value == null) return '—';
+  if (p.unit === '%') return `${p.value}%`;
+  return p.unit ? `${p.value} ${p.unit}` : `${p.value}`;
+}
+
+const KPI_STATUS_LABEL: Record<string, string> = { ok: 'Normal', warn: 'Warning', critical: 'Critical' };
+
+// A single KPI tile bound to a live widget. New tenant → shows real 0 values.
+function KpiTile({ widgetKey, title, icon, params }: {
+  widgetKey: string; title: string; icon: ReactNode; params?: Record<string, string>;
+}) {
+  const { data, loading } = useWidget<any>(widgetKey, params);
+  const statusType = (['ok', 'warn', 'critical'].includes(data?.status) ? data.status : 'ok') as 'ok' | 'warn' | 'critical';
+  return (
+    <div className="bg-surface border border-border-custom p-4 rounded-lg relative overflow-hidden">
+      <div className="flex justify-between items-start mb-2 text-text-secondary">
+        <span className="text-[10px] font-mono font-bold uppercase tracking-wider">{title}</span>
+        {icon}
+      </div>
+      {loading
+        ? <div className="h-9 w-20 bg-surface-muted rounded animate-pulse mt-1" />
+        : <p className="text-3xl font-display font-bold text-text-primary leading-tight">{fmtKpi(data)}</p>}
+      <div className="flex items-center justify-between mt-2 min-h-[18px]">
+        <span className="text-[10px] font-mono text-text-muted uppercase truncate pr-2">{data?.sublabel || ''}</span>
+        {!loading && data && <StatusChip label={KPI_STATUS_LABEL[statusType]} type={statusType} />}
+      </div>
+    </div>
+  );
+}
+
+function PanelEmpty({ label }: { label: string }) {
+  return <p className="text-[11px] font-mono text-text-muted text-center py-6">{label}</p>;
+}
+function PanelLoading() {
+  return (
+    <div className="space-y-3">
+      <div className="h-14 bg-surface-muted rounded animate-pulse" />
+      <div className="h-14 bg-surface-muted rounded animate-pulse" />
+    </div>
+  );
+}
+
+function confToBadge(c: unknown): number | 'Low' | 'High' | 'Med' {
+  if (typeof c !== 'number') return 'Med';
+  return c <= 1 ? Math.round(c * 100) : Math.round(c);
+}
+
+// Daily AI brief cards (list.ai_brief) — real AIInsight rows, role-filtered.
+function AiBriefPanel({ role }: { role: string }) {
+  const { data, loading } = useWidget<any>('list.ai_brief', { role });
+  const items: any[] = data?.items ?? [];
+  return (
+    <div className="lg:col-span-2 bg-ai-soft/40 border border-ai-soft-border p-5 rounded-lg relative">
+      <div className="absolute top-3 right-3"><Sparkles className="w-5 h-5 text-ai animate-pulse" /></div>
+      <div className="flex items-center space-x-2 mb-4">
+        <Bot className="w-5 h-5 text-ai" />
+        <h3 className="font-display text-sm font-semibold text-ai uppercase tracking-wider">Daily AI Operational Synthesis</h3>
+      </div>
+      {loading ? <PanelLoading /> : items.length === 0 ? (
+        <PanelEmpty label="NO AI INSIGHTS FOR THIS NODE YET — INGEST DOCUMENTS TO GENERATE BRIEFS" />
+      ) : (
+        <div className="space-y-4 font-sans text-xs">
+          {items.map((it) => (
+            <div key={it.id} className="p-3 bg-surface border-l-2 border-ai rounded-r space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-mono font-bold text-text-primary text-[11px] uppercase">{it.title}</span>
+                {it.confidence != null && <ConfidenceBadge confidence={confToBadge(it.confidence)} />}
+              </div>
+              <p className="text-text-secondary leading-relaxed">{it.body}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Area health matrix (chart.area_health) — avg equipment health by area.
+function AreaMatrixPanel() {
+  const { data, loading } = useWidget<any>('chart.area_health');
+  const series: any[] = data?.series ?? [];
+  const dot = (h: number | null) => h == null ? 'bg-text-muted' : h >= 85 ? 'bg-status-ok' : h >= 60 ? 'bg-status-warn' : 'bg-status-critical';
+  const txt = (h: number | null) => h == null ? 'text-text-muted' : h >= 85 ? 'text-status-ok' : h >= 60 ? 'text-status-warn' : 'text-status-critical';
+  return (
+    <div className="bg-surface border border-border-custom p-4 rounded-lg flex flex-col">
+      <div className="flex justify-between items-center border-b border-border-custom pb-3 mb-4">
+        <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider">Area Status Matrix</h3>
+        <span className="text-[10px] font-mono text-text-muted">{series.length} AREAS</span>
+      </div>
+      {loading ? <PanelLoading /> : series.length === 0 ? (
+        <PanelEmpty label="NO AREAS CONFIGURED YET" />
+      ) : (
+        <div className="space-y-3">
+          {series.map((s, i) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <span className={`w-2.5 h-2.5 rounded-full ${dot(s.health)}`} />
+                <span className="font-medium text-text-primary">{s.area}</span>
+              </div>
+              <span className={`font-mono font-bold ${txt(s.health)}`}>{s.health == null ? '—' : `${s.health}% HEALTH`}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const PRIORITY_STYLE: Record<string, string> = {
+  critical: 'border-status-critical bg-status-critical/10 text-status-critical',
+  high: 'border-status-warn bg-status-warn/10 text-status-warn',
+  medium: 'border-primary bg-primary/10 text-primary',
+  low: 'border-border-custom bg-surface-muted text-text-muted',
+};
+
+// My assigned tasks (table.my_tasks) — open WOs assigned to the caller.
+function MyTasksPanel() {
+  const { data, loading } = useWidget<any>('table.my_tasks');
+  const rows: any[] = data?.rows ?? [];
+  const fmtDue = (d: string | null) => {
+    if (!d) return 'NO DUE DATE';
+    try { return `DUE ${new Date(d).toLocaleDateString()}`; } catch { return 'DUE —'; }
+  };
+  return (
+    <div className="space-y-3">
+      <h3 className="text-xs font-mono font-bold text-text-muted uppercase tracking-wider">Today's Assigned Tasks (Touch to Open)</h3>
+      {loading ? <PanelLoading /> : rows.length === 0 ? (
+        <div className="p-4 bg-surface border border-border-custom rounded-lg">
+          <PanelEmpty label="NO TASKS ASSIGNED TO YOU YET" />
+        </div>
+      ) : rows.map((w, i) => {
+        const style = PRIORITY_STYLE[String(w.priority).toLowerCase()] ?? PRIORITY_STYLE.medium;
+        return (
+          <div key={i} onClick={() => { window.location.hash = '#maintenance'; }}
+               className="p-4 bg-surface-muted/30 hover:bg-surface-muted rounded-lg border border-border-custom transition-all cursor-pointer">
+            <div className="flex justify-between items-start mb-2">
+              <span className="font-mono text-xs font-bold text-text-primary">{w.wo_number}</span>
+              <span className={`text-[9px] font-mono font-bold border px-1.5 py-0.5 rounded uppercase ${style}`}>
+                {w.priority} · {fmtDue(w.due_at)}
+              </span>
+            </div>
+            <h4 className="text-xs font-semibold text-text-primary mb-1">{w.title}</h4>
+            <div className="flex items-center space-x-3 text-[10px] font-mono text-text-secondary mt-3">
+              <span className="flex items-center"><Wrench className="w-3.5 h-3.5 mr-1" /> {w.status}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Predictive alerts (list.predictions) — open predictions, highest risk first.
+function PredictionsPanel() {
+  const { data, loading } = useWidget<any>('list.predictions');
+  const items: any[] = data?.items ?? [];
+  return (
+    <div className="lg:col-span-2 bg-surface border border-border-custom p-4 rounded-lg">
+      <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider mb-4 pb-3 border-b border-border-custom">
+        Anomalous Equipment &amp; AI Predictive Recommendations
+      </h3>
+      {loading ? <PanelLoading /> : items.length === 0 ? (
+        <PanelEmpty label="NO PREDICTIVE ALERTS — MODELS ACTIVATE ONCE TELEMETRY & FAILURE HISTORY EXIST" />
+      ) : (
+        <div className="space-y-4 text-xs font-sans">
+          {items.map((p) => {
+            const pct = p.risk_score != null ? (p.risk_score <= 1 ? Math.round(p.risk_score * 100) : Math.round(p.risk_score)) : null;
+            const band = String(p.risk_band || '').toLowerCase();
+            const isCrit = band === 'critical' || band === 'high';
+            const dotCls = isCrit ? 'bg-status-critical' : 'bg-status-warn';
+            const badgeCls = isCrit
+              ? 'text-status-critical bg-status-critical/10 border-status-critical/20'
+              : 'text-status-warn bg-status-warn/10 border-status-warn/20';
+            return (
+              <div key={p.id} className="p-3 bg-background-custom/40 border border-border-custom rounded space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <span className={`w-2 h-2 rounded-full ${dotCls}`} />
+                    <span className="font-mono font-bold text-text-primary">{p.equipment_id ? `Equipment ${String(p.equipment_id).slice(0, 8)}` : 'Unassigned equipment'}</span>
+                  </div>
+                  {pct != null && (
+                    <span className={`font-mono font-bold text-[10px] px-1.5 py-0.5 rounded border ${badgeCls}`}>
+                      {pct}% RISK{p.risk_band ? ` · ${String(p.risk_band).toUpperCase()}` : ''}
+                    </span>
+                  )}
+                </div>
+                {p.recommendation && <p className="text-text-secondary">{p.recommendation}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const GAP_SEVERITY_CLS: Record<string, string> = {
+  critical: 'text-status-critical', high: 'text-status-warn', medium: 'text-primary', low: 'text-text-muted',
+};
+
+// Open compliance gaps (list.compliance_gaps).
+function ComplianceGapsPanel() {
+  const { data, loading } = useWidget<any>('list.compliance_gaps');
+  const items: any[] = data?.items ?? [];
+  return (
+    <div className="lg:col-span-2 bg-surface border border-border-custom p-4 rounded-lg">
+      <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider pb-3 border-b border-border-custom mb-4">
+        Federal Operational Gaps Detected by AI Engine
+      </h3>
+      {loading ? <PanelLoading /> : items.length === 0 ? (
+        <PanelEmpty label="NO OPEN COMPLIANCE GAPS FOR THIS NODE" />
+      ) : (
+        <div className="space-y-3">
+          {items.map((g, i) => {
+            const cls = GAP_SEVERITY_CLS[String(g.severity).toLowerCase()] ?? 'text-status-warn';
+            return (
+              <div key={g.id} className="p-3 bg-background-custom/40 border border-border-custom rounded space-y-2">
+                <div className="flex justify-between items-center font-mono text-[11px]">
+                  <span className={`font-bold ${cls}`}>GAP #{i + 1}: {String(g.title || '').toUpperCase()}</span>
+                  {g.severity && <span className="text-text-muted uppercase">{g.severity}</span>}
+                </div>
+                {g.explanation && <p className="text-xs text-text-secondary">{g.explanation}</p>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RoleDashboard() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -461,142 +722,17 @@ export function RoleDashboard() {
           </div>
         </div>
 
-        {/* Executive KPI Grid */}
+        {/* Executive KPI Grid — live widget data (0 for a new tenant) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-surface border border-border-custom p-4 rounded-lg relative overflow-hidden">
-            <div className="flex justify-between items-start mb-2 text-text-secondary">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Overall Equipment Effectiveness (OEE)</span>
-              <Cpu className="w-4 h-4 text-primary" />
-            </div>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight">84.6%</p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] font-mono text-status-ok">▲ +1.2% VS LST SHIFT</span>
-              <StatusChip label="Normal" type="ok" />
-            </div>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg relative overflow-hidden">
-            <div className="flex justify-between items-start mb-2 text-text-secondary">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Unplanned Downtime Hrs</span>
-              <AlertTriangle className="w-4 h-4 text-status-critical" />
-            </div>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight">14.8 hrs</p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] font-mono text-status-critical">▼ +3.4 hrs COLD STARTS</span>
-              <StatusChip label="Critical" type="critical" />
-            </div>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg relative overflow-hidden">
-            <div className="flex justify-between items-start mb-2 text-text-secondary">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Active Work Order backlog</span>
-              <Wrench className="w-4 h-4 text-status-warn" />
-            </div>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight">24 WOs</p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] font-mono text-text-muted">6 HIGH PRIORITY OPEN</span>
-              <StatusChip label="Warning" type="warn" />
-            </div>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg relative overflow-hidden">
-            <div className="flex justify-between items-start mb-2 text-text-secondary">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Compliance score</span>
-              <ShieldCheck className="w-4 h-4 text-status-ok" />
-            </div>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight">98.2%</p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px] font-mono text-text-muted">3 GAPS DETECTED</span>
-              <StatusChip label="Secured" type="ok" />
-            </div>
-          </div>
+          <KpiTile widgetKey="kpi.oee" title="Overall Equipment Effectiveness (OEE)" icon={<Cpu className="w-4 h-4 text-primary" />} />
+          <KpiTile widgetKey="kpi.unplanned_downtime" title="Unplanned Downtime Hrs" icon={<AlertTriangle className="w-4 h-4 text-status-critical" />} />
+          <KpiTile widgetKey="kpi.wo_backlog" title="Active Work Order backlog" icon={<Wrench className="w-4 h-4 text-status-warn" />} />
+          <KpiTile widgetKey="kpi.compliance_score" title="Compliance score" icon={<ShieldCheck className="w-4 h-4 text-status-ok" />} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* DAILY AI OPERATIONAL BRIEF - Highlighting Amber Accent */}
-          <div className="lg:col-span-2 bg-ai-soft/40 border border-ai-soft-border p-5 rounded-lg relative">
-            <div className="absolute top-3 right-3">
-              <Sparkles className="w-5 h-5 text-ai animate-pulse" />
-            </div>
-            
-            <div className="flex items-center space-x-2 mb-4">
-              <Bot className="w-5 h-5 text-ai" />
-              <h3 className="font-display text-sm font-semibold text-ai uppercase tracking-wider">
-                Daily AI Operational Synthesis
-              </h3>
-            </div>
-
-            <div className="space-y-4 font-sans text-xs">
-              <div className="p-3 bg-surface border-l-2 border-ai rounded-r space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-mono font-bold text-text-primary text-[11px] uppercase">Anomaly Warning: Compressor Station 4</span>
-                  <ConfidenceBadge confidence="High" />
-                </div>
-                <p className="text-text-secondary leading-relaxed">
-                  Vibration sensors on <span className="font-mono text-ai bg-ai-soft/50 px-1 rounded">COMP-302B</span> have breached nominal limits (7.2 mm/s vs 5.0 mm/s target). Lessons Learned model matches this pattern with the June 2025 stator coil breakdown. Recommended inspection within 48 hours to avert unplanned outage.
-                </p>
-                <div className="flex space-x-2 pt-1">
-                  <button className="text-[10px] font-mono text-ai hover:underline flex items-center cursor-pointer">
-                    View Correlated Incident Report [INC-991] →
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-3 bg-surface-muted border-l-2 border-status-critical/50 rounded-r space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-mono font-bold text-text-primary text-[11px] uppercase">Regulatory Non-Compliance Risk</span>
-                  <ConfidenceBadge confidence={98} />
-                </div>
-                <p className="text-text-secondary leading-relaxed">
-                  Firewater pump weekly validation records are overdue by 4 shifts in Area REF-A. This breaches <span className="font-mono text-text-primary bg-background-custom px-1 rounded">OISD-STD-118 Clause 6.4</span>. Audit risk has increased by 14%.
-                </p>
-                <div className="flex space-x-2 pt-1">
-                  <button className="text-[10px] font-mono text-primary hover:underline flex items-center cursor-pointer">
-                    Instruct Maintenance Lead to Execute Test →
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Plant Health & Status Matrix */}
-          <div className="bg-surface border border-border-custom p-4 rounded-lg flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-center border-b border-border-custom pb-3 mb-4">
-                <h3 className="font-display text-sm font-bold text-text-primary uppercase tracking-wider">Area Status Matrix</h3>
-                <span className="text-[10px] font-mono text-text-muted">4 ACTIVE LABELS</span>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-status-ok" />
-                    <span className="font-medium text-text-primary">REF-A (Crude Unit)</span>
-                  </div>
-                  <span className="font-mono font-bold text-status-ok">98% HEALTH</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-status-warn" />
-                    <span className="font-medium text-text-primary">REF-B (Catalytic Cracker)</span>
-                  </div>
-                  <span className="font-mono font-bold text-status-warn">72% HEALTH</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-status-critical" />
-                    <span className="font-medium text-text-primary">UTILITIES (Water/Steam)</span>
-                  </div>
-                  <span className="font-mono font-bold text-status-critical">46% HEALTH</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="pt-4 border-t border-border-custom mt-4">
-              <button className="w-full py-2 bg-surface-muted hover:bg-surface border border-border-custom text-xs font-semibold text-text-primary rounded text-center cursor-pointer transition-colors">
-                Open Detailed 360° Plant Heatmap
-              </button>
-            </div>
-          </div>
+          <AiBriefPanel role="Plant Manager" />
+          <AreaMatrixPanel />
         </div>
       </div>
     );
@@ -619,77 +755,14 @@ export function RoleDashboard() {
           </p>
         </div>
 
-        {/* Small Touch-Friendly Stats Row */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-surface border border-border-custom p-3 rounded-lg text-center">
-            <span className="text-[9px] font-mono text-text-muted block uppercase">Open WOs</span>
-            <span className="text-xl font-bold text-text-primary font-display">2</span>
-          </div>
-          <div className="bg-surface border border-border-custom p-3 rounded-lg text-center bg-primary/5 border-primary/20">
-            <span className="text-[9px] font-mono text-primary block uppercase">Due Shift</span>
-            <span className="text-xl font-bold text-primary font-display">1</span>
-          </div>
-          <div className="bg-surface border border-border-custom p-3 rounded-lg text-center">
-            <span className="text-[9px] font-mono text-text-muted block uppercase">Hrs Logged</span>
-            <span className="text-xl font-bold text-text-primary font-display">6.5</span>
-          </div>
+        {/* Small Touch-Friendly Stats Row — live widget data */}
+        <div className="grid grid-cols-2 gap-3">
+          <KpiTile widgetKey="kpi.my_open_wos" title="Open WOs" icon={<Wrench className="w-4 h-4 text-primary" />} />
+          <KpiTile widgetKey="kpi.hours_logged" title="Hrs Logged" icon={<History className="w-4 h-4 text-text-muted" />} />
         </div>
 
-        {/* Swipeable/Clickable Safety Briefing Card */}
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 rounded-lg">
-          <div className="flex items-center space-x-2 text-status-ok mb-2">
-            <ShieldCheck className="w-4 h-4" />
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Dynamic Safety Briefing</span>
-          </div>
-          <p className="text-xs text-text-secondary leading-relaxed">
-            Wear vapor respirator at <strong className="text-text-primary">REF-A (Crude Block)</strong> today. Low-pressure nitrogen flushing is active near Valve <span className="font-mono bg-surface-muted px-1 rounded text-text-primary">V-230</span>. Verify bypass line pressure remains at 0 BAR before starting calibration.
-          </p>
-        </div>
-
-        {/* Active Work Order Stepper list */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-mono font-bold text-text-muted uppercase tracking-wider">
-            Today's Assigned Tasks (Touch to Open)
-          </h3>
-
-          <div 
-            onClick={() => alert('Launching mobile interactive step-by-step WO-2041 panel.')}
-            className="p-4 bg-surface border-l-4 border-status-critical bg-surface-muted/30 hover:bg-surface-muted rounded-r-lg border border-y-border-custom border-r-border-custom transition-all cursor-pointer"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className="font-mono text-xs font-bold text-text-primary">WO-2041</span>
-              <span className="text-[9px] font-mono font-bold bg-status-critical/10 text-status-critical border border-status-critical/20 px-1.5 py-0.5 rounded">
-                CRITICAL DUE 17:00
-              </span>
-            </div>
-            <h4 className="text-xs font-semibold text-text-primary mb-1">
-              Calibrate Pressure Gauge PG-104 on Feed Pump P-101A
-            </h4>
-            <div className="flex items-center space-x-3 text-[10px] font-mono text-text-secondary mt-3">
-              <span className="flex items-center"><Cpu className="w-3.5 h-3.5 mr-1" /> P-101A</span>
-              <span className="flex items-center"><Calendar className="w-3.5 h-3.5 mr-1" /> 4 Steps Left</span>
-            </div>
-          </div>
-
-          <div 
-            onClick={() => alert('Launching mobile interactive step-by-step WO-1984 panel.')}
-            className="p-4 bg-surface border-l-4 border-status-warn bg-surface-muted/30 hover:bg-surface-muted rounded-r-lg border border-y-border-custom border-r-border-custom transition-all cursor-pointer opacity-70"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className="font-mono text-xs font-bold text-text-primary">WO-1984</span>
-              <span className="text-[9px] font-mono font-bold bg-status-warn/10 text-status-warn border border-status-warn/20 px-1.5 py-0.5 rounded">
-                NORMAL DUE TOMORROW
-              </span>
-            </div>
-            <h4 className="text-xs font-semibold text-text-primary mb-1">
-              Lubricate Rotating Stator Bearings on Sludge Pump P-101B
-            </h4>
-            <div className="flex items-center space-x-3 text-[10px] font-mono text-text-secondary mt-3">
-              <span className="flex items-center"><Cpu className="w-3.5 h-3.5 mr-1" /> P-101B</span>
-              <span className="flex items-center"><Calendar className="w-3.5 h-3.5 mr-1" /> 7 Steps Left</span>
-            </div>
-          </div>
-        </div>
+        {/* Active Work Order list — live, assigned to me */}
+        <MyTasksPanel />
 
         {/* Quick Voice/Text Copilot Box */}
         <div className="bg-surface border border-border-custom p-4 rounded-lg">
@@ -915,66 +988,17 @@ export function RoleDashboard() {
           </div>
         </div>
 
-        {/* Engineer KPI Grid */}
+        {/* Engineer KPI Grid — live widget data */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Active Work Orders</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">48</p>
-            <span className="text-[10px] font-mono text-status-warn mt-2 block">12 HIGH PRIORITY OPEN</span>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Mean Time Between Failure (MTBF)</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">342 hrs</p>
-            <span className="text-[10px] font-mono text-status-ok mt-2 block">▲ +14% OVER 30D PERIOD</span>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Mean Time To Repair (MTTR)</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">2.1 hrs</p>
-            <span className="text-[10px] font-mono text-status-ok mt-2 block">▼ -20m OPTIMISED BY CO-PILOT</span>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Active backlog duration</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">120 hrs</p>
-            <span className="text-[10px] font-mono text-status-warn mt-2 block">6 PM TASKS DELAYED</span>
-          </div>
+          <KpiTile widgetKey="kpi.active_work_orders" title="Active Work Orders" icon={<Wrench className="w-4 h-4 text-status-warn" />} />
+          <KpiTile widgetKey="kpi.mtbf" title="Mean Time Between Failure (MTBF)" icon={<Cpu className="w-4 h-4 text-primary" />} />
+          <KpiTile widgetKey="kpi.mttr" title="Mean Time To Repair (MTTR)" icon={<History className="w-4 h-4 text-primary" />} />
+          <KpiTile widgetKey="kpi.wo_backlog" title="Work Order Backlog" icon={<AlertTriangle className="w-4 h-4 text-status-warn" />} />
         </div>
 
-        {/* Maintenance suggestions list */}
+        {/* Maintenance suggestions list — live predictions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-surface border border-border-custom p-4 rounded-lg">
-            <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider mb-4 pb-3 border-b border-border-custom">
-              Anomalous Equipment & AI Predictive Recommendations
-            </h3>
-            
-            <div className="space-y-4 text-xs font-sans">
-              <div className="p-3 bg-background-custom/40 border border-border-custom rounded space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2 h-2 rounded-full bg-status-critical" />
-                    <span className="font-mono font-bold text-text-primary">COMP-302B (Reciprocating Compressor)</span>
-                  </div>
-                  <span className="text-status-critical font-mono font-bold text-[10px] px-1.5 py-0.5 rounded bg-status-critical/10 border border-status-critical/20">
-                    94% RISK OF OUTAGE
-                  </span>
-                </div>
-                <p className="text-text-secondary">
-                  Telemetry logs register periodic high fluid-discharge friction coefficient on secondary piston rings. Lessons Learned correlates this signature with 3 historical seal failures (MT-2022, MT-2024, MT-2025).
-                </p>
-                <div className="flex justify-between items-center pt-2 border-t border-border-custom/50 mt-1">
-                  <span className="font-mono text-[10px] text-text-muted">EXPECTED FAILURE WINDOW: 48 HOURS</span>
-                  <button 
-                    onClick={() => alert('Work Order auto-generated for COMP-302B replacement.')}
-                    className="px-2.5 py-1 bg-primary hover:bg-primary-hover text-white rounded font-mono text-[10px] font-semibold cursor-pointer"
-                  >
-                    Accept Recommendation & Dispatch Tech →
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PredictionsPanel />
 
           <div className="bg-surface border border-border-custom p-4 rounded-lg flex flex-col justify-between">
             <div>
@@ -983,24 +1007,15 @@ export function RoleDashboard() {
                 <span>RCA Agent Workspace</span>
               </h3>
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
-                The AI Root Cause Analysis agent evaluates incidents, correlating P&IDs and past maintenance records to determine failure modes.
+                The AI Root Cause Analysis agent evaluates incidents, correlating P&IDs and past maintenance records to determine failure modes. Open a failure record to draft a 5-Why map.
               </p>
-              <div className="bg-background-custom p-3 rounded border border-border-custom space-y-2">
-                <div className="flex justify-between text-[10px] font-mono">
-                  <span className="text-text-muted">TARGET: P-101A STALL</span>
-                  <span className="text-status-ok">92% CONFIDENCE</span>
-                </div>
-                <p className="text-[11px] font-mono text-text-primary leading-snug">
-                  CAUSAL PATHWAY: Recirculation valve blockages → suction cavity starvation → hydraulic cavitation of secondary impeller.
-                </p>
-              </div>
             </div>
 
             <button
-              onClick={() => alert('RCA Generator triggered.')}
+              onClick={() => { window.location.hash = '#maintenance'; }}
               className="w-full mt-4 py-2 bg-surface-muted hover:bg-surface border border-border-custom text-xs font-bold text-text-primary rounded text-center cursor-pointer transition-colors"
             >
-              Draft Root Cause Analysis Map [5-Why]
+              Open Maintenance Workspace →
             </button>
           </div>
         </div>
@@ -1036,60 +1051,17 @@ export function RoleDashboard() {
           </div>
         </div>
 
-        {/* Compliance KPI Grid */}
+        {/* Compliance KPI Grid — live widget data */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Validation Health</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">98.2%</p>
-            <span className="text-[10px] font-mono text-status-ok mt-2 block">● COMPLETED OVERALL COMPLIANCE</span>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Registered Regulations</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">14 sets</p>
-            <span className="text-[10px] font-mono text-text-secondary mt-2 block">1,240 CLAUSES GOVERNING</span>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">Active Procedural Gaps</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">3 gaps</p>
-            <span className="text-[10px] font-mono text-status-critical mt-2 block">1 HIGH RISK GAP IN REF-A</span>
-          </div>
-
-          <div className="bg-surface border border-border-custom p-4 rounded-lg">
-            <span className="text-[10px] font-mono font-bold text-text-muted block uppercase">PESO Audits Pending</span>
-            <p className="text-3xl font-display font-bold text-text-primary leading-tight mt-1">1 due</p>
-            <span className="text-[10px] font-mono text-status-warn mt-2 block">AUDIT WINDOW OPENS IN 21 DAYS</span>
-          </div>
+          <KpiTile widgetKey="kpi.compliance_score" title="Validation Health" icon={<ShieldCheck className="w-4 h-4 text-status-ok" />} />
+          <KpiTile widgetKey="kpi.registered_regulations" title="Registered Regulations" icon={<FileText className="w-4 h-4 text-primary" />} />
+          <KpiTile widgetKey="kpi.active_gaps" title="Active Procedural Gaps" icon={<AlertTriangle className="w-4 h-4 text-status-critical" />} />
+          <KpiTile widgetKey="kpi.audits_pending" title="Audits Pending" icon={<Calendar className="w-4 h-4 text-status-warn" />} />
         </div>
 
-        {/* Gap and evidence compiling widgets */}
+        {/* Gap and evidence compiling widgets — live gaps */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-surface border border-border-custom p-4 rounded-lg">
-            <h3 className="font-display text-xs font-bold text-text-primary uppercase tracking-wider pb-3 border-b border-border-custom mb-4">
-              Federal Operational Gaps Detected by AI Engine
-            </h3>
-            
-            <div className="space-y-3">
-              <div className="p-3 bg-background-custom/40 border border-border-custom rounded space-y-2">
-                <div className="flex justify-between items-center font-mono text-[11px]">
-                  <span className="font-bold text-status-critical">GAP #1: OVERDUE PRESSURE CHECKS</span>
-                  <span className="text-text-muted">DETECTION: 12 HOURS AGO</span>
-                </div>
-                <p className="text-xs text-text-secondary">
-                  <strong className="text-text-primary">OISD-STD-118 Clause 6.4:</strong> Weekly validation checks of fuel booster pumps are overdue on sector REF-A. Current maintenance procedure lacks an explicit logging instruction link.
-                </p>
-                <div className="flex justify-end pt-1">
-                  <button 
-                    onClick={() => alert('Remediation Work Order dispatched to PRIYA SHARMA.')}
-                    className="text-[10px] font-mono text-primary hover:underline cursor-pointer"
-                  >
-                    Generate Remediation Action WO →
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ComplianceGapsPanel />
 
           <div className="bg-surface border border-border-custom p-5 rounded-lg flex flex-col justify-between">
             <div>
@@ -1100,20 +1072,13 @@ export function RoleDashboard() {
               <p className="text-xs text-text-secondary leading-relaxed mb-4">
                 Instantly generate a compiled PDF package containing all linked equipment data, historical maintenance certifications, and SOP citations for incoming safety auditors.
               </p>
-              
-              <div className="space-y-2 text-[10px] font-mono text-text-muted bg-background-custom/60 p-3 rounded border border-border-custom">
-                <div>REGULATION: OISD-STD-118</div>
-                <div>SCOPE: RELIANCE JAMNAGER REF-A</div>
-                <div>DOCUMENTS CITED: 14</div>
-                <div>CERTIFICATIONS LINKED: 4</div>
-              </div>
             </div>
 
-            <button 
-              onClick={() => alert('Evidence package successfully compiled. PDF generated [EVIDENCE-OISD-118.pdf].')}
+            <button
+              onClick={() => { window.location.hash = '#compliance'; }}
               className="w-full mt-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded cursor-pointer transition-colors"
             >
-              Generate Evidence Package PDF
+              Open Compliance Workspace →
             </button>
           </div>
         </div>

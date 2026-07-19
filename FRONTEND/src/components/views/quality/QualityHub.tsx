@@ -15,6 +15,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ComposedChart 
 } from 'recharts';
 import { StatusChip, ConfidenceBadge, Select } from '../../shared';
+import { api, USE_MOCK } from '../../../lib/api/client';
 
 export interface Ncr {
   id: string;
@@ -117,14 +118,56 @@ const TRENDS_DATA = [
   { month: 'Jun', 'Line A (Refinery)': 3.4, 'Line B (Gas Terminal)': 1.5 } // Peak in monsoon startup season!
 ];
 
+// Map a backend NCRRead row (see BACKEND/app/modules/quality/schemas.py) onto the
+// frontend `Ncr` type. Backend enums are lowercase snake_case; fields it doesn't
+// expose (defect label, operator, doc) fall back to empty defaults so a new tenant
+// renders an empty register while the demo tenant shows its real NCRs.
+const NCR_SEVERITY_MAP: Record<string, Ncr['severity']> = {
+  critical: 'Critical', high: 'High', major: 'High',
+  medium: 'Medium', low: 'Low', minor: 'Low',
+};
+const NCR_STATUS_MAP: Record<string, Ncr['status']> = {
+  open: 'Open', in_review: 'In Progress', in_progress: 'In Progress',
+  closed: 'Resolved', resolved: 'Resolved', void: 'Resolved',
+};
+function mapNcr(row: any): Ncr {
+  const severity = NCR_SEVERITY_MAP[String(row?.severity ?? '').toLowerCase()] ?? 'Medium';
+  const status = NCR_STATUS_MAP[String(row?.status ?? '').toLowerCase()] ?? 'Open';
+  const capa = row?.capa;
+  const capaItems = Array.isArray(capa) ? capa : (Array.isArray(capa?.items) ? capa.items : []);
+  const capaChecklist = capaItems.map((c: any, i: number) => ({
+    id: String(c?.id ?? i + 1),
+    task: c?.task ?? String(c ?? ''),
+    isCompleted: !!(c?.isCompleted ?? c?.completed),
+  }));
+  const detected = row?.detected_at ?? row?.date ?? '';
+  return {
+    id: String(row?.ncr_number ?? row?.id ?? ''),
+    equipment: row?.equipment_id ? String(row.equipment_id) : '',
+    defectType: row?.defect_type ?? '',
+    severity,
+    operator: row?.operator ?? '',
+    date: detected ? String(detected).slice(0, 10) : '',
+    status,
+    capaChecklist,
+    description: row?.description ?? '',
+  };
+}
+
 export function QualityHub() {
   const [ncrs, setNcrs] = useState<Ncr[]>(() => {
+    // LIVE: start empty and hydrate from GET /quality/ncrs in an effect below.
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_quality_ncrs');
     if (stored) {
       try { return JSON.parse(stored); } catch (e) {}
     }
     return INITIAL_NCRS;
   });
+
+  // Chart datasets: mock fixtures in MOCK, backend-derived (or empty) in LIVE.
+  const [paretoData, setParetoData] = useState<any[]>(USE_MOCK ? PARETO_DATA : []);
+  const [trendsData, setTrendsData] = useState<any[]>(USE_MOCK ? TRENDS_DATA : []);
 
   // Tab State: 'register' | 'trends'
   const [activeTab, setActiveTab] = useState<'register' | 'trends'>('register');
@@ -138,11 +181,48 @@ export function QualityHub() {
   // CAPA Addition State
   const [newCapaText, setNewCapaText] = useState<string>('');
 
-  // Sync state to LocalStorage
+  // Sync state to LocalStorage (mock-only persistence).
   const saveNcrs = (updated: Ncr[]) => {
     setNcrs(updated);
-    localStorage.setItem('indusmind_quality_ncrs', JSON.stringify(updated));
+    if (USE_MOCK) localStorage.setItem('indusmind_quality_ncrs', JSON.stringify(updated));
   };
+
+  // LIVE: fetch NCRs + trends from the backend on mount (empty for a new tenant).
+  useEffect(() => {
+    if (USE_MOCK) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res: any = await api.get('/quality/ncrs');
+        const rows: any[] = res?.data ?? res?.items ?? res ?? [];
+        if (!cancelled) setNcrs((Array.isArray(rows) ? rows : []).map(mapNcr));
+      } catch (e) {
+        if (!cancelled) setNcrs([]);
+      }
+      try {
+        const tr: any = await api.get('/quality/ncrs/trends');
+        const t = tr?.data ?? tr ?? {};
+        const pareto = Array.isArray(t?.defect_pareto) ? t.defect_pareto : [];
+        const byLine = Array.isArray(t?.deviation_rate_by_line) ? t.deviation_rate_by_line : [];
+        if (!cancelled) {
+          setParetoData(pareto.map((p: any) => ({
+            defect: p?.defect_type ?? 'Unclassified',
+            count: p?.count ?? 0,
+            cumulative: p?.cumulative_pct ?? 0,
+          })));
+          // Backend has no monthly series; plot deviation rate per line under the
+          // primary series so the chart renders real data (empty when no NCRs).
+          setTrendsData(byLine.map((l: any) => ({
+            month: l?.line ?? 'Unassigned',
+            'Line A (Refinery)': l?.rate_pct ?? 0,
+          })));
+        }
+      } catch (e) {
+        if (!cancelled) { setParetoData([]); setTrendsData([]); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Listen for hash subrouting
   useEffect(() => {
@@ -623,7 +703,8 @@ export function QualityHub() {
             /* ==================== QUALITY TRENDS ANALYSIS ==================== */
             <div className="space-y-6">
               
-              {/* Emerging Quality Pattern AI Card */}
+              {/* Emerging Quality Pattern AI Card (mock-only fabricated insight) */}
+              {USE_MOCK && (
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5">
                   <Sparkles className="w-32 h-32 text-primary" />
@@ -651,6 +732,7 @@ export function QualityHub() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Pareto and Trend charts side by side */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -664,7 +746,7 @@ export function QualityHub() {
 
                   <div className="h-80 w-full bg-background-custom/30 rounded border border-border-custom/40 p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={PARETO_DATA}>
+                      <ComposedChart data={paretoData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#222d36" />
                         <XAxis dataKey="defect" stroke="#687b8d" fontSize={10} />
                         <YAxis yAxisId="left" label={{ value: 'Incident Frequency', angle: -90, position: 'insideLeft', fill: '#687b8d', fontSize: 10 }} stroke="#687b8d" fontSize={10} />
@@ -687,7 +769,7 @@ export function QualityHub() {
 
                   <div className="h-80 w-full bg-background-custom/30 rounded border border-border-custom/40 p-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={TRENDS_DATA}>
+                      <LineChart data={trendsData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#222d36" />
                         <XAxis dataKey="month" stroke="#687b8d" fontSize={10} />
                         <YAxis label={{ value: 'Deviation Rate %', angle: -90, position: 'insideLeft', fill: '#687b8d', fontSize: 10 }} stroke="#687b8d" fontSize={10} />

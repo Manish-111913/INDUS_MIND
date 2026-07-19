@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { api, USE_MOCK } from '../lib/api/client';
 
 export interface AdminUser {
   id: string;
@@ -49,6 +50,9 @@ export interface FeatureFlag {
   description: string;
   tenants: { [tenant: string]: boolean };
   roles: { [role: string]: boolean };
+  // LIVE-only backend fields (docs/02 §24 flat flag shape); optional so MOCK is unchanged.
+  enabled?: boolean;
+  rollout_pct?: number;
 }
 
 export interface AuditRecord {
@@ -94,8 +98,10 @@ interface AdminState {
   ingestionJobs: IngestionJob[];
   lookups: LookupData;
   activeSessions: { id: string; device: string; ip: string; location: string; active: boolean }[];
-  
+  hydrated: boolean;
+
   // Actions
+  hydrateFromBackend: () => Promise<void>;
   inviteUser: (name: string, email: string, roles: string[]) => void;
   toggleUserStatus: (id: string) => void;
   updateRolePermissions: (role: string, permissionCode: string, value: boolean) => void;
@@ -112,6 +118,10 @@ interface AdminState {
   revokeSession: (id: string) => void;
 }
 
+// ============================================================================
+// MOCK FIXTURES — used ONLY when USE_MOCK is true. In LIVE the store starts
+// empty and is filled from the backend via hydrateFromBackend().
+// ============================================================================
 const INITIAL_USERS: AdminUser[] = [
   { id: 'usr-1', name: 'Aditya Vardhan', email: 'admin@indusmind.io', roles: ['Admin'], status: 'active', lastActive: '12 Jul 2026 12:44' },
   { id: 'usr-2', name: 'Rajesh Nair', email: 'manager@indusmind.io', roles: ['Plant Manager'], status: 'active', lastActive: '12 Jul 2026 11:20' },
@@ -272,149 +282,379 @@ const INITIAL_SESSIONS = [
   { id: 'sess-3', device: 'Safari on iPad Pro (Tablet)', ip: '10.220.15.11', location: 'Mumbai, India', active: false },
 ];
 
-export const useAdminStore = create<AdminState>((set) => {
-  // Load initial values from localStorage if available
+// ============================================================================
+// LIVE helpers — backend → frontend field mapping (docs/02 §24/§25/§27).
+// api.get/post already unwrap the { data } envelope; unwrap() is defensive.
+// ============================================================================
+const unwrap = (res: any): any[] =>
+  Array.isArray(res) ? res : (res?.data ?? res?.items ?? []);
+
+// Role name → id and permission code → id maps, filled during hydrate so LIVE
+// mutations (invite, role-permission save) can translate the frontend's
+// name/code identifiers into the UUIDs the backend expects.
+let roleIdByName: Record<string, string> = {};
+let permIdByCode: Record<string, string> = {};
+
+const fmtDate = (isoStr?: string | null): string => {
+  if (!isoStr) return 'Never';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return String(isoStr);
+  return d
+    .toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+    .replace(',', '');
+};
+
+const mapUser = (u: any): AdminUser => ({
+  id: String(u.id),
+  name: u.full_name ?? u.name ?? u.email ?? '',
+  email: u.email ?? '',
+  roles: Array.isArray(u.roles) ? u.roles : [],
+  status: u.status === 'active' ? 'active' : 'inactive',
+  lastActive: u.last_login_at ? fmtDate(u.last_login_at) : 'Never',
+});
+
+const mapFlag = (f: any): FeatureFlag => {
+  const roleScope: string[] = Array.isArray(f.role_scope) ? f.role_scope : [];
+  const roles: { [r: string]: boolean } = {};
+  roleScope.forEach((r) => { roles[r] = !!f.enabled; });
+  return {
+    key: f.key,
+    title: f.key,
+    description: '',
+    tenants: {},
+    roles,
+    enabled: !!f.enabled,
+    rollout_pct: f.rollout_pct ?? 100,
+  };
+};
+
+const mapAudit = (a: any): AuditRecord => ({
+  id: String(a.id),
+  time: fmtDate(a.created_at),
+  actor: a.actor_id ? String(a.actor_id) : 'System',
+  action: a.action ?? '',
+  entity: [a.entity_type, a.entity_id].filter(Boolean).join(' '),
+  ip: a.actor_ip ?? '—',
+  beforeJson: JSON.stringify(a.before ?? {}, null, 2),
+  afterJson: JSON.stringify(a.after ?? {}, null, 2),
+});
+
+const mapIngestion = (j: any): IngestionJob => ({
+  id: String(j.id),
+  filename: j.document_id ? `Document ${j.document_id}` : String(j.id),
+  stage: j.current_stage ?? j.status ?? '—',
+  reason: j.error ?? '—',
+  time: fmtDate(j.created_at),
+});
+
+// Backend LookupRead → LookupOption. The live adapter reshapes
+// /lookups/{doc_types|plants|areas} into plain string arrays, so handle both a
+// {code,label,sort,active} object and a bare label string.
+const mapLookupOption = (r: any, i: number): LookupOption =>
+  typeof r === 'string'
+    ? { code: r, label: r, sort: (i + 1) * 10, active: true }
+    : {
+        code: r.code ?? r.label ?? '',
+        label: r.label ?? r.code ?? '',
+        sort: r.sort ?? (i + 1) * 10,
+        active: r.active ?? true,
+      };
+
+export const useAdminStore = create<AdminState>((set, get) => {
+  // Load initial values from localStorage if available (MOCK mode only).
   const loadLocal = <T>(key: string, defaults: T): T => {
     const val = localStorage.getItem(`indusmind_admin_${key}`);
     return val ? JSON.parse(val) : defaults;
   };
 
+  // Persist to localStorage only in MOCK mode; LIVE state lives on the backend.
   const saveLocal = (key: string, data: any) => {
+    if (!USE_MOCK) return;
     localStorage.setItem(`indusmind_admin_${key}`, JSON.stringify(data));
   };
 
   return {
-    users: loadLocal('users', INITIAL_USERS),
-    roles: ['Admin', 'Plant Manager', 'Maintenance Engineer', 'Compliance Officer'],
-    permissions: INITIAL_PERMISSIONS,
-    rolePermissions: loadLocal('rolePermissions', INITIAL_ROLE_PERMISSIONS),
-    aiCapabilities: loadLocal('aiCapabilities', INITIAL_AI_CAPABILITIES),
-    fallbackModel: loadLocal('fallbackModel', 'gemini-2.5-pro'),
-    prompts: loadLocal('prompts', INITIAL_PROMPTS),
-    featureFlags: loadLocal('featureFlags', INITIAL_FEATURE_FLAGS),
-    auditLogs: loadLocal('auditLogs', INITIAL_AUDIT_LOGS),
-    ingestionJobs: loadLocal('ingestionJobs', INITIAL_INGESTION_JOBS),
-    lookups: loadLocal('lookups', INITIAL_LOOKUPS),
-    activeSessions: loadLocal('activeSessions', INITIAL_SESSIONS),
+    // In LIVE the store starts EMPTY and is filled by hydrateFromBackend().
+    // In MOCK it keeps the exact localStorage + fixture behavior it always had.
+    users: USE_MOCK ? loadLocal('users', INITIAL_USERS) : [],
+    roles: USE_MOCK ? ['Admin', 'Plant Manager', 'Maintenance Engineer', 'Compliance Officer'] : [],
+    permissions: USE_MOCK ? INITIAL_PERMISSIONS : [],
+    rolePermissions: USE_MOCK ? loadLocal('rolePermissions', INITIAL_ROLE_PERMISSIONS) : {},
+    aiCapabilities: USE_MOCK ? loadLocal('aiCapabilities', INITIAL_AI_CAPABILITIES) : [], // TODO: no backend endpoint yet
+    fallbackModel: USE_MOCK ? loadLocal('fallbackModel', 'gemini-2.5-pro') : '', // TODO: no backend endpoint yet
+    prompts: USE_MOCK ? loadLocal('prompts', INITIAL_PROMPTS) : [], // TODO: no backend endpoint yet
+    featureFlags: USE_MOCK ? loadLocal('featureFlags', INITIAL_FEATURE_FLAGS) : [],
+    auditLogs: USE_MOCK ? loadLocal('auditLogs', INITIAL_AUDIT_LOGS) : [],
+    ingestionJobs: USE_MOCK ? loadLocal('ingestionJobs', INITIAL_INGESTION_JOBS) : [],
+    lookups: USE_MOCK ? loadLocal('lookups', INITIAL_LOOKUPS) : {},
+    activeSessions: USE_MOCK ? loadLocal('activeSessions', INITIAL_SESSIONS) : [],
+    hydrated: false,
 
-    inviteUser: (name, email, roles) => set((state) => {
-      const newUser: AdminUser = {
-        id: `usr-${Date.now()}`,
-        name,
-        email,
-        roles,
-        status: 'active',
-        lastActive: 'Never'
-      };
-      const updated = [newUser, ...state.users];
-      saveLocal('users', updated);
-      
-      // Append audit log
-      const audit: AuditRecord = {
-        id: `aud-${Date.now()}`,
-        time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-        actor: 'Aditya Vardhan (Admin)',
-        action: 'USER_INVITE',
-        entity: email,
-        ip: '127.0.0.1',
-        beforeJson: '{}',
-        afterJson: JSON.stringify(newUser, null, 2)
-      };
-      const updatedAudits = [audit, ...state.auditLogs];
-      saveLocal('auditLogs', updatedAudits);
+    // ── LIVE hydration ─────────────────────────────────────────────────────
+    // Fetch every admin resource that has a backend home and load it into the
+    // store. No-op in MOCK. Each fetch is isolated so one 403 (missing
+    // permission) or empty resource doesn't blank the others.
+    hydrateFromBackend: async () => {
+      if (USE_MOCK) return;
 
-      return { users: updated, auditLogs: updatedAudits };
-    }),
-
-    toggleUserStatus: (id) => set((state) => {
-      const updated = state.users.map((u) => {
-        if (u.id === id) {
-          const nextStatus: 'active' | 'inactive' = u.status === 'active' ? 'inactive' : 'active';
-          
-          // Append audit log
-          const audit: AuditRecord = {
-            id: `aud-${Date.now()}`,
-            time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-            actor: 'Aditya Vardhan (Admin)',
-            action: `USER_STATUS_TOGGLE`,
-            entity: u.email,
-            ip: '127.0.0.1',
-            beforeJson: JSON.stringify({ status: u.status }),
-            afterJson: JSON.stringify({ status: nextStatus })
-          };
-          setTimeout(() => {
-            set((s) => {
-              const updatedAudits = [audit, ...s.auditLogs];
-              saveLocal('auditLogs', updatedAudits);
-              return { auditLogs: updatedAudits };
-            });
-          }, 0);
-
-          return { ...u, status: nextStatus };
+      const safe = async (fn: () => Promise<void>) => {
+        try {
+          await fn();
+        } catch (e) {
+          console.warn('[adminStore] hydrate partial failure', e);
         }
-        return u;
+      };
+
+      await Promise.all([
+        // Users → GET /users
+        safe(async () => {
+          const r = await api.get<any>('/users');
+          set({ users: unwrap(r).map(mapUser) });
+        }),
+        // Roles (+ their permission codes) → GET /roles
+        safe(async () => {
+          const r = await api.get<any>('/roles');
+          const rows = unwrap(r);
+          const nextRoleIdByName: Record<string, string> = {};
+          const rp: RolePermissions = {};
+          const roles: string[] = [];
+          rows.forEach((x: any) => {
+            roles.push(x.name);
+            rp[x.name] = Array.isArray(x.permissions) ? x.permissions : [];
+            nextRoleIdByName[x.name] = String(x.id);
+          });
+          roleIdByName = nextRoleIdByName;
+          set({ roles, rolePermissions: rp });
+        }),
+        // Permission catalog → GET /permissions
+        safe(async () => {
+          const r = await api.get<any>('/permissions');
+          const rows = unwrap(r);
+          const nextPermIdByCode: Record<string, string> = {};
+          rows.forEach((p: any) => { nextPermIdByCode[p.code] = String(p.id); });
+          permIdByCode = nextPermIdByCode;
+          set({
+            permissions: rows.map((p: any) => ({
+              code: p.code,
+              label: p.description ?? p.code,
+              resource: p.resource ?? 'General',
+            })),
+          });
+        }),
+        // Feature flags → GET /feature-flags
+        safe(async () => {
+          const r = await api.get<any>('/feature-flags');
+          set({ featureFlags: unwrap(r).map(mapFlag) });
+        }),
+        // Audit log → GET /admin/audit-log
+        safe(async () => {
+          const r = await api.get<any>('/admin/audit-log');
+          set({ auditLogs: unwrap(r).map(mapAudit) });
+        }),
+        // Ingestion jobs → GET /ingestion/jobs
+        safe(async () => {
+          const r = await api.get<any>('/ingestion/jobs');
+          set({ ingestionJobs: unwrap(r).map(mapIngestion) });
+        }),
+        // Lookups → GET /lookups/{category} for each admin-managed category
+        safe(async () => {
+          const cats = ['doc_types', 'plants', 'areas'];
+          const lookups: LookupData = {};
+          await Promise.all(
+            cats.map(async (c) => {
+              try {
+                const r = await api.get<any>(`/lookups/${c}`);
+                lookups[c] = unwrap(r).map(mapLookupOption);
+              } catch {
+                lookups[c] = [];
+              }
+            })
+          );
+          set({ lookups });
+        }),
+        // AI capabilities, prompts, fallback model, system health:
+        // TODO: no backend endpoint yet — left EMPTY in LIVE (no fixtures).
+      ]);
+
+      set({ hydrated: true });
+    },
+
+    inviteUser: (name, email, roles) => {
+      if (!USE_MOCK) {
+        const role_ids = roles.map((r) => roleIdByName[r]).filter(Boolean);
+        api
+          .post<any>('/users/invite', { email, full_name: name, role_ids })
+          .then(async () => {
+            const r = await api.get<any>('/users');
+            set({ users: unwrap(r).map(mapUser) });
+          })
+          .catch((e) => console.error('[adminStore] inviteUser failed', e));
+        return;
+      }
+
+      set((state) => {
+        const newUser: AdminUser = {
+          id: `usr-${Date.now()}`,
+          name,
+          email,
+          roles,
+          status: 'active',
+          lastActive: 'Never'
+        };
+        const updated = [newUser, ...state.users];
+        saveLocal('users', updated);
+
+        // Append audit log
+        const audit: AuditRecord = {
+          id: `aud-${Date.now()}`,
+          time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          actor: 'Aditya Vardhan (Admin)',
+          action: 'USER_INVITE',
+          entity: email,
+          ip: '127.0.0.1',
+          beforeJson: '{}',
+          afterJson: JSON.stringify(newUser, null, 2)
+        };
+        const updatedAudits = [audit, ...state.auditLogs];
+        saveLocal('auditLogs', updatedAudits);
+
+        return { users: updated, auditLogs: updatedAudits };
       });
-      saveLocal('users', updated);
-      return { users: updated };
-    }),
+    },
+
+    toggleUserStatus: (id) => {
+      if (!USE_MOCK) {
+        const user = get().users.find((u) => u.id === id);
+        const activate = user?.status !== 'active';
+        // Optimistic flip
+        set((state) => ({
+          users: state.users.map((u) =>
+            u.id === id ? { ...u, status: activate ? 'active' : 'inactive' } : u
+          ),
+        }));
+        api
+          .post<any>(`/users/${id}/${activate ? 'activate' : 'deactivate'}`)
+          .then((res) => {
+            const updated = Array.isArray(res) ? res[0] : (res?.data ?? res);
+            if (updated) {
+              set((state) => ({
+                users: state.users.map((u) => (u.id === id ? mapUser(updated) : u)),
+              }));
+            }
+          })
+          .catch((e) => console.error('[adminStore] toggleUserStatus failed', e));
+        return;
+      }
+
+      set((state) => {
+        const updated = state.users.map((u) => {
+          if (u.id === id) {
+            const nextStatus: 'active' | 'inactive' = u.status === 'active' ? 'inactive' : 'active';
+
+            // Append audit log
+            const audit: AuditRecord = {
+              id: `aud-${Date.now()}`,
+              time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+              actor: 'Aditya Vardhan (Admin)',
+              action: `USER_STATUS_TOGGLE`,
+              entity: u.email,
+              ip: '127.0.0.1',
+              beforeJson: JSON.stringify({ status: u.status }),
+              afterJson: JSON.stringify({ status: nextStatus })
+            };
+            setTimeout(() => {
+              set((s) => {
+                const updatedAudits = [audit, ...s.auditLogs];
+                saveLocal('auditLogs', updatedAudits);
+                return { auditLogs: updatedAudits };
+              });
+            }, 0);
+
+            return { ...u, status: nextStatus };
+          }
+          return u;
+        });
+        saveLocal('users', updated);
+        return { users: updated };
+      });
+    },
 
     updateRolePermissions: (role, permissionCode, value) => set((state) => {
       const currentPerms = state.rolePermissions[role] || [];
-      const updatedPerms = value 
-        ? [...currentPerms, permissionCode] 
+      const updatedPerms = value
+        ? [...currentPerms, permissionCode]
         : currentPerms.filter(p => p !== permissionCode);
-      
+
       const updated = {
         ...state.rolePermissions,
         [role]: updatedPerms
       };
-      // Note: We don't save to local storage until saveRolePermissionsMatrix is explicitly called, or we can save on change.
-      // The prompt says "save bar appearing on change" implying an explicit Save. We'll store it immediately but track changes
-      // or save it instantly to storage for flawless UX. Let's save on change, but we will show the save success bar!
+      // Not persisted until saveRolePermissionsMatrix() is explicitly called
+      // (the floating Save bar). LIVE and MOCK behave identically here.
       return { rolePermissions: updated };
     }),
 
-    saveRolePermissionsMatrix: () => set((state) => {
-      saveLocal('rolePermissions', state.rolePermissions);
-      // Create Audit Log
-      const audit: AuditRecord = {
-        id: `aud-${Date.now()}`,
-        time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-        actor: 'Aditya Vardhan (Admin)',
-        action: 'UPDATE_ROLE_PERMISSIONS_MATRIX',
-        entity: 'ROLE_MATRIX',
-        ip: '127.0.0.1',
-        beforeJson: 'Saved previously',
-        afterJson: JSON.stringify(state.rolePermissions, null, 2)
-      };
-      const updatedAudits = [audit, ...state.auditLogs];
-      saveLocal('auditLogs', updatedAudits);
-      return { auditLogs: updatedAudits };
-    }),
+    saveRolePermissionsMatrix: () => {
+      if (!USE_MOCK) {
+        // PUT each role's permission set — translate codes → permission UUIDs.
+        const rp = get().rolePermissions;
+        Object.entries(rp).forEach(([roleName, codes]) => {
+          const roleId = roleIdByName[roleName];
+          if (!roleId) return;
+          const permission_ids = codes.map((c) => permIdByCode[c]).filter(Boolean);
+          api
+            .put<any>(`/roles/${roleId}/permissions`, { permission_ids })
+            .catch((e) => console.error('[adminStore] saveRolePermissionsMatrix failed', e));
+        });
+        return;
+      }
 
+      set((state) => {
+        saveLocal('rolePermissions', state.rolePermissions);
+        // Create Audit Log
+        const audit: AuditRecord = {
+          id: `aud-${Date.now()}`,
+          time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          actor: 'Aditya Vardhan (Admin)',
+          action: 'UPDATE_ROLE_PERMISSIONS_MATRIX',
+          entity: 'ROLE_MATRIX',
+          ip: '127.0.0.1',
+          beforeJson: 'Saved previously',
+          afterJson: JSON.stringify(state.rolePermissions, null, 2)
+        };
+        const updatedAudits = [audit, ...state.auditLogs];
+        saveLocal('auditLogs', updatedAudits);
+        return { auditLogs: updatedAudits };
+      });
+    },
+
+    // TODO: no backend endpoint yet for AI capability config — LIVE updates are
+    // in-memory only (no persistence, no audit synthesis).
     updateAiCapability: (key, data) => set((state) => {
       const updated = state.aiCapabilities.map((cap) => {
         if (cap.key === key) {
           const capBefore = { ...cap };
           const capAfter = { ...cap, ...data };
-          
-          const audit: AuditRecord = {
-            id: `aud-${Date.now()}`,
-            time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-            actor: 'Aditya Vardhan (Admin)',
-            action: 'UPDATE_AI_CONFIG',
-            entity: `CAPABILITY_${key.toUpperCase()}`,
-            ip: '127.0.0.1',
-            beforeJson: JSON.stringify(capBefore, null, 2),
-            afterJson: JSON.stringify(capAfter, null, 2)
-          };
-          setTimeout(() => {
-            set((s) => {
-              const updatedAudits = [audit, ...s.auditLogs];
-              saveLocal('auditLogs', updatedAudits);
-              return { auditLogs: updatedAudits };
-            });
-          }, 0);
+
+          if (USE_MOCK) {
+            const audit: AuditRecord = {
+              id: `aud-${Date.now()}`,
+              time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+              actor: 'Aditya Vardhan (Admin)',
+              action: 'UPDATE_AI_CONFIG',
+              entity: `CAPABILITY_${key.toUpperCase()}`,
+              ip: '127.0.0.1',
+              beforeJson: JSON.stringify(capBefore, null, 2),
+              afterJson: JSON.stringify(capAfter, null, 2)
+            };
+            setTimeout(() => {
+              set((s) => {
+                const updatedAudits = [audit, ...s.auditLogs];
+                saveLocal('auditLogs', updatedAudits);
+                return { auditLogs: updatedAudits };
+              });
+            }, 0);
+          }
 
           return capAfter;
         }
@@ -424,9 +664,14 @@ export const useAdminStore = create<AdminState>((set) => {
       return { aiCapabilities: updated };
     }),
 
+    // TODO: no backend endpoint yet for fallback model config.
     setFallbackModel: (model) => set((state) => {
       const beforeModel = state.fallbackModel;
       saveLocal('fallbackModel', model);
+
+      if (!USE_MOCK) {
+        return { fallbackModel: model };
+      }
 
       const audit: AuditRecord = {
         id: `aud-${Date.now()}`,
@@ -444,13 +689,15 @@ export const useAdminStore = create<AdminState>((set) => {
       return { fallbackModel: model, auditLogs: updatedAudits };
     }),
 
+    // TODO: no backend endpoint yet for prompt templates — LIVE updates are
+    // in-memory only (no persistence, no audit synthesis).
     savePrompt: (key, template, activate) => set((state) => {
       const updated = state.prompts.map((p) => {
         if (p.key === key) {
           const beforePrompt = { ...p };
           let nextVersion = p.version;
           let nextHistory = [...p.history];
-          
+
           if (activate) {
             const currentVerNum = parseFloat(p.version.replace('V', ''));
             nextVersion = `V${(currentVerNum + 0.1).toFixed(1)}`;
@@ -473,23 +720,25 @@ export const useAdminStore = create<AdminState>((set) => {
             active: activate ? true : p.active
           };
 
-          const audit: AuditRecord = {
-            id: `aud-${Date.now()}`,
-            time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-            actor: 'Aditya Vardhan (Admin)',
-            action: activate ? 'PROMPT_ACTIVATE_NEW_VERSION' : 'PROMPT_DRAFT_SAVE',
-            entity: `PROMPT_${key.toUpperCase()}`,
-            ip: '127.0.0.1',
-            beforeJson: JSON.stringify(beforePrompt, null, 2),
-            afterJson: JSON.stringify(afterPrompt, null, 2)
-          };
-          setTimeout(() => {
-            set((s) => {
-              const updatedAudits = [audit, ...s.auditLogs];
-              saveLocal('auditLogs', updatedAudits);
-              return { auditLogs: updatedAudits };
-            });
-          }, 0);
+          if (USE_MOCK) {
+            const audit: AuditRecord = {
+              id: `aud-${Date.now()}`,
+              time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+              actor: 'Aditya Vardhan (Admin)',
+              action: activate ? 'PROMPT_ACTIVATE_NEW_VERSION' : 'PROMPT_DRAFT_SAVE',
+              entity: `PROMPT_${key.toUpperCase()}`,
+              ip: '127.0.0.1',
+              beforeJson: JSON.stringify(beforePrompt, null, 2),
+              afterJson: JSON.stringify(afterPrompt, null, 2)
+            };
+            setTimeout(() => {
+              set((s) => {
+                const updatedAudits = [audit, ...s.auditLogs];
+                saveLocal('auditLogs', updatedAudits);
+                return { auditLogs: updatedAudits };
+              });
+            }, 0);
+          }
 
           return afterPrompt;
         }
@@ -499,119 +748,197 @@ export const useAdminStore = create<AdminState>((set) => {
       return { prompts: updated };
     }),
 
-    toggleFlag: (flagKey, type, target) => set((state) => {
-      const updated = state.featureFlags.map((flag) => {
-        if (flag.key === flagKey) {
-          const beforeFlag = { ...flag };
-          let afterFlag = { ...flag };
-          
-          if (type === 'tenant') {
-            const nextVal = !flag.tenants[target];
-            afterFlag = {
-              ...flag,
-              tenants: { ...flag.tenants, [target]: nextVal }
-            };
-          } else {
-            const nextVal = !flag.roles[target];
-            afterFlag = {
-              ...flag,
-              roles: { ...flag.roles, [target]: nextVal }
-            };
-          }
-
-          const audit: AuditRecord = {
-            id: `aud-${Date.now()}`,
-            time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-            actor: 'Aditya Vardhan (Admin)',
-            action: 'FEATURE_FLAG_TOGGLE',
-            entity: `FLAG_${flagKey.toUpperCase()}`,
-            ip: '127.0.0.1',
-            beforeJson: JSON.stringify(beforeFlag, null, 2),
-            afterJson: JSON.stringify(afterFlag, null, 2)
-          };
-          setTimeout(() => {
-            set((s) => {
-              const updatedAudits = [audit, ...s.auditLogs];
-              saveLocal('auditLogs', updatedAudits);
-              return { auditLogs: updatedAudits };
-            });
-          }, 0);
-
-          return afterFlag;
+    toggleFlag: (flagKey, type, target) => {
+      if (!USE_MOCK) {
+        // Optimistic local flip, then reconcile with the flat backend flag shape
+        // (docs/02 §24): enabled + role_scope + rollout_pct.
+        let afterFlag: FeatureFlag | undefined;
+        set((state) => ({
+          featureFlags: state.featureFlags.map((flag) => {
+            if (flag.key !== flagKey) return flag;
+            if (type === 'tenant') {
+              afterFlag = { ...flag, enabled: !flag.enabled, tenants: { ...flag.tenants, [target]: !flag.tenants[target] } };
+            } else {
+              afterFlag = { ...flag, roles: { ...flag.roles, [target]: !flag.roles[target] } };
+            }
+            return afterFlag;
+          }),
+        }));
+        if (afterFlag) {
+          const role_scope = Object.keys(afterFlag.roles).filter((r) => afterFlag!.roles[r]);
+          api
+            .put<any>('/feature-flags', {
+              key: afterFlag.key,
+              enabled: afterFlag.enabled ?? role_scope.length > 0,
+              role_scope,
+              rollout_pct: afterFlag.rollout_pct ?? 100,
+            })
+            .catch((e) => console.error('[adminStore] toggleFlag failed', e));
         }
-        return flag;
+        return;
+      }
+
+      set((state) => {
+        const updated = state.featureFlags.map((flag) => {
+          if (flag.key === flagKey) {
+            const beforeFlag = { ...flag };
+            let afterFlag = { ...flag };
+
+            if (type === 'tenant') {
+              const nextVal = !flag.tenants[target];
+              afterFlag = {
+                ...flag,
+                tenants: { ...flag.tenants, [target]: nextVal }
+              };
+            } else {
+              const nextVal = !flag.roles[target];
+              afterFlag = {
+                ...flag,
+                roles: { ...flag.roles, [target]: nextVal }
+              };
+            }
+
+            const audit: AuditRecord = {
+              id: `aud-${Date.now()}`,
+              time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+              actor: 'Aditya Vardhan (Admin)',
+              action: 'FEATURE_FLAG_TOGGLE',
+              entity: `FLAG_${flagKey.toUpperCase()}`,
+              ip: '127.0.0.1',
+              beforeJson: JSON.stringify(beforeFlag, null, 2),
+              afterJson: JSON.stringify(afterFlag, null, 2)
+            };
+            setTimeout(() => {
+              set((s) => {
+                const updatedAudits = [audit, ...s.auditLogs];
+                saveLocal('auditLogs', updatedAudits);
+                return { auditLogs: updatedAudits };
+              });
+            }, 0);
+
+            return afterFlag;
+          }
+          return flag;
+        });
+        saveLocal('featureFlags', updated);
+        return { featureFlags: updated };
       });
-      saveLocal('featureFlags', updated);
-      return { featureFlags: updated };
-    }),
+    },
 
-    retryIngestionJob: (id) => set((state) => {
-      // Find the job to get its name
-      const job = state.ingestionJobs.find(j => j.id === id);
-      const updated = state.ingestionJobs.filter(j => j.id !== id);
-      saveLocal('ingestionJobs', updated);
+    retryIngestionJob: (id) => {
+      if (!USE_MOCK) {
+        set((state) => ({ ingestionJobs: state.ingestionJobs.filter((j) => j.id !== id) }));
+        api
+          .post<any>(`/ingestion/jobs/${id}/retry`)
+          .catch((e) => console.error('[adminStore] retryIngestionJob failed', e));
+        return;
+      }
 
-      const audit: AuditRecord = {
-        id: `aud-${Date.now()}`,
-        time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-        actor: 'Aditya Vardhan (Admin)',
-        action: 'INGESTION_RETRY_JOB',
-        entity: job ? job.filename : `JOB_${id}`,
-        ip: '127.0.0.1',
-        beforeJson: JSON.stringify(job || {}),
-        afterJson: '{}'
-      };
-      const updatedAudits = [audit, ...state.auditLogs];
-      saveLocal('auditLogs', updatedAudits);
+      set((state) => {
+        // Find the job to get its name
+        const job = state.ingestionJobs.find(j => j.id === id);
+        const updated = state.ingestionJobs.filter(j => j.id !== id);
+        saveLocal('ingestionJobs', updated);
 
-      return { ingestionJobs: updated, auditLogs: updatedAudits };
-    }),
+        const audit: AuditRecord = {
+          id: `aud-${Date.now()}`,
+          time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          actor: 'Aditya Vardhan (Admin)',
+          action: 'INGESTION_RETRY_JOB',
+          entity: job ? job.filename : `JOB_${id}`,
+          ip: '127.0.0.1',
+          beforeJson: JSON.stringify(job || {}),
+          afterJson: '{}'
+        };
+        const updatedAudits = [audit, ...state.auditLogs];
+        saveLocal('auditLogs', updatedAudits);
 
-    retryAllIngestionJobs: () => set((state) => {
-      const beforeJobsCount = state.ingestionJobs.length;
-      saveLocal('ingestionJobs', []);
+        return { ingestionJobs: updated, auditLogs: updatedAudits };
+      });
+    },
 
-      const audit: AuditRecord = {
-        id: `aud-${Date.now()}`,
-        time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-        actor: 'Aditya Vardhan (Admin)',
-        action: 'INGESTION_RETRY_ALL_JOBS',
-        entity: 'INGESTION_QUEUE',
-        ip: '127.0.0.1',
-        beforeJson: JSON.stringify({ count: beforeJobsCount }),
-        afterJson: JSON.stringify({ count: 0 })
-      };
-      const updatedAudits = [audit, ...state.auditLogs];
-      saveLocal('auditLogs', updatedAudits);
+    retryAllIngestionJobs: () => {
+      if (!USE_MOCK) {
+        const jobs = get().ingestionJobs;
+        jobs.forEach((j) => {
+          api
+            .post<any>(`/ingestion/jobs/${j.id}/retry`)
+            .catch((e) => console.error('[adminStore] retryAllIngestionJobs failed', e));
+        });
+        set({ ingestionJobs: [] });
+        return;
+      }
 
-      return { ingestionJobs: [], auditLogs: updatedAudits };
-    }),
+      set((state) => {
+        const beforeJobsCount = state.ingestionJobs.length;
+        saveLocal('ingestionJobs', []);
 
-    addLookupOption: (category, option) => set((state) => {
-      const currentCatList = state.lookups[category] || [];
-      const updatedList = [...currentCatList, option].sort((a, b) => a.sort - b.sort);
-      const updated = {
-        ...state.lookups,
-        [category]: updatedList
-      };
-      saveLocal('lookups', updated);
+        const audit: AuditRecord = {
+          id: `aud-${Date.now()}`,
+          time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          actor: 'Aditya Vardhan (Admin)',
+          action: 'INGESTION_RETRY_ALL_JOBS',
+          entity: 'INGESTION_QUEUE',
+          ip: '127.0.0.1',
+          beforeJson: JSON.stringify({ count: beforeJobsCount }),
+          afterJson: JSON.stringify({ count: 0 })
+        };
+        const updatedAudits = [audit, ...state.auditLogs];
+        saveLocal('auditLogs', updatedAudits);
 
-      const audit: AuditRecord = {
-        id: `aud-${Date.now()}`,
-        time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
-        actor: 'Aditya Vardhan (Admin)',
-        action: 'LOOKUP_ADD_OPTION',
-        entity: `LOOKUP_${category.toUpperCase()}`,
-        ip: '127.0.0.1',
-        beforeJson: '{}',
-        afterJson: JSON.stringify({ category, option }, null, 2)
-      };
-      const updatedAudits = [audit, ...state.auditLogs];
-      saveLocal('auditLogs', updatedAudits);
+        return { ingestionJobs: [], auditLogs: updatedAudits };
+      });
+    },
 
-      return { lookups: updated, auditLogs: updatedAudits };
-    }),
+    addLookupOption: (category, option) => {
+      if (!USE_MOCK) {
+        // Optimistic add, plus a real create (POST /lookups).
+        set((state) => {
+          const currentCatList = state.lookups[category] || [];
+          const updatedList = [...currentCatList, option].sort((a, b) => a.sort - b.sort);
+          return { lookups: { ...state.lookups, [category]: updatedList } };
+        });
+        api
+          .post<any>('/lookups', {
+            category,
+            code: option.code,
+            label: option.label,
+            sort: option.sort,
+            active: option.active,
+          })
+          .catch((e) => console.error('[adminStore] addLookupOption failed', e));
+        return;
+      }
 
+      set((state) => {
+        const currentCatList = state.lookups[category] || [];
+        const updatedList = [...currentCatList, option].sort((a, b) => a.sort - b.sort);
+        const updated = {
+          ...state.lookups,
+          [category]: updatedList
+        };
+        saveLocal('lookups', updated);
+
+        const audit: AuditRecord = {
+          id: `aud-${Date.now()}`,
+          time: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''),
+          actor: 'Aditya Vardhan (Admin)',
+          action: 'LOOKUP_ADD_OPTION',
+          entity: `LOOKUP_${category.toUpperCase()}`,
+          ip: '127.0.0.1',
+          beforeJson: '{}',
+          afterJson: JSON.stringify({ category, option }, null, 2)
+        };
+        const updatedAudits = [audit, ...state.auditLogs];
+        saveLocal('auditLogs', updatedAudits);
+
+        return { lookups: updated, auditLogs: updatedAudits };
+      });
+    },
+
+    // TODO: the live adapter reshapes /lookups/{category} to strings, so the
+    // backend lookup UUID isn't available client-side; LIVE update/delete are
+    // in-memory only (PATCH/DELETE /lookups/id/{uuid} would need the raw id).
     updateLookupOption: (category, code, data) => set((state) => {
       const currentCatList = state.lookups[category] || [];
       const beforeOpt = currentCatList.find(o => o.code === code);
@@ -627,6 +954,10 @@ export const useAdminStore = create<AdminState>((set) => {
         [category]: updatedList
       };
       saveLocal('lookups', updated);
+
+      if (!USE_MOCK) {
+        return { lookups: updated };
+      }
 
       const audit: AuditRecord = {
         id: `aud-${Date.now()}`,
@@ -644,6 +975,7 @@ export const useAdminStore = create<AdminState>((set) => {
       return { lookups: updated, auditLogs: updatedAudits };
     }),
 
+    // TODO: see updateLookupOption — LIVE delete is in-memory only (no raw id).
     deleteLookupOption: (category, code) => set((state) => {
       const currentCatList = state.lookups[category] || [];
       const beforeOpt = currentCatList.find(o => o.code === code);
@@ -654,6 +986,10 @@ export const useAdminStore = create<AdminState>((set) => {
         [category]: updatedList
       };
       saveLocal('lookups', updated);
+
+      if (!USE_MOCK) {
+        return { lookups: updated };
+      }
 
       const audit: AuditRecord = {
         id: `aud-${Date.now()}`,
@@ -671,6 +1007,7 @@ export const useAdminStore = create<AdminState>((set) => {
       return { lookups: updated, auditLogs: updatedAudits };
     }),
 
+    // TODO: no admin sessions endpoint wired — LIVE revoke is in-memory only.
     revokeSession: (id) => set((state) => {
       const targetSession = state.activeSessions.find(s => s.id === id);
       const updated = state.activeSessions.map((s) => {
@@ -680,6 +1017,10 @@ export const useAdminStore = create<AdminState>((set) => {
         return s;
       });
       saveLocal('activeSessions', updated);
+
+      if (!USE_MOCK) {
+        return { activeSessions: updated };
+      }
 
       const audit: AuditRecord = {
         id: `aud-${Date.now()}`,

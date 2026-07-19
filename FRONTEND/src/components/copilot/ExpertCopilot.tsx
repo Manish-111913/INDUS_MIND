@@ -41,6 +41,8 @@ interface ChatSession {
   pinned?: boolean;
   /** Live mode: the backend chat-session UUID (lazily created on first send). */
   backendId?: string;
+  /** Live mode: true once this session's messages have been fetched from the backend. */
+  messagesLoaded?: boolean;
 }
 
 interface ScopeFilters {
@@ -468,8 +470,41 @@ export function ExpertCopilot() {
 
   const isSpeechSupported = !!SpeechRecognition;
 
-  // Initialize sessions on mount (with seeding of pre-populated sessions)
+  // Initialize sessions on mount.
+  //  • MOCK: read/seed the offline fixture sessions from localStorage (unchanged).
+  //  • LIVE: no seeding — the session list is populated from GET /chat/sessions,
+  //    so a brand-new tenant correctly starts with an empty list.
   useEffect(() => {
+    if (!USE_MOCK) {
+      // ---- LIVE: fetch real chat sessions; never seed fixtures. ----
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await api.get<any>('/chat/sessions');
+          const rows = res?.data ?? res?.items ?? res ?? [];
+          const mapped: ChatSession[] = (Array.isArray(rows) ? rows : []).map(mapLiveSession);
+          if (cancelled) return;
+          setSessions(mapped);
+
+          const params = new URLSearchParams(window.location.hash.split('?')[1]);
+          const hashId = params.get('sessionId');
+          const initial = (hashId && mapped.some(s => s.id === hashId)) ? hashId : (mapped[0]?.id || '');
+          setActiveSessionId(initial);
+
+          const active = mapped.find(s => s.id === initial);
+          if (active?.backendId) void loadSessionMessages(active.id, active.backendId);
+        } catch (e) {
+          console.error('Failed to load chat sessions', e);
+          if (!cancelled) {
+            setSessions([]);
+            setActiveSessionId('');
+          }
+        }
+      })();
+      return () => { cancelled = true; };
+    }
+
+    // ---- MOCK: seed pre-populated fixture sessions from localStorage. ----
     const saved = localStorage.getItem('indusmind_chat_sessions');
     let parsed: ChatSession[] = [];
     if (saved) {
@@ -580,10 +615,11 @@ export function ExpertCopilot() {
     return () => window.removeEventListener('hashchange', handleUrlQuery);
   }, []);
 
-  // Save sessions to localStorage whenever state changes
+  // Save sessions to localStorage whenever state changes.
+  // Only MOCK persists to localStorage; LIVE is server-backed (no seeding).
   const saveSessions = (updated: ChatSession[]) => {
     setSessions(updated);
-    localStorage.setItem('indusmind_chat_sessions', JSON.stringify(updated));
+    if (USE_MOCK) localStorage.setItem('indusmind_chat_sessions', JSON.stringify(updated));
   };
 
   // Find active session
@@ -633,6 +669,15 @@ export function ExpertCopilot() {
     // Update hash route so it represents session ID correctly
     window.location.hash = `#copilot?sessionId=${id}`;
     setIsMobileDrawerOpen(false);
+
+    // Live mode: lazily fetch this session's message history the first time it
+    // is opened. Mock keeps its full history in localStorage already.
+    if (!USE_MOCK) {
+      const sess = sessions.find(s => s.id === id);
+      if (sess?.backendId && !sess.messagesLoaded) {
+        void loadSessionMessages(id, sess.backendId);
+      }
+    }
   };
 
   const handleCreateNewSession = () => {
@@ -662,9 +707,18 @@ export function ExpertCopilot() {
 
   const handleDeleteSession = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const removed = sessions.find(s => s.id === id);
     const updated = sessions.filter(s => s.id !== id);
-    if (updated.length === 0) {
-      // Create empty fallback session immediately so list never collapses
+
+    // Live mode: best-effort delete on the backend when this session exists there.
+    if (!USE_MOCK && removed?.backendId) {
+      api.delete(`/chat/sessions/${removed.backendId}`).catch(err =>
+        console.error('Failed to delete chat session', err),
+      );
+    }
+
+    if (updated.length === 0 && USE_MOCK) {
+      // MOCK only: create an empty fallback fixture so the list never collapses.
       const fbId = `session-${Date.now()}`;
       const fbSess: ChatSession = {
         id: fbId,
@@ -675,6 +729,11 @@ export function ExpertCopilot() {
       saveSessions([fbSess]);
       setActiveSessionId(fbId);
       window.location.hash = `#copilot?sessionId=${fbId}`;
+    } else if (updated.length === 0) {
+      // LIVE: deleting the last session leaves an empty list + empty state.
+      saveSessions(updated);
+      setActiveSessionId('');
+      window.location.hash = `#copilot`;
     } else {
       saveSessions(updated);
       if (activeSessionId === id) {
@@ -819,6 +878,48 @@ export function ExpertCopilot() {
     return 'Med';
   };
 
+  // Backend ChatSessionRead → the local ChatSession shape. The backend UUID is
+  // used as both the local id and the backendId, so sending re-uses the
+  // existing server session instead of lazily creating a new one.
+  const mapLiveSession = (s: any): ChatSession => ({
+    id: String(s.id),
+    name: s.title || 'Untitled Session',
+    createdTime: s.created_at ? new Date(s.created_at).getTime() : Date.now(),
+    messages: [],
+    pinned: !!s.pinned,
+    backendId: String(s.id),
+    messagesLoaded: false,
+  });
+
+  // Backend ChatMessageRead → the local Message shape.
+  const mapLiveMessage = (m: any): Message => ({
+    id: String(m.id),
+    sender: m.role === 'user' ? 'user' : 'system',
+    text: m.content || '',
+    time: m.created_at
+      ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '',
+    citations: Array.isArray(m.citations) ? m.citations.map(mapLiveCitation) : [],
+    confidence: m.confidence_level ? mapConfidenceLevel(m.confidence_level) : undefined,
+    confidencePct: typeof m.confidence === 'number' ? Math.round(m.confidence * 100) : undefined,
+    timeToAnswer: m.latency_ms != null ? `${(m.latency_ms / 1000).toFixed(1)}s` : undefined,
+    // Carry the backend message id so feedback/save-to-kb target the real message.
+    backendMessageId: String(m.id),
+  });
+
+  // Live-mode lazy loader: fetch a session's message history on demand.
+  const loadSessionMessages = async (localId: string, backendId: string) => {
+    try {
+      const res = await api.get<any>(`/chat/sessions/${backendId}/messages`);
+      const rows = res?.data ?? res?.items ?? res ?? [];
+      const msgs = (Array.isArray(rows) ? rows : []).map(mapLiveMessage);
+      setSessions(prev => prev.map(s => (s.id === localId ? { ...s, messages: msgs, messagesLoaded: true } : s)));
+    } catch (e) {
+      console.error('Failed to load session messages', e);
+      setSessions(prev => prev.map(s => (s.id === localId ? { ...s, messagesLoaded: true } : s)));
+    }
+  };
+
   // Patch the streaming bot message in the active session and persist on finalize.
   const patchBotMessage = (
     localSessionId: string,
@@ -832,13 +933,12 @@ export function ExpertCopilot() {
           ? { ...s, messages: (s.messages || []).map(m => (m.id === botMsgId ? { ...m, ...patch } : m)) }
           : s,
       );
-      if (persist) localStorage.setItem('indusmind_chat_sessions', JSON.stringify(updated));
+      if (persist && USE_MOCK) localStorage.setItem('indusmind_chat_sessions', JSON.stringify(updated));
       return updated;
     });
   };
 
-  const streamLiveAnswer = async (content: string, baseSessions: ChatSession[]) => {
-    const localSessionId = activeSessionId;
+  const streamLiveAnswer = async (content: string, baseSessions: ChatSession[], localSessionId: string) => {
     const active = baseSessions.find(s => s.id === localSessionId);
     if (!active) return;
 
@@ -915,7 +1015,7 @@ export function ExpertCopilot() {
   // Message transmission & token-by-token streaming
   // ============================================================================
   const handleSend = (textToSend: string) => {
-    if (!textToSend.trim() || !activeSessionId) return;
+    if (!textToSend.trim()) return;
 
     // Stop recording if active
     if (isMicActive && recRef.current) {
@@ -934,19 +1034,37 @@ export function ExpertCopilot() {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    const sessionObj = sessions.find(s => s.id === activeSessionId);
-    if (!sessionObj) return;
+    // Resolve the target session. A brand-new LIVE tenant has an empty session
+    // list, so spin up an in-memory working session on demand — its backend
+    // session is created lazily on first send (streamLiveAnswer). In MOCK there
+    // is always a seeded active session, so this simply reuses it.
+    let sessionObj = sessions.find(s => s.id === activeSessionId);
+    let targetId = activeSessionId;
+    let baseSessions = sessions;
+    if (!sessionObj) {
+      targetId = `session-${Date.now()}`;
+      sessionObj = {
+        id: targetId,
+        name: cleanedText.length > 25 ? cleanedText.substring(0, 25) + '...' : cleanedText,
+        createdTime: Date.now(),
+        messages: [],
+        messagesLoaded: true,
+      };
+      baseSessions = [sessionObj, ...sessions];
+      setActiveSessionId(targetId);
+      window.location.hash = `#copilot?sessionId=${targetId}`;
+    }
 
     const currentMsgList = [...sessionObj.messages, userMsg];
-    
+
     // Automatically rename the session name if it was a default "New Session"
     let updatedSessName = sessionObj.name;
     if (sessionObj.name.startsWith('New Session')) {
       updatedSessName = cleanedText.length > 25 ? cleanedText.substring(0, 25) + '...' : cleanedText;
     }
 
-    const updatedSessionsWithUser = sessions.map(s => {
-      if (s.id === activeSessionId) {
+    const updatedSessionsWithUser = baseSessions.map(s => {
+      if (s.id === targetId) {
         return { ...s, name: updatedSessName, messages: currentMsgList };
       }
       return s;
@@ -958,7 +1076,7 @@ export function ExpertCopilot() {
     // retrieval + produces cited answers). Mock mode keeps the offline
     // MOCK_ANSWERS simulator below.
     if (!USE_MOCK) {
-      void streamLiveAnswer(cleanedText, updatedSessionsWithUser);
+      void streamLiveAnswer(cleanedText, updatedSessionsWithUser, targetId);
       return;
     }
 

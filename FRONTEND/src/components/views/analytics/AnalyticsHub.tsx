@@ -3,17 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { 
+import React, { useState, useEffect } from 'react';
+import {
   BarChart3, Calendar, FileText, Download, Mail, Check, Play,
   Plus, ArrowRight, Clock, ShieldAlert, Cpu, Network, RefreshCw,
   Search, Sliders, ChevronRight, BookmarkCheck, LayoutGrid, List
 } from 'lucide-react';
-import { 
+import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { StatusChip, Select } from '../../shared';
+import { api, USE_MOCK } from '../../../lib/api/client';
 
 export interface ReportDefinition {
   id: string;
@@ -31,6 +32,94 @@ export interface ReportDefinition {
   chartData: any[];
   tableHeaders: string[];
   tableRows: any[][];
+  // LIVE-only: set when a report is sourced from the backend so rendering can
+  // use a generic `{name,value}` chart series instead of the mock's fixed keys.
+  live?: boolean;
+  xKey?: string;
+  yKey?: string;
+  yLabel?: string;
+}
+
+// ---------------------------------------------------------------------------
+// LIVE mappers: translate backend analytics shapes → the ReportDefinition UI
+// model. Only used when USE_MOCK is false; MOCK mode never touches these.
+//   GET /analytics/reports item  → { id, key, name, description, category,
+//        params_schema[], chart_config{type,x,y}, required_permission }
+//   POST /analytics/reports/{id}/run → { report{id,key,name}, columns[],
+//        rows[{col:val}], row_count, charts{type,x,y}, params }
+// ---------------------------------------------------------------------------
+function mapCategory(c?: string): ReportDefinition['category'] {
+  switch ((c || '').toLowerCase()) {
+    case 'maintenance': return 'Maintenance';
+    case 'compliance': return 'Compliance';
+    case 'knowledge': return 'Knowledge';
+    case 'operations': return 'Operations';
+    default: return 'Operations';
+  }
+}
+
+function mapParam(spec: any): ReportDefinition['parametersSchema'][number] {
+  const t = String(spec?.type ?? '').toLowerCase();
+  let type: 'select' | 'date' | 'number' = 'number';
+  if (Array.isArray(spec?.options) && spec.options.length) type = 'select';
+  else if (t === 'date') type = 'date';
+  else if (t === 'int' || t === 'float' || t === 'number') type = 'number';
+  else if (Array.isArray(spec?.options)) type = 'select';
+  return {
+    key: String(spec?.name ?? ''),
+    label: String(spec?.label ?? spec?.name ?? ''),
+    type,
+    options: Array.isArray(spec?.options) ? spec.options.map(String) : undefined,
+    defaultValue: spec?.default ?? '',
+  };
+}
+
+function chartTypeOf(cc: any, fallback: ReportDefinition['chartType']): ReportDefinition['chartType'] {
+  const t = cc?.type;
+  return t === 'bar' || t === 'line' || t === 'pie' || t === 'area' ? t : fallback;
+}
+
+// A gallery entry (definition only — no data until a run is issued).
+function mapReportDef(r: any): ReportDefinition {
+  const cc = r?.chart_config || {};
+  return {
+    id: String(r?.id ?? ''),
+    name: String(r?.name ?? r?.key ?? 'Report'),
+    description: String(r?.description ?? ''),
+    category: mapCategory(r?.category),
+    parametersSchema: Array.isArray(r?.params_schema) ? r.params_schema.map(mapParam) : [],
+    chartType: chartTypeOf(cc, 'bar'),
+    chartData: [],
+    tableHeaders: [],
+    tableRows: [],
+    live: true,
+    xKey: cc?.x,
+    yKey: cc?.y,
+    yLabel: cc?.y ? String(cc.y) : 'Value',
+  };
+}
+
+// Merge a run-result payload into an existing (gallery) definition.
+function applyRun(def: ReportDefinition, res: any): ReportDefinition {
+  const cols: string[] = Array.isArray(res?.columns) ? res.columns.map(String) : [];
+  const rows: any[] = Array.isArray(res?.rows) ? res.rows : [];
+  const cc = res?.charts || {};
+  const xKey = cc?.x ?? def.xKey;
+  const yKey = cc?.y ?? def.yKey;
+  const isTable = cc?.type === 'table' || !xKey || !yKey;
+  const chartData = isTable
+    ? []
+    : rows.map((row) => ({ name: String(row?.[xKey] ?? ''), value: Number(row?.[yKey] ?? 0) }));
+  return {
+    ...def,
+    chartType: chartTypeOf(cc, def.chartType),
+    xKey,
+    yKey,
+    yLabel: yKey ? String(yKey) : def.yLabel,
+    chartData,
+    tableHeaders: cols,
+    tableRows: rows.map((row) => cols.map((c) => row?.[c])),
+  };
 }
 
 const MOCK_REPORTS: ReportDefinition[] = [
@@ -133,11 +222,13 @@ const MOCK_REPORTS: ReportDefinition[] = [
 ];
 
 export function AnalyticsHub() {
-  const [reports] = useState<ReportDefinition[]>(MOCK_REPORTS);
-  const [selectedReportId, setSelectedReportId] = useState<string>('rep-1');
-  
+  // MOCK: keep the baked fixtures + hardcoded defaults. LIVE: start empty and
+  // hydrate the gallery from GET /analytics/reports on mount.
+  const [reports, setReports] = useState<ReportDefinition[]>(USE_MOCK ? MOCK_REPORTS : []);
+  const [selectedReportId, setSelectedReportId] = useState<string>(USE_MOCK ? 'rep-1' : '');
+
   // Custom states matching report parameter values
-  const [paramValues, setParamValues] = useState<Record<string, any>>({
+  const [paramValues, setParamValues] = useState<Record<string, any>>(USE_MOCK ? {
     area: 'all',
     startDate: '2026-06-01',
     endDate: '2026-07-01',
@@ -148,7 +239,7 @@ export function AnalyticsHub() {
     regulatoryBody: 'all',
     docType: 'all',
     minConfidence: 85
-  });
+  } : {});
 
   // Schedule modal state
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
@@ -174,7 +265,64 @@ export function AnalyticsHub() {
 
   const activeReport = reports.find(r => r.id === selectedReportId) || reports[0];
 
+  // LIVE: run a report definition and fold its rows/series into the gallery
+  // entry so the existing chart/table components render the returned data.
+  const runLive = async (def: ReportDefinition, params: Record<string, any>) => {
+    setIsRunningDiagnostic(true);
+    setShowResults(false);
+    try {
+      const res: any = await api.post(`/analytics/reports/${def.id}/run`, { params: params ?? {} });
+      const payload = res?.data ?? res ?? {};
+      const updated = applyRun(def, payload);
+      setReports(prev => prev.map(r => (r.id === def.id ? updated : r)));
+    } catch (e) {
+      // A brand-new tenant with no data still resolves to empty charts/tables.
+      setReports(prev => prev.map(r => (r.id === def.id
+        ? { ...def, chartData: [], tableHeaders: [], tableRows: [] }
+        : r)));
+    } finally {
+      setIsRunningDiagnostic(false);
+      setShowResults(true);
+    }
+  };
+
+  // LIVE: populate the report gallery on mount; auto-run the first report.
+  useEffect(() => {
+    if (USE_MOCK) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res: any = await api.get('/analytics/reports');
+        const list = res?.data ?? res?.items ?? res ?? [];
+        const mapped: ReportDefinition[] = (Array.isArray(list) ? list : []).map(mapReportDef);
+        if (cancelled) return;
+        setReports(mapped);
+        if (mapped.length) {
+          setSelectedReportId(mapped[0].id);
+          runLive(mapped[0], {});
+        }
+      } catch (e) {
+        if (!cancelled) setReports([]);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSelectReport = (rep: ReportDefinition) => {
+    setSelectedReportId(rep.id);
+    setShowResults(true);
+    if (!USE_MOCK) runLive(rep, paramValues);
+  };
+
   const handleRunReport = () => {
+    if (!activeReport) return;
+    if (!USE_MOCK) {
+      runLive(activeReport, paramValues).then(() => {
+        showToast(`Diagnostic Report "${activeReport.name}" compiled successfully!`);
+      });
+      return;
+    }
     setIsRunningDiagnostic(true);
     setShowResults(false);
     setTimeout(() => {
@@ -184,17 +332,53 @@ export function AnalyticsHub() {
     }, 800);
   };
 
-  const handleExport = (format: 'CSV' | 'PDF') => {
-    showToast(`EXPORT SUCCESS: Mapped diagnostic rows for "${activeReport.name}" compiled and exported as ${format}!`);
+  const handleExport = async (format: 'CSV' | 'PDF') => {
+    if (!activeReport) return;
+    if (USE_MOCK) {
+      showToast(`EXPORT SUCCESS: Mapped diagnostic rows for "${activeReport.name}" compiled and exported as ${format}!`);
+      return;
+    }
+    try {
+      const res: any = await api.post(`/analytics/reports/${activeReport.id}/export`, {
+        format: format.toLowerCase(),
+        params: paramValues,
+      });
+      const payload = res?.data ?? res ?? {};
+      const url = payload?.download_url;
+      if (url) window.open(url, '_blank');
+      showToast(`EXPORT SUCCESS: "${activeReport.name}" exported as ${format}!`);
+    } catch (e) {
+      showToast(`Export failed for "${activeReport.name}".`);
+    }
   };
 
-  const handleScheduleEmail = (e: React.FormEvent) => {
+  const handleScheduleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scheduleEmail.trim()) {
       alert('Please provide a target email address.');
       return;
     }
-    showToast(`SCHEDULED: Recurring ${scheduleFrequency} email digest of "${activeReport.name}" routed to ${scheduleEmail}!`);
+    if (!USE_MOCK && activeReport) {
+      const cronMap: Record<string, string> = {
+        Daily: '0 6 * * *',
+        Weekly: '0 0 * * 1',
+        Monthly: '0 0 1 * *',
+      };
+      try {
+        await api.post(`/analytics/reports/${activeReport.id}/schedule`, {
+          cron: cronMap[scheduleFrequency] ?? '0 0 * * 1',
+          recipients: [scheduleEmail.trim()],
+          params: paramValues,
+          format: 'pdf',
+        });
+      } catch (err) {
+        showToast(`Failed to schedule "${activeReport.name}".`);
+        setIsScheduleOpen(false);
+        setScheduleEmail('');
+        return;
+      }
+    }
+    showToast(`SCHEDULED: Recurring ${scheduleFrequency} email digest of "${activeReport?.name ?? 'report'}" routed to ${scheduleEmail}!`);
     setIsScheduleOpen(false);
     setScheduleEmail('');
   };
@@ -227,15 +411,17 @@ export function AnalyticsHub() {
             </h3>
 
             <div className="space-y-1.5">
+              {reports.length === 0 && (
+                <p className="text-[11px] text-text-muted font-sans py-4 text-center">
+                  No report definitions available for this tenant yet.
+                </p>
+              )}
               {reports.map((rep) => {
                 const isSelected = selectedReportId === rep.id;
                 return (
                   <button
                     key={rep.id}
-                    onClick={() => {
-                      setSelectedReportId(rep.id);
-                      setShowResults(true);
-                    }}
+                    onClick={() => handleSelectReport(rep)}
                     className={`w-full text-left p-3 rounded-lg border text-xs font-sans flex items-start justify-between cursor-pointer transition-all ${
                       isSelected 
                         ? 'bg-primary/10 border-primary text-text-primary font-bold'
@@ -261,7 +447,7 @@ export function AnalyticsHub() {
             </h3>
 
             <div className="space-y-3 pt-1">
-              {activeReport.parametersSchema.map((field) => (
+              {(activeReport?.parametersSchema ?? []).map((field) => (
                 <div key={field.key} className="space-y-1.5">
                   <label className="block text-[10px] font-mono font-bold text-text-muted uppercase tracking-wide">
                     {field.label}
@@ -294,7 +480,7 @@ export function AnalyticsHub() {
 
               <button
                 onClick={handleRunReport}
-                disabled={isRunningDiagnostic}
+                disabled={isRunningDiagnostic || !activeReport}
                 className="w-full py-2.5 bg-primary hover:bg-primary-hover disabled:bg-primary/50 text-white rounded text-xs font-mono font-bold cursor-pointer transition-colors flex items-center justify-center space-x-2 mt-4"
               >
                 {isRunningDiagnostic ? (
@@ -373,16 +559,25 @@ export function AnalyticsHub() {
                         <YAxis stroke="#687b8d" fontSize={10} />
                         <Tooltip contentStyle={{ backgroundColor: '#13191d', borderColor: '#222d36', fontSize: 11 }} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Bar 
-                          dataKey={activeReport.id === 'rep-1' ? 'downtime' : 'hours'} 
-                          name={activeReport.id === 'rep-1' ? 'Downtime Minutes' : 'MTBF Hours'} 
-                          fill="#0E7C86" 
-                          radius={[4, 4, 0, 0]} 
+                        <Bar
+                          dataKey={activeReport.live ? 'value' : (activeReport.id === 'rep-1' ? 'downtime' : 'hours')}
+                          name={activeReport.live ? (activeReport.yLabel || 'Value') : (activeReport.id === 'rep-1' ? 'Downtime Minutes' : 'MTBF Hours')}
+                          fill="#0E7C86"
+                          radius={[4, 4, 0, 0]}
                         />
-                        {activeReport.id === 'rep-2' && (
+                        {!activeReport.live && activeReport.id === 'rep-2' && (
                           <Bar dataKey="target" name="Nominal Target" fill="#F5A524" opacity={0.6} radius={[4, 4, 0, 0]} />
                         )}
                       </BarChart>
+                    ) : activeReport.chartType === 'line' ? (
+                      <LineChart data={activeReport.chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#222d36" />
+                        <XAxis dataKey="name" stroke="#687b8d" fontSize={10} />
+                        <YAxis stroke="#687b8d" fontSize={10} />
+                        <Tooltip contentStyle={{ backgroundColor: '#13191d', borderColor: '#222d36', fontSize: 11 }} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Line type="monotone" dataKey="value" name={activeReport.yLabel || 'Value'} stroke="#0E7C86" strokeWidth={2} dot={false} />
+                      </LineChart>
                     ) : activeReport.chartType === 'area' ? (
                       <AreaChart data={activeReport.chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#222d36" />
@@ -390,8 +585,14 @@ export function AnalyticsHub() {
                         <YAxis stroke="#687b8d" fontSize={10} />
                         <Tooltip contentStyle={{ backgroundColor: '#13191d', borderColor: '#222d36', fontSize: 11 }} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Area type="monotone" dataKey="gaps" name="Open Gaps" stroke="#E5484D" fill="#E5484D" fillOpacity={0.1} strokeWidth={2} />
-                        <Area type="monotone" dataKey="remediated" name="Remediated" stroke="#2E9E5B" fill="#2E9E5B" fillOpacity={0.05} strokeWidth={2} />
+                        {activeReport.live ? (
+                          <Area type="monotone" dataKey="value" name={activeReport.yLabel || 'Value'} stroke="#0E7C86" fill="#0E7C86" fillOpacity={0.1} strokeWidth={2} />
+                        ) : (
+                          <>
+                            <Area type="monotone" dataKey="gaps" name="Open Gaps" stroke="#E5484D" fill="#E5484D" fillOpacity={0.1} strokeWidth={2} />
+                            <Area type="monotone" dataKey="remediated" name="Remediated" stroke="#2E9E5B" fill="#2E9E5B" fillOpacity={0.05} strokeWidth={2} />
+                          </>
+                        )}
                       </AreaChart>
                     ) : (
                       <PieChart>

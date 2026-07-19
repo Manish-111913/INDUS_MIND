@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
-import { api } from '../../../lib/api/client';
+import { api, USE_MOCK } from '../../../lib/api/client';
 import { Select } from '../../shared';
 
 export function SparePartsModule() {
@@ -35,7 +35,9 @@ export function SparePartsModule() {
         api.get<string[]>('/lookups?type=part_categories')
       ]);
       setParts(partsRes || []);
-      setCategories(catsRes || ['Seals', 'Bearings', 'Valves', 'Gaskets', 'Couplings', 'Filters', 'Fasteners', 'Instrumentation']);
+      // Categories come from the tenant's own lookups (empty for a new tenant); no
+      // fixture fallback so a fresh node never shows demo categories.
+      setCategories(Array.isArray(catsRes) ? catsRes : []);
     } catch (err) {
       console.error('Failed to load parts:', err);
     } finally {
@@ -52,9 +54,17 @@ export function SparePartsModule() {
       const partToUpdate = parts.find(p => p.id === id);
       if (!partToUpdate) return;
 
-      const updatedFields = { on_hand: editingOnHand };
-      await api.put(`/parts/${id}`, updatedFields);
-      
+      if (USE_MOCK) {
+        await api.put(`/parts/${id}`, { on_hand: editingOnHand });
+      } else {
+        // LIVE: stock changes go through the movement ledger (POST /parts/{id}/adjust
+        // with a delta), not a PUT — the backend has no PUT /parts/{id}.
+        const delta = Number(editingOnHand) - Number(partToUpdate.on_hand || 0);
+        if (delta !== 0) {
+          await api.post(`/parts/${id}/adjust`, { delta, reason: 'Manual stock correction' });
+        }
+      }
+
       setParts(prev => prev.map(p => p.id === id ? { ...p, on_hand: editingOnHand } : p));
       setEditingPartId(null);
     } catch (err) {

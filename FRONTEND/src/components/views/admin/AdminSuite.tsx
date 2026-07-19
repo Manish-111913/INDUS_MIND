@@ -4,7 +4,7 @@ import { Select } from '../../shared';
 import { useAdminStore, AdminUser, Permission, AiCapability, PromptTemplate, FeatureFlag, AuditRecord, LookupOption } from '../../../stores/adminStore';
 import { renderIcon } from '../../layout/AppShell';
 import { useSettingsStore } from '../../../stores/settingsStore';
-import { api } from '../../../lib/api/client';
+import { api, USE_MOCK } from '../../../lib/api/client';
 import { TranslationsModule } from './TranslationsModule';
 import { RetentionModule } from './RetentionModule';
 import { useNotificationStore } from '../../../stores/notificationStore';
@@ -36,6 +36,14 @@ export function AdminSuite({ currentHash, onRouteChange }: AdminSuiteProps) {
   const handleModuleChange = (module: string) => {
     onRouteChange(`#admin/${module}`);
   };
+
+  // In LIVE mode, pull every admin module's real data from the backend once on
+  // mount (empty for a brand-new tenant). No-op in MOCK mode, which keeps the
+  // existing fixture/localStorage behavior.
+  const hydrateFromBackend = useAdminStore((s) => s.hydrateFromBackend);
+  useEffect(() => {
+    hydrateFromBackend();
+  }, [hydrateFromBackend]);
 
   const adminMenu = [
     { id: 'users', label: 'User Directory', icon: 'Users', badge: null },
@@ -581,11 +589,13 @@ function UsersModule() {
 // 2. ACCESS PERMISSION MATRIX MODULE
 // ============================================================================
 function RolesPermissionsModule() {
-  const { permissions, rolePermissions, updateRolePermissions, saveRolePermissionsMatrix } = useAdminStore();
+  const { roles, permissions, rolePermissions, updateRolePermissions, saveRolePermissionsMatrix } = useAdminStore();
   const [dirty, setDirty] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const rolesList = ['Admin', 'Plant Manager', 'Maintenance Engineer', 'Compliance Officer'];
+  // Backend-driven role columns in LIVE; fall back to the canonical set only if
+  // roles haven't loaded (e.g. MOCK bootstrap or a permission-scoped fetch).
+  const rolesList = roles.length ? roles : ['Admin', 'Plant Manager', 'Maintenance Engineer', 'Compliance Officer'];
 
   const groupedPermissions = useMemo(() => {
     const groups: { [resource: string]: Permission[] } = {};
@@ -1234,20 +1244,21 @@ function PromptsModule() {
 // 5. FEATURE FLAGS MODULE
 // ============================================================================
 function FeatureFlagsModule() {
-  const { featureFlags, toggleFlag } = useAdminStore();
+  const { featureFlags, toggleFlag, roles } = useAdminStore();
 
-  const mockTenants = [
-    'Reliance Jamnagar Refinery - Sector A',
-    'Reliance Jamnagar Refinery - Sector B',
-    'Hazira Petrochemicals Complex - Unit 4'
-  ];
+  // Tenant gates are a MOCK-only concept (the backend flag model is flat +
+  // per-tenant scoped to the current tenant). In LIVE we only render role gates.
+  const mockTenants = USE_MOCK
+    ? [
+        'Reliance Jamnagar Refinery - Sector A',
+        'Reliance Jamnagar Refinery - Sector B',
+        'Hazira Petrochemicals Complex - Unit 4'
+      ]
+    : [];
 
-  const mockRoles = [
-    'Admin',
-    'Plant Manager',
-    'Maintenance Engineer',
-    'Compliance Officer'
-  ];
+  const mockRoles = roles.length
+    ? roles
+    : ['Admin', 'Plant Manager', 'Maintenance Engineer', 'Compliance Officer'];
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -1858,6 +1869,29 @@ function LookupsModule() {
 // 9. SYSTEM HEALTH MONITORING MODULE
 // ============================================================================
 function SystemHealthModule() {
+  // No backend telemetry/health endpoint is exposed under the API surface
+  // (only server-root /healthz + /readyz probes). In LIVE, render an
+  // "unavailable" state instead of the mock charts/dependency fixtures.
+  if (!USE_MOCK) {
+    return (
+      <div className="space-y-5 animate-fade-in text-xs">
+        <div className="border-b border-border-custom pb-4">
+          <h2 className="font-display text-lg font-bold text-text-primary tracking-tight">System Node Telemetry & Diagnostic Health</h2>
+          <p className="text-xs text-text-secondary mt-0.5">
+            Real-time performance measurements of API server request latency, error distribution curves, and database node status.
+          </p>
+        </div>
+        <div className="border border-border-custom rounded-xl bg-background-custom p-10 flex flex-col items-center justify-center text-center space-y-3">
+          <Icons.Activity className="w-8 h-8 text-text-muted" />
+          <span className="font-display font-semibold text-sm text-text-primary">Telemetry Unavailable</span>
+          <p className="text-[11px] text-text-muted max-w-md">
+            No system-health telemetry endpoint is exposed on this backend. Node diagnostics will appear here once a metrics service is connected.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Mock Latency Data over past 12 hours
   const mockHealthData = [
     { hour: '00:00', latency: 42, errors: 0, cpu: 12 },
@@ -2152,14 +2186,14 @@ function NotificationTemplatesModule() {
 
       {editingTemplate && (
         <div className="fixed inset-0 bg-black/85 flex justify-end z-50 p-0 font-sans backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-4xl bg-[#0E1316] border-l border-border-custom h-full flex flex-col p-6 overflow-y-auto space-y-5 animate-in slide-in-from-right duration-200">
-            
+          <div className="w-full max-w-4xl bg-surface border-l border-border-custom h-full flex flex-col p-6 overflow-y-auto space-y-5 animate-in slide-in-from-right duration-200">
+
             <div className="flex justify-between items-start border-b border-border-custom pb-4">
               <div>
                 <span className="font-mono text-[10px] font-bold text-primary uppercase tracking-wider block">
                   TEMPLATE COMPILER PANEL
                 </span>
-                <h3 className="font-display font-bold text-white text-base mt-1 select-all">
+                <h3 className="font-display font-bold text-text-primary text-base mt-1 select-all">
                   {editingTemplate.event}
                 </h3>
               </div>
@@ -2194,7 +2228,7 @@ function NotificationTemplatesModule() {
                         required
                         value={version}
                         onChange={(e) => setVersion(e.target.value)}
-                        className="w-full bg-[#0B0F12] border border-border-custom rounded px-3 py-2 text-text-primary text-xs font-mono"
+                        className="w-full bg-background-custom border border-border-custom rounded px-3 py-2 text-text-primary text-xs font-mono"
                       />
                     </div>
                   </div>
@@ -2206,7 +2240,7 @@ function NotificationTemplatesModule() {
                       required
                       value={locale}
                       onChange={(e) => setLocale(e.target.value)}
-                      className="w-full bg-[#0B0F12] border border-border-custom rounded px-3 py-2 text-text-primary text-xs font-mono"
+                      className="w-full bg-background-custom border border-border-custom rounded px-3 py-2 text-text-primary text-xs font-mono"
                     />
                   </div>
 
@@ -2218,7 +2252,7 @@ function NotificationTemplatesModule() {
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
                       placeholder="Enter subject header template..."
-                      className="w-full bg-[#0B0F12] border border-border-custom rounded px-3 py-2 text-text-primary text-xs font-semibold focus:outline-none focus:border-primary"
+                      className="w-full bg-background-custom border border-border-custom rounded px-3 py-2 text-text-primary text-xs font-semibold focus:outline-none focus:border-primary"
                     />
                   </div>
 
@@ -2230,7 +2264,7 @@ function NotificationTemplatesModule() {
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
                       placeholder="Write message template payload using standard tokens..."
-                      className="w-full bg-[#0B0F12] border border-border-custom rounded p-3 text-text-primary text-xs font-sans leading-relaxed focus:outline-none focus:border-primary resize-none"
+                      className="w-full bg-background-custom border border-border-custom rounded p-3 text-text-primary text-xs font-sans leading-relaxed focus:outline-none focus:border-primary resize-none"
                     />
                   </div>
 
@@ -2248,7 +2282,7 @@ function NotificationTemplatesModule() {
                   </div>
                 </div>
 
-                <div className="bg-[#0B0F12] border border-border-custom rounded-lg p-3 space-y-2">
+                <div className="bg-background-custom border border-border-custom rounded-lg p-3 space-y-2">
                   <span className="font-mono text-[9px] font-bold text-primary uppercase block">Available Event Context Variables</span>
                   {variablesLegend.length === 0 ? (
                     <span className="text-[10px] text-text-muted font-mono block">No dynamic tokens registered for this event.</span>
@@ -2265,7 +2299,7 @@ function NotificationTemplatesModule() {
                 </div>
               </div>
 
-              <div className="flex flex-col space-y-3 bg-[#0B0F12] border border-border-custom rounded-xl p-4 min-h-[350px]">
+              <div className="flex flex-col space-y-3 bg-background-custom border border-border-custom rounded-xl p-4 min-h-[350px]">
                 <div className="flex justify-between items-center border-b border-border-custom pb-2">
                   <span className="font-mono text-[9px] font-bold text-text-muted uppercase tracking-wider flex items-center space-x-1.5">
                     <Icons.Play className="w-3 h-3 text-primary" />
@@ -2287,11 +2321,11 @@ function NotificationTemplatesModule() {
                     <div className="space-y-1.5 border-b border-border-custom/40 pb-3 text-xs">
                       <div className="flex justify-between">
                         <span className="font-mono text-[9px] text-text-muted uppercase">Render Type:</span>
-                        <span className="font-mono text-[10px] font-bold text-white uppercase">{channel === 'email' ? 'CORPORATE EMAIL RELAY' : 'OPERATOR HUD ALERTS'}</span>
+                        <span className="font-mono text-[10px] font-bold text-text-primary uppercase">{channel === 'email' ? 'CORPORATE EMAIL RELAY' : 'OPERATOR HUD ALERTS'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-mono text-[9px] text-text-muted uppercase">Subject line:</span>
-                        <span className="text-white font-semibold truncate max-w-xs">{previewData.renderedSubject || '(Draft Subject Empty)'}</span>
+                        <span className="text-text-primary font-semibold truncate max-w-xs">{previewData.renderedSubject || '(Draft Subject Empty)'}</span>
                       </div>
                     </div>
 
@@ -2313,7 +2347,7 @@ function NotificationTemplatesModule() {
                               <Icons.BellRing className="w-16 h-16 text-primary" />
                             </div>
                             <span className="font-mono text-[9px] font-bold text-primary block tracking-wider uppercase">INGRESS HUD NOTIFICATION</span>
-                            <h4 className="text-white font-bold text-xs mt-1.5">{previewData.renderedSubject || 'HUD Header'}</h4>
+                            <h4 className="text-text-primary font-bold text-xs mt-1.5">{previewData.renderedSubject || 'HUD Header'}</h4>
                             <p className="text-[11px] text-text-secondary leading-relaxed mt-1 whitespace-pre-wrap select-all">
                               {previewData.renderedBody || 'Active prompt body...'}
                             </p>
@@ -2324,7 +2358,7 @@ function NotificationTemplatesModule() {
 
                     <div className="bg-surface border border-border-custom/60 rounded-lg p-2.5 font-mono text-[9px] text-text-secondary">
                       <span className="text-primary font-bold block mb-1">MOCK VARIABLE SCOPE:</span>
-                      <pre className="overflow-x-auto text-[8px] leading-tight text-white/80 max-h-32">
+                      <pre className="overflow-x-auto text-[8px] leading-tight text-text-secondary max-h-32">
                         {JSON.stringify(previewData.samplePayload, null, 2)}
                       </pre>
                     </div>
@@ -2369,9 +2403,50 @@ function AiObservabilityModule() {
 
   useEffect(() => {
     let active = true;
-    api.get<any>('/admin/ai-usage/summary')
-      .then(res => {
-        if (active) setData(res);
+    const unwrap = (r: any) => (r && typeof r === 'object' && 'data' in r ? r.data : r);
+    Promise.all([
+      api.get<any>('/admin/ai-usage/summary?group_by=day').then(unwrap).catch(() => ({})),
+      api.get<any>('/admin/ai-usage/summary?group_by=model').then(unwrap).catch(() => ({})),
+      api.get<any>('/admin/ai-feedback?rating=down').then(unwrap).catch(() => []),
+    ])
+      .then(([dayRes, modelRes, fbRes]) => {
+        if (!active) return;
+        const totals = dayRes?.totals ?? {};
+        const daySeries: any[] = Array.isArray(dayRes?.series) ? dayRes.series : [];
+        const modelSeries: any[] = Array.isArray(modelRes?.series) ? modelRes.series : [];
+        const feedback: any[] = Array.isArray(fbRes) ? fbRes : (Array.isArray(fbRes?.items) ? fbRes.items : []);
+        const totalCalls = Number(totals.calls ?? 0);
+        const latSum = daySeries.reduce((s, r) => s + Number(r.avg_latency_ms ?? 0) * Number(r.calls ?? 0), 0);
+        const cacheHits = daySeries.reduce((s, r) => s + Number(r.cache_hits ?? 0), 0);
+        setData({
+          summary: {
+            totalRequests: totalCalls,
+            totalCost: Number(totals.cost_usd ?? 0),
+            avgLatency: totalCalls ? Math.round(latSum / totalCalls) : 0,
+            avgCacheHit: totalCalls ? Math.round((cacheHits / totalCalls) * 100) : 0,
+          },
+          daily: daySeries.map((r) => ({
+            date: r.bucket ?? '',
+            requests: Number(r.calls ?? 0),
+            latency: Number(r.avg_latency_ms ?? 0),
+            tokensIn: Number(r.prompt_tokens ?? 0),
+            tokensOut: Number(r.completion_tokens ?? 0),
+          })),
+          models: modelSeries.map((r) => ({
+            name: r.bucket ?? 'unknown',
+            requests: Number(r.calls ?? 0),
+            percentage: totalCalls ? Math.round((Number(r.calls ?? 0) / totalCalls) * 100) : 0,
+            latency: Number(r.avg_latency_ms ?? 0),
+            cost: Number(r.cost_usd ?? 0),
+          })),
+          flaggedFeedback: feedback.map((f) => ({
+            id: f.id,
+            timestamp: f.created_at ?? f.timestamp ?? null,
+            messageText: f.answer ?? f.question ?? '',
+            reason: f.reason_code ?? f.reason ?? 'unspecified',
+            comment: f.comment ?? '',
+          })),
+        });
       })
       .catch(e => console.error('Failed to fetch observability summary:', e))
       .finally(() => {
@@ -2624,28 +2699,48 @@ function ReportsModule() {
   // Toast/Notification state
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const unwrapList = (r: any): any[] =>
+    Array.isArray(r) ? r : (Array.isArray(r?.data) ? r.data : (Array.isArray(r?.items) ? r.items : []));
+
   const fetchTemplates = async () => {
     setLoadingTemplates(true);
     try {
-      const data = await api.get<ReportTemplate[]>('/admin/reports');
-      setTemplates(data);
+      // Backend templates (code/name/…) and schedules (cron/recipients/last_run) are
+      // separate resources; merge a template with its schedule so the card renders.
+      const [tplRes, schRes] = await Promise.all([
+        api.get<any>('/admin/reports'),
+        api.get<any>('/report-schedules').catch(() => []),
+      ]);
+      const rawTemplates = unwrapList(tplRes);
+      const schedules = unwrapList(schRes);
+      const schedByTemplate: Record<string, any> = {};
+      for (const s of schedules) {
+        if (s?.template_id != null) schedByTemplate[String(s.template_id)] = s;
+      }
+      const merged: ReportTemplate[] = rawTemplates.map((t) => {
+        const sch = schedByTemplate[String(t.id)] || {};
+        return {
+          id: String(t.id),
+          name: t.name ?? t.code ?? 'Untitled Report',
+          schedule: sch.cron_expr ?? '',
+          recipients: Array.isArray(sch.recipients) ? sch.recipients : [],
+          lastRun: sch.last_run_at ?? '',
+        };
+      });
+      setTemplates(merged);
     } catch (e) {
       console.error(e);
+      setTemplates([]);
     } finally {
       setLoadingTemplates(false);
     }
   };
 
   const fetchRuns = async () => {
-    setLoadingRuns(true);
-    try {
-      const data = await api.get<ReportRun[]>('/admin/reports/runs');
-      setRuns(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoadingRuns(false);
-    }
+    // The backend has no persisted "runs" ledger — run-now returns report data
+    // inline. Leave the historical-runs list empty (its empty state handles this).
+    setRuns([]);
+    setLoadingRuns(false);
   };
 
   useEffect(() => {
@@ -2690,40 +2785,23 @@ function ReportsModule() {
       setToastMessage(`Ad-hoc generation for ${template.name} queued.`);
       setTimeout(() => setToastMessage(null), 3000);
 
-      // Create new run
-      const newRunRes = await api.post<ReportRun>('/admin/reports/runs', {
-        templateName: template.name
+      // Real run-now endpoint: computes and returns the report data inline.
+      await api.post(`/admin/reports/${template.id}/run`, {});
+
+      const { addNotification } = useNotificationStore.getState();
+      addNotification({
+        title: 'REPORT COMPILED SUCCESSFULLY',
+        desc: `The ad-hoc generation run for template "${template.name}" completed. Open Analytics to view the compiled result.`,
+        type: 'info',
+        category: 'Compliance'
       });
 
-      // Optimistically insert and refresh
-      setRuns(prev => [newRunRes, ...prev]);
-
-      // Simulate a 2.5-second compliance processing
-      setTimeout(async () => {
-        const runId = newRunRes.id;
-        // Mark run as complete
-        await api.put(`/admin/reports/runs/${runId}`, {
-          status: 'done',
-          downloadUrl: `http://localhost/api/reports/download/${runId}.pdf`
-        });
-
-        // Add standard alert to notification drawer
-        const { addNotification } = useNotificationStore.getState();
-        addNotification({
-          title: 'REPORT COMPILED SUCCESSFULLY',
-          desc: `The ad-hoc generation run for template "${template.name}" is ready for review. Secure download token is available in your admin workspace. Download URL: http://localhost/api/reports/download/${runId}.pdf`,
-          type: 'info',
-          category: 'Compliance'
-        });
-
-        // Trigger UI refresh
-        fetchRuns();
-        setToastMessage(`Report "${template.name}" successfully compiled and archived!`);
-        setTimeout(() => setToastMessage(null), 3500);
-      }, 2500);
-
+      setToastMessage(`Report "${template.name}" successfully compiled!`);
+      setTimeout(() => setToastMessage(null), 3500);
     } catch (err) {
       console.error(err);
+      setToastMessage(`Failed to run report "${template.name}".`);
+      setTimeout(() => setToastMessage(null), 3500);
     }
   };
 
@@ -2767,6 +2845,10 @@ function ReportsModule() {
             <div className="flex items-center justify-center p-12 border border-border-custom rounded-lg bg-surface-muted/30">
               <Icons.Loader2 className="w-6 h-6 text-primary animate-spin" />
             </div>
+          ) : templates.length === 0 ? (
+            <div className="p-8 text-center border border-border-custom rounded-lg bg-surface-muted/30 font-mono text-[11px] text-text-muted uppercase">
+              No report templates configured for this node yet
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {templates.map(tpl => (
@@ -2784,14 +2866,16 @@ function ReportsModule() {
                     <div className="space-y-1.5 text-xs">
                       <div>
                         <span className="text-[10px] font-mono text-text-muted uppercase block">DISPATCH CRON SCHEDULE:</span>
-                        <span className="font-mono text-text-primary text-[11px] font-semibold">{tpl.schedule}</span>
-                        <span className="text-text-muted block text-[10px] italic">{translateCron(tpl.schedule)}</span>
+                        <span className="font-mono text-text-primary text-[11px] font-semibold">{tpl.schedule || '— not scheduled —'}</span>
+                        {tpl.schedule && <span className="text-text-muted block text-[10px] italic">{translateCron(tpl.schedule)}</span>}
                       </div>
 
                       <div className="pt-1">
                         <span className="text-[10px] font-mono text-text-muted uppercase block">RECIPIENTS DISPATCH LIST:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {tpl.recipients.map(email => (
+                          {(tpl.recipients || []).length === 0 ? (
+                            <span className="font-mono text-[9px] text-text-muted italic">No recipients configured</span>
+                          ) : (tpl.recipients || []).map(email => (
                             <span key={email} className="bg-surface border border-border-custom px-2 py-0.5 rounded font-mono text-[9px] text-text-secondary">
                               {email}
                             </span>

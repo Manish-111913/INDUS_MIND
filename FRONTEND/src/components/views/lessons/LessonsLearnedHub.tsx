@@ -11,6 +11,7 @@ import {
   TrendingUp, Compass, Bookmark, BookmarkCheck, ArrowLeft, Bell
 } from 'lucide-react';
 import { StatusChip, ConfidenceBadge, SkeletonLoader, Select } from '../../shared';
+import { api, USE_MOCK } from '../../../lib/api/client';
 
 export interface Lesson {
   id: string;
@@ -114,8 +115,48 @@ const INITIAL_LESSONS: Lesson[] = [
   }
 ];
 
+// Map a backend LessonRead row (see BACKEND/app/modules/lessons/schemas.py) onto
+// the frontend `Lesson` interface. Fields the backend doesn't provide fall back to
+// empty defaults so a brand-new tenant renders an empty list while the demo tenant
+// shows its real lessons.
+function mapLesson(row: any): Lesson {
+  const rawConfidence = Number(row?.confidence ?? 0);
+  // Backend stores confidence as a 0..1 Numeric(4,3); the UI uses a 0..100 scale.
+  const confidence = Number.isFinite(rawConfidence)
+    ? (rawConfidence <= 1 ? Math.round(rawConfidence * 100) : Math.round(rawConfidence))
+    : 0;
+  const evidence = Array.isArray(row?.evidence) ? row.evidence : [];
+  const backendStatus = String(row?.status ?? '').toLowerCase();
+  return {
+    id: String(row?.id ?? ''),
+    title: row?.title ?? '',
+    shortDesc: row?.pattern_summary ?? row?.shortDesc ?? '',
+    narrative: row?.narrative ?? '',
+    preventiveAction: row?.recommended_action ?? '',
+    area: row?.area ?? '',
+    equipment: Array.isArray(row?.affected_equipment_ids)
+      ? row.affected_equipment_ids.map((e: any) => String(e))
+      : [],
+    confidence,
+    evidenceCount: evidence.length,
+    downtimeCost: '',
+    status: backendStatus === 'published' ? 'Published' : 'Candidate',
+    sourceIncidents: evidence.map((ev: any, i: number) => ({
+      id: String(ev?.id ?? ev?.type ?? `EV-${i + 1}`),
+      name: ev?.excerpt ?? ev?.type ?? 'Evidence Record',
+      plant: ev?.plant ?? '',
+      date: ev?.date ?? '',
+      link: '#documents',
+    })),
+    externalReferences: [],
+    isSubscribed: false,
+  };
+}
+
 export function LessonsLearnedHub() {
   const [lessons, setLessons] = useState<Lesson[]>(() => {
+    // LIVE: start empty and hydrate from GET /lessons in an effect below.
+    if (!USE_MOCK) return [];
     const stored = localStorage.getItem('indusmind_lessons_learned');
     if (stored) {
       try {
@@ -153,11 +194,27 @@ export function LessonsLearnedHub() {
     }, 5000);
   };
 
-  // Sync state to LocalStorage
+  // Sync state to LocalStorage (mock-only persistence).
   const saveLessons = (newLessons: Lesson[]) => {
     setLessons(newLessons);
-    localStorage.setItem('indusmind_lessons_learned', JSON.stringify(newLessons));
+    if (USE_MOCK) localStorage.setItem('indusmind_lessons_learned', JSON.stringify(newLessons));
   };
+
+  // LIVE: fetch lessons from the backend on mount (empty for a new tenant).
+  useEffect(() => {
+    if (USE_MOCK) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res: any = await api.get('/lessons');
+        const rows: any[] = res?.data ?? res?.items ?? res ?? [];
+        if (!cancelled) setLessons((Array.isArray(rows) ? rows : []).map(mapLesson));
+      } catch (e) {
+        if (!cancelled) setLessons([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Parse routing parameters from hash
   useEffect(() => {

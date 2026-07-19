@@ -10,7 +10,7 @@ import {
   StatusChip, ConfidenceBadge, SkeletonLoader, EmptyState, ErrorState, Can, Select
 } from '../../shared';
 import { useAuthStore } from '../../../stores/authStore';
-import { api, getStoredDocuments } from '../../../lib/api/client';
+import { api, getStoredDocuments, USE_MOCK } from '../../../lib/api/client';
 import { DocumentFile, ExtractedEntity } from '../../../types';
 import { getDocumentDetails, OverlayEntity, LinkedEquipment, DocVersion, RelatedDoc, DocComment } from './mockDetailsData';
 import { formatDate } from '../../../lib/format';
@@ -145,24 +145,31 @@ function DocumentsLibraryTableAndGrid() {
         content: d?.content ?? '',
       }));
       setDocuments(normalizedDocs as DocumentFile[]);
-      // In simulateNetworkCall we wrap in response, let's verify if response has a meta or if we need to get total from local DB length
-      const fullDocs = getStoredDocuments();
-      
-      // Let's perform local filtering counts for meta total if needed, or fallback
-      let filteredCount = fullDocs.length;
-      if (search || selectedType || selectedStatus || selectedTag || selectedPlant || selectedArea) {
-        let f = [...fullDocs];
-        if (search) {
-          f = f.filter(d => d && ((d.name || '').toLowerCase().includes((search || '').toLowerCase()) || (d.content || '').toLowerCase().includes((search || '').toLowerCase())));
+
+      if (USE_MOCK) {
+        // MOCK: derive the total from the seeded local DB (with the same filters).
+        const fullDocs = getStoredDocuments();
+        let filteredCount = fullDocs.length;
+        if (search || selectedType || selectedStatus || selectedTag || selectedPlant || selectedArea) {
+          let f = [...fullDocs];
+          if (search) {
+            f = f.filter(d => d && ((d.name || '').toLowerCase().includes((search || '').toLowerCase()) || (d.content || '').toLowerCase().includes((search || '').toLowerCase())));
+          }
+          if (selectedType) f = f.filter(d => d.type === selectedType);
+          if (selectedStatus) f = f.filter(d => d.status === selectedStatus);
+          if (selectedTag) f = f.filter(d => (d.tags || []).includes(selectedTag));
+          if (selectedPlant) f = f.filter(d => d.plant === selectedPlant);
+          if (selectedArea) f = f.filter(d => d.area === selectedArea);
+          filteredCount = f.length;
         }
-        if (selectedType) f = f.filter(d => d.type === selectedType);
-        if (selectedStatus) f = f.filter(d => d.status === selectedStatus);
-        if (selectedTag) f = f.filter(d => (d.tags || []).includes(selectedTag));
-        if (selectedPlant) f = f.filter(d => d.plant === selectedPlant);
-        if (selectedArea) f = f.filter(d => d.area === selectedArea);
-        filteredCount = f.length;
+        setTotalCount(filteredCount);
+      } else {
+        // LIVE: use the real result (a pagination meta envelope if present, else the
+        // returned rows). Never read the seeded local fixtures — a new tenant is empty.
+        const metaTotal = (response && !Array.isArray(response) && response?.meta?.total != null)
+          ? Number(response.meta.total) : normalizedDocs.length;
+        setTotalCount(metaTotal);
       }
-      setTotalCount(filteredCount);
     } catch (err: any) {
       setError(err?.error?.message || 'Failed to fetch vault repository files.');
     } finally {

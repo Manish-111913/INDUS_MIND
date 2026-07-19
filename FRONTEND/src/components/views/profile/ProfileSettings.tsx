@@ -25,11 +25,12 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
   // Active Sessions local state
   const [sessions, setSessions] = useState<any[]>([]);
 
-  // Profile Form state
-  const [name, setName] = useState(user?.name || 'Aditya Vardhan');
-  const [email, setEmail] = useState(user?.email || 'admin@indusmind.io');
-  const [phone, setPhone] = useState('+91 98765 43210');
-  const [dept, setDept] = useState('Safety & Compliance Operations');
+  // Profile Form state — sourced from the authenticated user, never fabricated.
+  // A brand-new operator sees their own identity (blank phone/dept until they set it).
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState((user as any)?.phone || '');
+  const [dept, setDept] = useState((user as any)?.department || '');
 
   // Password state
   const [currPassword, setCurrPassword] = useState('');
@@ -42,7 +43,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
 
   const [theme, setTheme] = useState(() => localStorage.getItem('appearance.theme') || localStorage.getItem('indusmind_theme') || 'system');
   const [lang, setLang] = useState('en-IN');
-  const [mfaEnabled, setMfaEnabled] = useState(true);
+  const [mfaEnabled, setMfaEnabled] = useState<boolean>(Boolean((user as any)?.mfa_enabled ?? (user as any)?.mfaEnabled ?? false));
   const [notifChannels, setNotifChannels] = useState({
     email: true,
     sms: true,
@@ -103,7 +104,7 @@ export function ProfileSettings({ currentHash, onRouteChange }: ProfileSettingsP
 
     setPasswordError('');
     try {
-      await api.put('/me/password', { current_password: currPassword, new_password: newPassword });
+      await api.post('/me/change-password', { current_password: currPassword, new_password: newPassword });
       setCurrPassword('');
       setNewPassword('');
       setConfPassword('');

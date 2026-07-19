@@ -61,7 +61,8 @@ export function SparePartsModule() {
         // with a delta), not a PUT — the backend has no PUT /parts/{id}.
         const delta = Number(editingOnHand) - Number(partToUpdate.on_hand || 0);
         if (delta !== 0) {
-          await api.post(`/parts/${id}/adjust`, { delta, reason: 'Manual stock correction' });
+          // reason is a backend enum: 'adjustment' | 'receipt'.
+          await api.post(`/parts/${id}/adjust`, { delta, reason: delta > 0 ? 'receipt' : 'adjustment' });
         }
       }
 
